@@ -88,6 +88,35 @@
 
       <!-- ==================== DASHBOARD ==================== -->
       <section x-show="section === 'dashboard'" x-transition.opacity>
+        <div class="card p-5 mb-5 rounded-2xl bg-slate-50 border border-slate-100">
+          <p class="text-xs font-semibold text-slate-500 uppercase mb-3">Aaj kya kaam hai? Pehle ye choose karein</p>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <button type="button" @click="startWork('buy_stock')" class="text-left p-3 rounded-xl bg-white border hover:border-teal-400">
+              <p class="font-bold text-sm">1. Purchase → Stock</p>
+              <p class="text-[11px] text-slate-500 mt-1">Gas RPG godam me aayi. Inventory badhegi.</p>
+            </button>
+            <button type="button" @click="startWork('buy_direct')" class="text-left p-3 rounded-xl bg-white border hover:border-teal-400">
+              <p class="font-bold text-sm">2. Purchase → Direct party</p>
+              <p class="text-[11px] text-slate-500 mt-1">Godam nahi. Sirf party ledger. Inventory nahi.</p>
+            </button>
+            <button type="button" @click="startWork('sell_stock')" class="text-left p-3 rounded-xl bg-white border hover:border-emerald-400">
+              <p class="font-bold text-sm">3. Sale from Stock</p>
+              <p class="text-[11px] text-slate-500 mt-1">RPG se nikaal kar becha. Inventory ghategi.</p>
+            </button>
+            <button type="button" @click="startWork('sell_direct')" class="text-left p-3 rounded-xl bg-white border hover:border-emerald-400">
+              <p class="font-bold text-sm">4. Sale (direct load)</p>
+              <p class="text-[11px] text-slate-500 mt-1">Stock se nahi. Buyer ledger debit.</p>
+            </button>
+            <button type="button" @click="startWork('pay')" class="text-left p-3 rounded-xl bg-white border hover:border-blue-400">
+              <p class="font-bold text-sm">5. Payment / TID / Slip</p>
+              <p class="text-[11px] text-slate-500 mt-1">Received, Made, ya buyer→supplier direct.</p>
+            </button>
+            <button type="button" @click="go('guide')" class="text-left p-3 rounded-xl bg-white border hover:border-indigo-400">
+              <p class="font-bold text-sm">Flow padhein</p>
+              <p class="text-[11px] text-slate-500 mt-1">Poora data kahan jata hai — 1 page.</p>
+            </button>
+          </div>
+        </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div class="card-vip accent-teal p-5 pl-6">
             <p class="vip-label">Total Purchased</p>
@@ -141,6 +170,33 @@
             </div>
             <p class="text-xs text-slate-500">Only active inventory • Multi-ready</p>
           </div>
+        </div>
+      </section>
+
+      <section x-show="section === 'guide'" x-transition.opacity>
+        <div class="card p-6 rounded-2xl mb-5">
+          <h2 class="text-lg font-extrabold mb-2">Meer Gas — data sirf 4 dabbon me hai</h2>
+          <p class="text-sm text-slate-600 mb-4">Har entry inhi me se kisi ek ko chhooti hai. Baqi kuch nahi.</p>
+          <div class="grid md:grid-cols-4 gap-3 text-sm">
+            <div class="p-4 rounded-xl bg-teal-50"><p class="font-bold">1. Purchases</p><p class="text-xs text-slate-600 mt-1">Loading list. Kitni Ton kharidi / load hui.</p></div>
+            <div class="p-4 rounded-xl bg-emerald-50"><p class="font-bold">2. Sales</p><p class="text-xs text-slate-600 mt-1">Kis party ko kitni Ton bechi.</p></div>
+            <div class="p-4 rounded-xl bg-sky-50"><p class="font-bold">3. Inventory</p><p class="text-xs text-slate-600 mt-1">Sirf wo gas jo RPG STOCK me rakhi. Direct load yahan nahi aati.</p></div>
+            <div class="p-4 rounded-xl bg-amber-50"><p class="font-bold">4. Party Ledger</p><p class="text-xs text-slate-600 mt-1">Har party ka hisab: debit, credit, TID, slip, narration.</p></div>
+          </div>
+        </div>
+        <div class="card p-6 rounded-2xl mb-5 space-y-4 text-sm leading-relaxed">
+          <h3 class="font-bold">6 situations — operator ko itna yaad rakhna hai</h3>
+          <p><strong>A. Stock purchase:</strong> Type = Stock me rakhna. Qty + bowser. Inventory In. Supplier ledger tab jab Party STOCK na ho. STOCK party choose karo to sirf godam.</p>
+          <p><strong>B. Direct purchase:</strong> Type = Seedha party. Inventory 0 change. Us party ke ledger me line.</p>
+          <p><strong>C. Stock sale:</strong> Type = Stock se bechna. Inventory Out. Buyer ledger Debit.</p>
+          <p><strong>D. Direct sale:</strong> Type = Direct. Inventory nahi. Buyer ledger Debit. Pehle often B bhi hota hai same bowser par.</p>
+          <p><strong>E. Payment Meer Gas ke through:</strong> Received = party Credit. Made = party Debit. TID + slip narration me.</p>
+          <p><strong>F. Buyer ne supplier ko direct pay:</strong> Type = Slip Transfer. From = buyer, To = supplier. Dono ledgers + same TID.</p>
+          <p><strong>Rate baad me:</strong> Qty save karo. Table se “set rate”. Amount khud.</p>
+        </div>
+        <div class="card p-6 rounded-2xl text-sm">
+          <h3 class="font-bold mb-2">Client ko 30 second me kaise samjhayein</h3>
+          <p class="text-slate-600">“Gas ya to hamare STOCK me aati hai ya seedha party ko chali jati hai. Jo STOCK me hai wahi Inventory hai. Jo party ko gayi / unhone pay kiya wo Ledger hai. Payment ka proof TID aur slip number hai.”</p>
         </div>
       </section>
 
@@ -416,6 +472,20 @@
             <i class="fas fa-truck-loading text-teal-600 mr-2"></i>LPG Purchase / Loading Entry
           </h2>
           <form @submit.prevent="savePurchase" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="md:col-span-2 lg:col-span-3 grid sm:grid-cols-2 gap-3">
+              <button type="button" @click="setPurchaseDeal('stock')"
+                      class="p-3 rounded-xl border text-left"
+                      :class="purchaseForm.dealType === 'stock' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'">
+                <p class="font-bold text-sm">Stock me rakhna</p>
+                <p class="text-[11px] text-slate-500">Inventory badhegi. Party auto = RPG Plant - STOCK</p>
+              </button>
+              <button type="button" @click="setPurchaseDeal('direct')"
+                      class="p-3 rounded-xl border text-left"
+                      :class="purchaseForm.dealType === 'direct' ? 'border-amber-500 bg-amber-50' : 'border-slate-200'">
+                <p class="font-bold text-sm">Seedha party ko</p>
+                <p class="text-[11px] text-slate-500">Inventory nahi. Ledger me party Debit</p>
+              </button>
+            </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loading Date *</label>
               <input type="date" x-model="purchaseForm.loadingDate" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
@@ -426,7 +496,8 @@
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Party / Destination *</label>
-              <input list="partyList" x-model="purchaseForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
+              <input list="partyList" x-model="purchaseForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required
+                     :readonly="purchaseForm.dealType === 'stock'">
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label>
@@ -521,6 +592,20 @@
             <i class="fas fa-file-invoice-dollar text-emerald-600 mr-2"></i>LPG Sale Entry
           </h2>
           <form @submit.prevent="saveSale" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="md:col-span-2 lg:col-span-3 grid sm:grid-cols-2 gap-3">
+              <button type="button" @click="setSaleDeal('from_stock')"
+                      class="p-3 rounded-xl border text-left"
+                      :class="saleForm.dealType === 'from_stock' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'">
+                <p class="font-bold text-sm">Stock se bechna</p>
+                <p class="text-[11px] text-slate-500">RPG inventory ghategi + buyer ledger</p>
+              </button>
+              <button type="button" @click="setSaleDeal('direct')"
+                      class="p-3 rounded-xl border text-left"
+                      :class="saleForm.dealType === 'direct' ? 'border-amber-500 bg-amber-50' : 'border-slate-200'">
+                <p class="font-bold text-sm">Direct sale (stock nahi)</p>
+                <p class="text-[11px] text-slate-500">Sirf buyer ledger. Inventory same</p>
+              </button>
+            </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sale Date *</label>
               <input type="date" x-model="saleForm.date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
