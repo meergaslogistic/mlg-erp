@@ -313,6 +313,32 @@ function createApp() {
       return '';
     },
 
+    formatLedgerDesc(e) {
+      if (!e) return '';
+      const parts = [];
+      const base = String(e.narration || '').replace(/\s+/g, ' ').trim();
+      if (base) parts.push(base);
+
+      const bowser = this.getBowser(e);
+      const qty = this.getQty(e);
+      const rate = this.getRate(e);
+      const tid = this.getTid(e);
+      const fromP = this.getFrom(e);
+      const toP = this.getTo(e);
+
+      const extra = [];
+      if (bowser && !base.toUpperCase().includes(String(bowser).toUpperCase())) extra.push('Bowser ' + bowser);
+      if (qty && !base.includes(String(qty))) extra.push('Qty ' + qty + ' MT');
+      if (rate) extra.push('Rate ' + this.fmtMoney(rate));
+      if (tid && !base.includes(String(tid))) extra.push('TID ' + tid);
+      if (fromP && toP) extra.push('From ' + fromP + ' To ' + toP);
+      else if (fromP && !base.toLowerCase().includes(fromP.toLowerCase())) extra.push('From ' + fromP);
+      else if (toP && !base.toLowerCase().includes(toP.toLowerCase())) extra.push('To ' + toP);
+
+      if (extra.length) parts.push(extra.join(' | '));
+      return parts.filter(Boolean).join('  •  ');
+    },
+
     savePurchase() {
       const f = this.purchaseForm;
       if (!f.loadingDate || !f.bowser || !f.party || !f.qty) {
@@ -702,13 +728,7 @@ function createApp() {
         const rows = ledgerChrono.map((e, i) => [
           String(i + 1),
           e.date || '',
-          e.narration || '',
-          this.getBowser(e),
-          this.getTid(e),
-          this.getFrom(e),
-          this.getTo(e),
-          this.getQty(e),
-          this.getRate(e) ? this.fmtMoney(this.getRate(e)) : '',
+          this.formatLedgerDesc(e),
           e.debit ? this.fmtMoney(e.debit) : '',
           e.credit ? this.fmtMoney(e.credit) : '',
           this.fmtMoney(e.balance)
@@ -719,8 +739,8 @@ function createApp() {
 
         doc.autoTable({
           startY: y + 6,
-          head: [['S#', 'Date', 'Desc / Narration', 'Bowser', 'TID', 'From', 'To', 'Qty', 'Rate', 'Debit', 'Credit', 'Balance']],
-          body: rows.length ? rows : [['—', '—', 'No entries yet', '', '', '', '', '', '', '', '', '']],
+          head: [['S#', 'Date', 'Description', 'Debit', 'Credit', 'Balance']],
+          body: rows.length ? rows : [['—', '—', 'No entries yet', '', '', '']],
           theme: 'plain',
           styles: {
             fontSize: 8,
@@ -732,12 +752,11 @@ function createApp() {
             fillColor: false
           },
           didParseCell: function (data) {
-            // Debit col 9 → red; Credit col 10 → green
             if (data.section === 'body') {
-              if (data.column.index === 9 && data.cell.raw) {
+              if (data.column.index === 3 && data.cell.raw) {
                 data.cell.styles.textColor = [220, 38, 38];
               }
-              if (data.column.index === 10 && data.cell.raw) {
+              if (data.column.index === 4 && data.cell.raw) {
                 data.cell.styles.textColor = [5, 150, 105];
               }
             }
@@ -753,18 +772,12 @@ function createApp() {
             fillColor: false
           },
           columnStyles: {
-            0: { cellWidth: 8, halign: 'center' },
-            1: { cellWidth: 14 },
-            2: { cellWidth: 32 },
-            3: { cellWidth: 16 },
-            4: { cellWidth: 18 },
-            5: { cellWidth: 18 },
-            6: { cellWidth: 18 },
-            7: { cellWidth: 12, halign: 'right' },
-            8: { cellWidth: 14, halign: 'right' },
-            9: { cellWidth: 18, halign: 'right' },
-            10: { cellWidth: 18, halign: 'right' },
-            11: { cellWidth: 18, halign: 'right', fontStyle: 'bold' }
+            0: { cellWidth: 12, halign: 'center' },
+            1: { cellWidth: 22 },
+            2: { cellWidth: 88 },
+            3: { cellWidth: 24, halign: 'right' },
+            4: { cellWidth: 24, halign: 'right' },
+            5: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }
           },
           margin: { left: 14, right: 14, top: chrome.contentTop, bottom: Math.max(bottomMargin, 14) },
           didDrawPage: async function (data) {
