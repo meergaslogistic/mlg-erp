@@ -445,8 +445,8 @@
               <input type="number" step="0.001" x-model="purchaseForm.qty" @input="calcPurchase" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
             </div>
             <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate *</label>
-              <input type="number" x-model="purchaseForm.rate" @input="calcPurchase" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate (optional — baad mein)</label>
+              <input type="number" x-model="purchaseForm.rate" @input="calcPurchase" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Agar pata nahi to khali chhoren">
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount (auto)</label>
@@ -456,11 +456,15 @@
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Unloading Date</label>
               <input type="date" x-model="purchaseForm.unloadDate" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
             </div>
+            <div class="md:col-span-2 lg:col-span-3">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Details</label>
+              <input type="text" x-model="purchaseForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Jo bhi detail / proof note ledger me jana chahiye">
+            </div>
             <div class="md:col-span-2 lg:col-span-3 flex flex-wrap items-center gap-3 pt-2">
               <button type="submit" class="btn-primary px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Purchase
               </button>
-              <p class="text-xs text-slate-500">Unloading Date daalne se status <strong>Delivered</strong> + Stock/Ledger update hoga</p>
+              <p class="text-xs text-slate-500">Party = <strong>RPG Plant - STOCK</strong> + Unload Date → inventory In. Normal party → seedha uske ledger me. Rate khali ho to baad me table se fill karein.</p>
             </div>
           </form>
         </div>
@@ -487,7 +491,12 @@
                     <td class="px-4 py-2.5 font-medium" x-text="r.bowser"></td>
                     <td class="px-4 py-2.5" x-text="r.party"></td>
                     <td class="px-4 py-2.5" x-text="r.qty"></td>
-                    <td class="px-4 py-2.5 font-semibold text-teal-700" x-text="r.amount"></td>
+                    <td class="px-4 py-2.5 font-semibold text-teal-700">
+                      <span x-show="r.amount" x-text="r.amount"></span>
+                      <span x-show="!r.amount" class="text-amber-600 text-xs">Rate pending
+                        <button type="button" class="underline ml-1" @click="applyPendingRate('purchase', r.id, prompt('Rate per Ton?'))">set rate</button>
+                      </span>
+                    </td>
                     <td class="px-4 py-2.5">
                       <span class="badge" :class="r.status === 'Delivered' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'" x-text="r.status"></span>
                     </td>
@@ -537,17 +546,22 @@
               <input type="number" step="0.001" x-model="saleForm.qty" @input="calcSale" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
             </div>
             <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate *</label>
-              <input type="number" x-model="saleForm.rate" @input="calcSale" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate (optional)</label>
+              <input type="number" x-model="saleForm.rate" @input="calcSale" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Pata ho to daalein">
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount (auto)</label>
               <input type="text" x-model="saleForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50" readonly>
             </div>
+            <div class="md:col-span-2 lg:col-span-3">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Details</label>
+              <input type="text" x-model="saleForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Direct load / stock sale / extra note">
+            </div>
             <div class="md:col-span-2 lg:col-span-3 pt-2">
               <button type="submit" class="btn-success px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Sale (Auto Ledger + Stock)
               </button>
+              <p class="text-xs text-slate-500 mt-2">Filling Plant me RPG/STOCK likhein to inventory Out. Direct purchase-sale ke liye pehle Purchase party name se, phir Sale same bowser se.</p>
             </div>
           </form>
         </div>
@@ -573,7 +587,12 @@
                     <td class="px-4 py-2.5 font-medium" x-text="s.bowser"></td>
                     <td class="px-4 py-2.5" x-text="s.party"></td>
                     <td class="px-4 py-2.5" x-text="s.qty"></td>
-                    <td class="px-4 py-2.5 font-semibold text-emerald-700" x-text="s.amount"></td>
+                    <td class="px-4 py-2.5 font-semibold text-emerald-700">
+                      <span x-show="s.amount" x-text="s.amount"></span>
+                      <span x-show="!s.amount" class="text-amber-600 text-xs">Rate pending
+                        <button type="button" class="underline ml-1" @click="applyPendingRate('sale', s.id, prompt('Rate per Ton?'))">set rate</button>
+                      </span>
+                    </td>
                     <td class="px-4 py-2.5 text-right">
                       <button type="button" @click.stop="openPdfOptions('sale', s)"
                               class="text-rose-600 hover:text-rose-700 text-xs font-medium" title="Download PDF">
@@ -635,9 +654,13 @@
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount *</label>
               <input type="number" x-model="paymentForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
             </div>
+            <div class="md:col-span-2 lg:col-span-3">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Proof note</label>
+              <input type="text" x-model="paymentForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Buyer ne supplier ko direct pay kiya — screenshot/slip ref">
+            </div>
             <div class="md:col-span-2 lg:col-span-3 pt-2">
               <p class="text-xs text-slate-500 mb-2" x-show="paymentForm.type === 'Transfer'">
-                Transfer: From Party ke ledger mein Credit, To Party ke ledger mein Debit. Same TID dono jagah.
+                Buyer ne supplier ko direct pay kiya ho to Type = Slip Transfer. From = buyer, To = supplier. TID + Slip dono ledgers ki Description me save.
               </p>
               <button type="submit" class="btn-info px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Payment (Auto to Party Ledger)
