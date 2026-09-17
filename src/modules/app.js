@@ -63,15 +63,15 @@ function createApp() {
     // ========== Forms ==========
     purchaseForm: {
       loadingDate: '', bowser: '', party: '', city: '', plant: '',
-      qty: '', rate: '', amount: '', unloadDate: '', source: ''
+      qty: '', rate: '', amount: '', unloadDate: '', source: '', remarks: ''
     },
     saleForm: {
       date: '', bowser: '', party: '', city: '', plant: '',
-      qty: '', rate: '', amount: ''
+      qty: '', rate: '', amount: '', remarks: ''
     },
     paymentForm: {
       date: '', type: 'Received', party: '', fromParty: '', toParty: '',
-      slip: '', tid: '', bank: '', amount: ''
+      slip: '', tid: '', bank: '', amount: '', remarks: ''
     },
     stockForm: {
       location: 'RPG Plant – STOCK', type: 'In', qty: '', notes: ''
@@ -339,93 +339,158 @@ function createApp() {
       return parts.filter(Boolean).join('  •  ');
     },
 
+    applyStockMove(type, qty, remarks, dateStr) {
+      const inv = this.inventories[0];
+      if (!inv) return;
+      const q = parseFloat(qty) || 0;
+      const current = parseFloat(inv.qty) || 0;
+      const next = type === 'Out' ? current - q : current + q;
+      inv.qty = Math.round(next * 1000) / 1000;
+      inv.qtyLabel = '~ ' + inv.qty;
+      inv.status = inv.qty > 0 ? 'Available' : 'Empty';
+      inv.statusClass = inv.qty > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500';
+      inv.movements.unshift({
+        date: dateStr || formatDateDisplay(new Date()),
+        type,
+        qty: String(qty),
+        remarks: remarks || ''
+      });
+      this.totals.stock = inv.qty;
+    },
+
+    rebuildLedgerNarration(kind, f) {
+      const bits = [];
+      bits.push(kind);
+      if (f.bowser) bits.push('Bowser ' + f.bowser);
+      if (f.qty) bits.push(f.qty + ' MT');
+      if (f.plant) bits.push('Plant ' + f.plant);
+      if (f.source) bits.push('Source ' + f.source);
+      if (f.city) bits.push(f.city);
+      if (f.remarks) bits.push(f.remarks);
+      if (!f.rate) bits.push('Rate pending');
+      return bits.join(' • ');
+    },
+
     savePurchase() {
       const f = this.purchaseForm;
       if (!f.loadingDate || !f.bowser || !f.party || !f.qty) {
-        this.showToast('Please fill required fields');
+        this.showToast('Date, Bowser, Party, Qty required — Rate baad mein bhi aa sakti hai');
         return;
       }
       const status = f.unloadDate ? 'Delivered' : 'On Route';
-      this.purchases.unshift({
+      const isRpg = (f.party || '').toUpperCase().includes('RPG') || (f.party || '').toUpperCase().includes('STOCK');
+      const rec = {
         id: Date.now(),
         date: f.loadingDate,
         bowser: f.bowser,
         party: f.party,
         city: f.city,
         plant: f.plant,
+        source: f.source,
+        remarks: f.remarks,
         qty: f.qty,
-        rate: f.rate,
-        amount: f.amount,
-        status
-      });
+        rate: f.rate || '',
+        amount: f.rate ? calcAmount(f.qty, f.rate) : '',
+        status,
+        unloadDate: f.unloadDate || '',
+        ratePending: !f.rate
+      };
+      this.purchases.unshift(rec);
 
-      // Auto stock if going to RPG
-      const isRpg = (f.party || '').toUpperCase().includes('RPG') || (f.party || '').toUpperCase().includes('STOCK');
       if (isRpg && status === 'Delivered') {
-        const inv = this.inventories[0];
-        inv.movements.unshift({
-          date: formatDateDisplay(f.unloadDate || f.loadingDate),
-          type: 'In',
-          qty: f.qty,
-          remarks: `${f.bowser} – ${f.source || 'Purchase'}`
-        });
+        this.applyStockMove(
+          'In',
+          f.qty,
+          `${f.bowser} – ${f.source || f.remarks || 'Purchase to STOCK'}`,
+          formatDateDisplay(f.unloadDate || f.loadingDate)
+        );
       }
 
-      // Auto ledger if normal party (not stock)
+      // Direct party purchase (not stock): ledger me record — amount 0 ho to Rate pending
       if (!isRpg) {
-        const amt = parseAmount(f.amount);
-        this.postToLedger(f.party, `Purchase / Loading • ${f.qty} MT`, amt, 0, {
-          qty: f.qty, rate: f.rate, bowser: f.bowser, date: f.loadingDate
+        const amt = parseAmount(rec.amount);
+        this.postToLedger(f.party, this.rebuildLedgerNarration('Purchase / Loading', f), amt, 0, {
+          qty: f.qty, rate: f.rate, bowser: f.bowser, date: f.loadingDate, tid: '', fromParty: '', toParty: ''
         });
       }
 
-      this.showToast(status === 'Delivered'
-        ? 'Purchase saved • Delivered + Ledger/Stock updated'
-        : 'Purchase saved • On Route');
+      this.showToast(isRpg
+        ? (status === 'Delivered' ? 'Purchase STOCK me In ho gaya' : 'Purchase On Route — unload par STOCK In hoga')
+        : (rec.ratePending ? 'Purchase party ledger me • Rate pending' : 'Purchase party ledger me save'));
       this.purchaseForm = {
         loadingDate: '', bowser: '', party: '', city: '', plant: '',
-        qty: '', rate: '', amount: '', unloadDate: '', source: ''
+        qty: '', rate: '', amount: '', unloadDate: '', source: '', remarks: ''
       };
+      this.saveToStorage();
+    },
+
+    /** Excel-style: pehle Ton, baad mein rate — amount + ledger auto update */
+    applyPendingRate(kind, id, newRate) {
+      const rate = parseFloat(newRate);
+      if (!rate) {
+        this.showToast('Valid rate daalein');
+        return;
+      }
+      const list = kind === 'sale' ? this.sales : this.purchases;
+      const rec = list.find(x => x.id === id);
+      if (!rec) return;
+      rec.rate = String(rate);
+      rec.amount = calcAmount(rec.qty, rate);
+      rec.ratePending = false;
+      const amt = parseAmount(rec.amount);
+      const partyName = rec.party;
+      const p = this.parties.find(x => (x.name || '').toLowerCase() === String(partyName || '').toLowerCase());
+      if (p && p.ledger) {
+        const row = p.ledger.find(e =>
+          String(e.bowser || '') === String(rec.bowser || '') &&
+          String(e.qty || '') === String(rec.qty || '') &&
+          (!e.rate || e.narration && e.narration.includes('Rate pending'))
+        );
+        if (row) {
+          const oldDebit = Number(row.debit) || 0;
+          row.rate = String(rate);
+          row.debit = amt;
+          row.narration = String(row.narration || '').replace(/\s*•\s*Rate pending/g, '') + ' • Rate updated';
+          const diff = amt - oldDebit;
+          p.balance = (Number(p.balance) || 0) + diff;
+          row.balance = (Number(row.balance) || 0) + diff;
+        }
+      }
+      this.showToast('Rate save • Amount ' + rec.amount);
       this.saveToStorage();
     },
 
     saveSale() {
       const f = this.saleForm;
       if (!f.date || !f.bowser || !f.party || !f.qty) {
-        this.showToast('Please fill required fields');
+        this.showToast('Date, Bowser, Party, Qty required — Rate optional');
         return;
       }
-      const amt = parseAmount(f.amount);
-      this.sales.unshift({
+      const rec = {
         id: Date.now(),
         date: f.date,
         bowser: f.bowser,
         party: f.party,
         city: f.city,
         plant: f.plant,
+        remarks: f.remarks,
         qty: f.qty,
-        rate: f.rate,
-        amount: f.amount
-      });
+        rate: f.rate || '',
+        amount: f.rate ? calcAmount(f.qty, f.rate) : '',
+        ratePending: !f.rate
+      };
+      this.sales.unshift(rec);
 
-      // Auto Ledger – Debit party
-      this.postToLedger(f.party, `Sale • ${f.qty} MT`, amt, 0, {
+      this.postToLedger(f.party, this.rebuildLedgerNarration('Sale', f), parseAmount(rec.amount), 0, {
         qty: f.qty, rate: f.rate, bowser: f.bowser, date: f.date
       });
 
-      // Stock reduce if from RPG
       if ((f.plant || '').toUpperCase().includes('RPG') || (f.plant || '').toUpperCase().includes('STOCK')) {
-        const inv = this.inventories[0];
-        inv.movements.unshift({
-          date: formatDateDisplay(f.date),
-          type: 'Out',
-          qty: f.qty,
-          remarks: `Sale to ${f.party}`
-        });
+        this.applyStockMove('Out', f.qty, `Sale to ${f.party}` + (f.remarks ? ' • ' + f.remarks : ''), formatDateDisplay(f.date));
       }
 
-      this.showToast('Sale saved • Party Ledger auto-updated');
-      this.saleForm = { date: '', bowser: '', party: '', city: '', plant: '', qty: '', rate: '', amount: '' };
+      this.showToast(rec.ratePending ? 'Sale ledger me • Rate pending' : 'Sale saved • Party Ledger auto-updated');
+      this.saleForm = { date: '', bowser: '', party: '', city: '', plant: '', qty: '', rate: '', amount: '', remarks: '' };
       this.saveToStorage();
     },
 
@@ -439,6 +504,7 @@ function createApp() {
           this.showToast('Transfer: Date, From Party, To Party, Amount required');
           return;
         }
+        const note = (f.remarks || '').trim();
         this.payments.unshift({
           id: Date.now(),
           date: f.date,
@@ -449,21 +515,22 @@ function createApp() {
           slip: f.slip,
           tid,
           bank: f.bank,
-          amount: amt
+          amount: amt,
+          remarks: note
         });
         this.postToLedger(
           f.fromParty,
-          `Payment Received (sent to ${f.toParty})` + (tid ? ` • TID ${tid}` : ''),
+          `Direct / Slip payment to ${f.toParty}` + (tid ? ` • TID ${tid}` : '') + (f.slip ? ` • Slip ${f.slip}` : '') + (f.bank ? ` • ${f.bank}` : '') + (note ? ` • ${note}` : ''),
           0, amt,
           { date: f.date, tid, fromParty: f.fromParty, toParty: f.toParty }
         );
         this.postToLedger(
           f.toParty,
-          `Payment Made (from ${f.fromParty})` + (tid ? ` • TID ${tid}` : ''),
+          `Direct / Slip received from ${f.fromParty}` + (tid ? ` • TID ${tid}` : '') + (f.slip ? ` • Slip ${f.slip}` : '') + (f.bank ? ` • ${f.bank}` : '') + (note ? ` • ${note}` : ''),
           amt, 0,
           { date: f.date, tid, fromParty: f.fromParty, toParty: f.toParty }
         );
-        this.showToast('Slip transfer saved • both ledgers updated');
+        this.showToast('Party-to-party payment dono ledgers + TID/Slip ke sath save');
       } else {
         if (!f.date || !f.party || !f.amount) {
           this.showToast('Please fill required fields');
@@ -471,6 +538,7 @@ function createApp() {
         }
         const fromParty = f.type === 'Received' ? f.party : (f.fromParty || 'Self');
         const toParty = f.type === 'Made' ? f.party : (f.toParty || 'Self');
+        const note = (f.remarks || '').trim();
         this.payments.unshift({
           id: Date.now(),
           date: f.date,
@@ -481,19 +549,20 @@ function createApp() {
           slip: f.slip,
           tid,
           bank: f.bank,
-          amount: amt
+          amount: amt,
+          remarks: note
         });
         if (f.type === 'Received') {
           this.postToLedger(
             f.party,
-            `Payment Received` + (tid ? ` • TID ${tid}` : '') + (f.bank ? ` • ${f.bank}` : ''),
+            `Payment Received` + (tid ? ` • TID ${tid}` : '') + (f.slip ? ` • Slip ${f.slip}` : '') + (f.bank ? ` • ${f.bank}` : '') + (note ? ` • ${note}` : ''),
             0, amt,
             { date: f.date, tid, fromParty, toParty }
           );
         } else {
           this.postToLedger(
             f.party,
-            `Payment Made` + (tid ? ` • TID ${tid}` : '') + (f.bank ? ` • ${f.bank}` : ''),
+            `Payment Made` + (tid ? ` • TID ${tid}` : '') + (f.slip ? ` • Slip ${f.slip}` : '') + (f.bank ? ` • ${f.bank}` : '') + (note ? ` • ${note}` : ''),
             amt, 0,
             { date: f.date, tid, fromParty, toParty }
           );
@@ -503,21 +572,19 @@ function createApp() {
 
       this.paymentForm = {
         date: '', type: 'Received', party: '', fromParty: '', toParty: '',
-        slip: '', tid: '', bank: '', amount: ''
+        slip: '', tid: '', bank: '', amount: '', remarks: ''
       };
       this.saveToStorage();
     },
 
     adjustStock() {
-      const inv = this.currentInv;
-      if (!inv || !this.stockForm.qty) return;
-      inv.movements.unshift({
-        date: formatDateDisplay(new Date()),
-        type: this.stockForm.type,
-        qty: this.stockForm.qty,
-        remarks: this.stockForm.notes || 'Manual adjustment'
-      });
-      this.showToast('Stock updated');
+      if (!this.stockForm.qty) return;
+      this.applyStockMove(
+        this.stockForm.type,
+        this.stockForm.qty,
+        this.stockForm.notes || 'Manual adjustment'
+      );
+      this.showToast('Stock qty + movement updated');
       this.stockForm.qty = '';
       this.stockForm.notes = '';
       this.saveToStorage();
@@ -854,7 +921,11 @@ function createApp() {
           fields.push(['Type', entry.type || '—']);
           fields.push(['Party', entry.party || '—']);
           fields.push(['Slip / Voucher', entry.slip || '—']);
+          fields.push(['TID', entry.tid || '—']);
+          fields.push(['From Party', entry.fromParty || '—']);
+          fields.push(['To Party', entry.toParty || '—']);
           fields.push(['Bank / Account', entry.bank || '—']);
+          fields.push(['Remarks', entry.remarks || '—']);
           fields.push(['Amount (PKR)', this.fmtMoney(entry.amount)]);
         }
 
