@@ -24,7 +24,7 @@ function createApp() {
 
     titles: {
       dashboard: 'Dashboard',
-      guide: 'Data Flow (Simple)',
+      guide: 'Data Flow & Documents',
       parties: 'Parties & Ledgers',
       inventory: 'Inventory',
       purchase: 'LPG Purchase / Loading',
@@ -36,7 +36,7 @@ function createApp() {
 
     nav: [
       { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-home' },
-      { id: 'guide', label: 'Samajhne ke liye', icon: 'fas fa-route' },
+      { id: 'guide', label: 'Data Flow', icon: 'fas fa-route' },
       { id: 'parties', label: 'Parties & Ledgers', icon: 'fas fa-users' },
       { id: 'purchase', label: 'Purchase / Loading', icon: 'fas fa-truck-loading' },
       { id: 'sale', label: 'Sale', icon: 'fas fa-file-invoice-dollar' },
