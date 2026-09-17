@@ -24,6 +24,7 @@ function createApp() {
 
     titles: {
       dashboard: 'Dashboard',
+      guide: 'Data Flow (Simple)',
       parties: 'Parties & Ledgers',
       inventory: 'Inventory',
       purchase: 'LPG Purchase / Loading',
@@ -35,6 +36,7 @@ function createApp() {
 
     nav: [
       { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-home' },
+      { id: 'guide', label: 'Samajhne ke liye', icon: 'fas fa-route' },
       { id: 'parties', label: 'Parties & Ledgers', icon: 'fas fa-users' },
       { id: 'purchase', label: 'Purchase / Loading', icon: 'fas fa-truck-loading' },
       { id: 'sale', label: 'Sale', icon: 'fas fa-file-invoice-dollar' },
@@ -62,11 +64,13 @@ function createApp() {
 
     // ========== Forms ==========
     purchaseForm: {
-      loadingDate: '', bowser: '', party: '', city: '', plant: '',
+      dealType: 'stock',
+      loadingDate: '', bowser: '', party: 'RPG Plant - STOCK', city: '', plant: '',
       qty: '', rate: '', amount: '', unloadDate: '', source: '', remarks: ''
     },
     saleForm: {
-      date: '', bowser: '', party: '', city: '', plant: '',
+      dealType: 'from_stock',
+      date: '', bowser: '', party: '', city: '', plant: 'RPG STOCK - Karachi',
       qty: '', rate: '', amount: '', remarks: ''
     },
     paymentForm: {
@@ -110,8 +114,50 @@ function createApp() {
     init() {
       this.parties = createInitialParties(this.master.party);
       this.refreshDatalists();
-      // Load from localStorage if exists (persistence)
       this.loadFromStorage();
+      this.recalcTotals();
+    },
+
+    startWork(kind) {
+      if (kind === 'buy_stock') {
+        this.purchaseForm.dealType = 'stock';
+        this.purchaseForm.party = 'RPG Plant - STOCK';
+        this.go('purchase');
+      } else if (kind === 'buy_direct') {
+        this.purchaseForm.dealType = 'direct';
+        this.purchaseForm.party = '';
+        this.go('purchase');
+      } else if (kind === 'sell_stock') {
+        this.saleForm.dealType = 'from_stock';
+        this.saleForm.plant = 'RPG STOCK - Karachi';
+        this.go('sale');
+      } else if (kind === 'sell_direct') {
+        this.saleForm.dealType = 'direct';
+        this.saleForm.plant = '';
+        this.go('sale');
+      } else if (kind === 'pay') {
+        this.go('payment');
+      } else if (kind === 'ledger') {
+        this.go('parties');
+      }
+    },
+
+    setPurchaseDeal(type) {
+      this.purchaseForm.dealType = type;
+      if (type === 'stock') this.purchaseForm.party = 'RPG Plant - STOCK';
+    },
+
+    setSaleDeal(type) {
+      this.saleForm.dealType = type;
+      if (type === 'from_stock') this.saleForm.plant = 'RPG STOCK - Karachi';
+    },
+
+    recalcTotals() {
+      const sumQty = (arr) => (arr || []).reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+      this.totals.purchased = Math.round(sumQty(this.purchases) * 1000) / 1000;
+      this.totals.sold = Math.round(sumQty(this.sales) * 1000) / 1000;
+      const inv = this.inventories[0];
+      this.totals.stock = inv ? (parseFloat(inv.qty) || 0) : 0;
     },
 
     // ========== Navigation ==========
@@ -377,8 +423,9 @@ function createApp() {
         this.showToast('Date, Bowser, Party, Qty required — Rate baad mein bhi aa sakti hai');
         return;
       }
-      const status = f.unloadDate ? 'Delivered' : 'On Route';
-      const isRpg = (f.party || '').toUpperCase().includes('RPG') || (f.party || '').toUpperCase().includes('STOCK');
+      if (f.dealType === 'stock' && !f.unloadDate) f.unloadDate = f.loadingDate;
+      const status = f.dealType === 'stock' ? 'Delivered' : (f.unloadDate ? 'Delivered' : 'On Route');
+      const isRpg = f.dealType === 'stock' || (f.party || '').toUpperCase().includes('RPG') || (f.party || '').toUpperCase().includes('STOCK');
       const rec = {
         id: Date.now(),
         date: f.loadingDate,
@@ -393,7 +440,8 @@ function createApp() {
         amount: f.rate ? calcAmount(f.qty, f.rate) : '',
         status,
         unloadDate: f.unloadDate || '',
-        ratePending: !f.rate
+        ratePending: !f.rate,
+        dealType: f.dealType || (isRpg ? 'stock' : 'direct')
       };
       this.purchases.unshift(rec);
 
@@ -418,9 +466,11 @@ function createApp() {
         ? (status === 'Delivered' ? 'Purchase STOCK me In ho gaya' : 'Purchase On Route — unload par STOCK In hoga')
         : (rec.ratePending ? 'Purchase party ledger me • Rate pending' : 'Purchase party ledger me save'));
       this.purchaseForm = {
-        loadingDate: '', bowser: '', party: '', city: '', plant: '',
+        dealType: f.dealType || 'stock',
+        loadingDate: '', bowser: '', party: isRpg ? 'RPG Plant - STOCK' : '', city: '', plant: '',
         qty: '', rate: '', amount: '', unloadDate: '', source: '', remarks: ''
       };
+      this.recalcTotals();
       this.saveToStorage();
     },
 
@@ -477,7 +527,8 @@ function createApp() {
         qty: f.qty,
         rate: f.rate || '',
         amount: f.rate ? calcAmount(f.qty, f.rate) : '',
-        ratePending: !f.rate
+        ratePending: !f.rate,
+        dealType: f.dealType || 'direct'
       };
       this.sales.unshift(rec);
 
@@ -485,12 +536,19 @@ function createApp() {
         qty: f.qty, rate: f.rate, bowser: f.bowser, date: f.date
       });
 
-      if ((f.plant || '').toUpperCase().includes('RPG') || (f.plant || '').toUpperCase().includes('STOCK')) {
+      const fromStock = f.dealType === 'from_stock' || (f.plant || '').toUpperCase().includes('RPG') || (f.plant || '').toUpperCase().includes('STOCK');
+      if (fromStock) {
         this.applyStockMove('Out', f.qty, `Sale to ${f.party}` + (f.remarks ? ' • ' + f.remarks : ''), formatDateDisplay(f.date));
       }
 
       this.showToast(rec.ratePending ? 'Sale ledger me • Rate pending' : 'Sale saved • Party Ledger auto-updated');
-      this.saleForm = { date: '', bowser: '', party: '', city: '', plant: '', qty: '', rate: '', amount: '', remarks: '' };
+      this.saleForm = {
+        dealType: f.dealType || 'from_stock',
+        date: '', bowser: '', party: '', city: '',
+        plant: fromStock ? 'RPG STOCK - Karachi' : '',
+        qty: '', rate: '', amount: '', remarks: ''
+      };
+      this.recalcTotals();
       this.saveToStorage();
     },
 
@@ -587,6 +645,7 @@ function createApp() {
       this.showToast('Stock qty + movement updated');
       this.stockForm.qty = '';
       this.stockForm.notes = '';
+      this.recalcTotals();
       this.saveToStorage();
     },
 
