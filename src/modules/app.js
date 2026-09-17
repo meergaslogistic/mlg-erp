@@ -70,7 +70,8 @@ function createApp() {
       qty: '', rate: '', amount: ''
     },
     paymentForm: {
-      date: '', type: 'Received', party: '', slip: '', bank: '', amount: ''
+      date: '', type: 'Received', party: '', fromParty: '', toParty: '',
+      slip: '', tid: '', bank: '', amount: ''
     },
     stockForm: {
       location: 'RPG Plant – STOCK', type: 'In', qty: '', notes: ''
@@ -239,6 +240,9 @@ function createApp() {
         date: extra.date ? formatDateDisplay(extra.date) : formatDateDisplay(new Date()),
         narration: narration || '',
         bowser: extra.bowser || '',
+        tid: extra.tid || '',
+        fromParty: extra.fromParty || '',
+        toParty: extra.toParty || '',
         qty: extra.qty != null && extra.qty !== '' ? String(extra.qty) : '',
         rate: extra.rate != null && extra.rate !== '' ? String(extra.rate) : '',
         debit: debitN,
@@ -260,6 +264,53 @@ function createApp() {
       if (e.bowser) return e.bowser;
       const m = String(e.narration || '').match(/\b([A-Z]{2,4}\s?-?\s?\d{2,5})\b/i);
       return m ? m[1].toUpperCase() : '';
+    },
+
+    getQty(e) {
+      if (!e) return '';
+      if (e.qty) return e.qty;
+      const m = String(e.narration || '').match(/(\d+(?:\.\d+)?)\s*(?:T|Ton|MT)\b/i);
+      return m ? m[1] : '';
+    },
+
+    getTid(e) {
+      if (!e) return '';
+      if (e.tid) return e.tid;
+      const m = String(e.narration || '').match(/\b(\d{8,20})\b/);
+      return m ? m[1] : '';
+    },
+
+    getFrom(e) {
+      if (!e) return '';
+      return e.fromParty || '';
+    },
+
+    getTo(e) {
+      if (!e) return '';
+      return e.toParty || '';
+    },
+
+    getRate(e) {
+      if (!e) return '';
+      if (e.rate) return e.rate;
+      const bowser = this.getBowser(e);
+      const qty = String(this.getQty(e) || '');
+      const fromPurchase = (this.purchases || []).find(p =>
+        (!bowser || String(p.bowser || '').toUpperCase() === bowser.toUpperCase()) &&
+        (!qty || String(p.qty || '') === qty) &&
+        p.rate
+      );
+      if (fromPurchase && fromPurchase.rate) return fromPurchase.rate;
+      const fromSale = (this.sales || []).find(s =>
+        (!bowser || String(s.bowser || '').toUpperCase() === bowser.toUpperCase()) &&
+        (!qty || String(s.qty || '') === qty) &&
+        s.rate
+      );
+      if (fromSale && fromSale.rate) return fromSale.rate;
+      const q = parseFloat(qty);
+      const debit = Number(e.debit) || 0;
+      if (q && debit) return Math.round(debit / q);
+      return '';
     },
 
     savePurchase() {
@@ -354,29 +405,80 @@ function createApp() {
 
     savePayment() {
       const f = this.paymentForm;
-      if (!f.date || !f.party || !f.amount) {
-        this.showToast('Please fill required fields');
-        return;
-      }
       const amt = parseFloat(f.amount) || 0;
-      this.payments.unshift({
-        id: Date.now(),
-        date: f.date,
-        type: f.type,
-        party: f.party,
-        slip: f.slip,
-        bank: f.bank,
-        amount: amt
-      });
+      const tid = (f.tid || f.slip || '').trim();
 
-      if (f.type === 'Received') {
-        this.postToLedger(f.party, `Payment Received • ${f.slip || f.bank || 'Cash'}`, 0, amt);
+      if (f.type === 'Transfer') {
+        if (!f.date || !f.fromParty || !f.toParty || !f.amount) {
+          this.showToast('Transfer: Date, From Party, To Party, Amount required');
+          return;
+        }
+        this.payments.unshift({
+          id: Date.now(),
+          date: f.date,
+          type: 'Transfer',
+          party: f.fromParty + ' → ' + f.toParty,
+          fromParty: f.fromParty,
+          toParty: f.toParty,
+          slip: f.slip,
+          tid,
+          bank: f.bank,
+          amount: amt
+        });
+        this.postToLedger(
+          f.fromParty,
+          `Payment Received (sent to ${f.toParty})` + (tid ? ` • TID ${tid}` : ''),
+          0, amt,
+          { date: f.date, tid, fromParty: f.fromParty, toParty: f.toParty }
+        );
+        this.postToLedger(
+          f.toParty,
+          `Payment Made (from ${f.fromParty})` + (tid ? ` • TID ${tid}` : ''),
+          amt, 0,
+          { date: f.date, tid, fromParty: f.fromParty, toParty: f.toParty }
+        );
+        this.showToast('Slip transfer saved • both ledgers updated');
       } else {
-        this.postToLedger(f.party, `Payment Made • ${f.slip || f.bank || 'Cash'}`, amt, 0);
+        if (!f.date || !f.party || !f.amount) {
+          this.showToast('Please fill required fields');
+          return;
+        }
+        const fromParty = f.type === 'Received' ? f.party : (f.fromParty || 'Self');
+        const toParty = f.type === 'Made' ? f.party : (f.toParty || 'Self');
+        this.payments.unshift({
+          id: Date.now(),
+          date: f.date,
+          type: f.type,
+          party: f.party,
+          fromParty,
+          toParty,
+          slip: f.slip,
+          tid,
+          bank: f.bank,
+          amount: amt
+        });
+        if (f.type === 'Received') {
+          this.postToLedger(
+            f.party,
+            `Payment Received` + (tid ? ` • TID ${tid}` : '') + (f.bank ? ` • ${f.bank}` : ''),
+            0, amt,
+            { date: f.date, tid, fromParty, toParty }
+          );
+        } else {
+          this.postToLedger(
+            f.party,
+            `Payment Made` + (tid ? ` • TID ${tid}` : '') + (f.bank ? ` • ${f.bank}` : ''),
+            amt, 0,
+            { date: f.date, tid, fromParty, toParty }
+          );
+        }
+        this.showToast('Payment saved • Party Ledger auto-updated');
       }
 
-      this.showToast('Payment saved • Party Ledger auto-updated');
-      this.paymentForm = { date: '', type: 'Received', party: '', slip: '', bank: '', amount: '' };
+      this.paymentForm = {
+        date: '', type: 'Received', party: '', fromParty: '', toParty: '',
+        slip: '', tid: '', bank: '', amount: ''
+      };
       this.saveToStorage();
     },
 
@@ -602,7 +704,11 @@ function createApp() {
           e.date || '',
           e.narration || '',
           this.getBowser(e),
-          e.qty || '',
+          this.getTid(e),
+          this.getFrom(e),
+          this.getTo(e),
+          this.getQty(e),
+          this.getRate(e) ? this.fmtMoney(this.getRate(e)) : '',
           e.debit ? this.fmtMoney(e.debit) : '',
           e.credit ? this.fmtMoney(e.credit) : '',
           this.fmtMoney(e.balance)
@@ -613,8 +719,8 @@ function createApp() {
 
         doc.autoTable({
           startY: y + 6,
-          head: [['S#', 'Date', 'Desc / Narration', 'Bowser No', 'Qty (MT)', 'Debit', 'Credit', 'Balance']],
-          body: rows.length ? rows : [['—', '—', 'No entries yet', '', '', '', '', '']],
+          head: [['S#', 'Date', 'Desc / Narration', 'Bowser', 'TID', 'From', 'To', 'Qty', 'Rate', 'Debit', 'Credit', 'Balance']],
+          body: rows.length ? rows : [['—', '—', 'No entries yet', '', '', '', '', '', '', '', '', '']],
           theme: 'plain',
           styles: {
             fontSize: 8,
@@ -626,12 +732,12 @@ function createApp() {
             fillColor: false
           },
           didParseCell: function (data) {
-            // Debit col 5 → red; Credit col 6 → green
+            // Debit col 9 → red; Credit col 10 → green
             if (data.section === 'body') {
-              if (data.column.index === 5 && data.cell.raw) {
+              if (data.column.index === 9 && data.cell.raw) {
                 data.cell.styles.textColor = [220, 38, 38];
               }
-              if (data.column.index === 6 && data.cell.raw) {
+              if (data.column.index === 10 && data.cell.raw) {
                 data.cell.styles.textColor = [5, 150, 105];
               }
             }
@@ -647,14 +753,18 @@ function createApp() {
             fillColor: false
           },
           columnStyles: {
-            0: { cellWidth: 10, halign: 'center' },
-            1: { cellWidth: 18 },
-            2: { cellWidth: 48 },
-            3: { cellWidth: 22 },
-            4: { cellWidth: 16, halign: 'right' },
-            5: { cellWidth: 24, halign: 'right' },
-            6: { cellWidth: 24, halign: 'right' },
-            7: { cellWidth: 24, halign: 'right', fontStyle: 'bold' }
+            0: { cellWidth: 8, halign: 'center' },
+            1: { cellWidth: 14 },
+            2: { cellWidth: 32 },
+            3: { cellWidth: 16 },
+            4: { cellWidth: 18 },
+            5: { cellWidth: 18 },
+            6: { cellWidth: 18 },
+            7: { cellWidth: 12, halign: 'right' },
+            8: { cellWidth: 14, halign: 'right' },
+            9: { cellWidth: 18, halign: 'right' },
+            10: { cellWidth: 18, halign: 'right' },
+            11: { cellWidth: 18, halign: 'right', fontStyle: 'bold' }
           },
           margin: { left: 14, right: 14, top: chrome.contentTop, bottom: Math.max(bottomMargin, 14) },
           didDrawPage: async function (data) {
