@@ -89,31 +89,31 @@
       <!-- ==================== DASHBOARD ==================== -->
       <section x-show="section === 'dashboard'" x-transition.opacity>
         <div class="card p-5 mb-5 rounded-2xl bg-slate-50 border border-slate-100">
-          <p class="text-xs font-semibold text-slate-500 uppercase mb-3">Aaj kya kaam hai? Pehle ye choose karein</p>
+          <p class="text-xs font-semibold text-slate-500 uppercase mb-3">Start with the transaction type</p>
           <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <button type="button" @click="startWork('buy_stock')" class="text-left p-3 rounded-xl bg-white border hover:border-teal-400">
-              <p class="font-bold text-sm">1. Purchase → Stock</p>
-              <p class="text-[11px] text-slate-500 mt-1">Gas RPG godam me aayi. Inventory badhegi.</p>
+              <p class="font-bold text-sm">1. Purchase into stock</p>
+              <p class="text-[11px] text-slate-500 mt-1">Inventory increases automatically at RPG Stock.</p>
             </button>
             <button type="button" @click="startWork('buy_direct')" class="text-left p-3 rounded-xl bg-white border hover:border-teal-400">
-              <p class="font-bold text-sm">2. Purchase → Direct party</p>
-              <p class="text-[11px] text-slate-500 mt-1">Godam nahi. Sirf party ledger. Inventory nahi.</p>
+              <p class="font-bold text-sm">2. Purchase to a party</p>
+              <p class="text-[11px] text-slate-500 mt-1">No warehouse movement. Party ledger only.</p>
             </button>
             <button type="button" @click="startWork('sell_stock')" class="text-left p-3 rounded-xl bg-white border hover:border-emerald-400">
-              <p class="font-bold text-sm">3. Sale from Stock</p>
-              <p class="text-[11px] text-slate-500 mt-1">RPG se nikaal kar becha. Inventory ghategi.</p>
+              <p class="font-bold text-sm">3. Sale from stock</p>
+              <p class="text-[11px] text-slate-500 mt-1">Inventory decreases. Buyer is debited.</p>
             </button>
             <button type="button" @click="startWork('sell_direct')" class="text-left p-3 rounded-xl bg-white border hover:border-emerald-400">
-              <p class="font-bold text-sm">4. Sale (direct load)</p>
-              <p class="text-[11px] text-slate-500 mt-1">Stock se nahi. Buyer ledger debit.</p>
+              <p class="font-bold text-sm">4. Direct sale</p>
+              <p class="text-[11px] text-slate-500 mt-1">No inventory change. Buyer ledger debit.</p>
             </button>
             <button type="button" @click="startWork('pay')" class="text-left p-3 rounded-xl bg-white border hover:border-blue-400">
-              <p class="font-bold text-sm">5. Payment / TID / Slip</p>
-              <p class="text-[11px] text-slate-500 mt-1">Received, Made, ya buyer→supplier direct.</p>
+              <p class="font-bold text-sm">5. Payment / TID / slip</p>
+              <p class="text-[11px] text-slate-500 mt-1">Received, paid, or party-to-party settlement.</p>
             </button>
             <button type="button" @click="go('guide')" class="text-left p-3 rounded-xl bg-white border hover:border-indigo-400">
-              <p class="font-bold text-sm">Flow padhein</p>
-              <p class="text-[11px] text-slate-500 mt-1">Poora data kahan jata hai — 1 page.</p>
+              <p class="font-bold text-sm">6. Data flow guide</p>
+              <p class="text-[11px] text-slate-500 mt-1">Registers, stock effect, and document columns.</p>
             </button>
           </div>
         </div>
@@ -555,7 +555,8 @@
           </div>
 
           <div class="card p-5 rounded-2xl">
-            <h3 class="font-bold text-sm mb-4">Quick Stock Adjustment</h3>
+            <h3 class="font-bold text-sm mb-1">Exception adjustment only</h3>
+            <p class="text-[11px] text-slate-500 mb-4">Daily stock should move from Purchase (IN) and Sale from stock (OUT). Use this panel only for a physical-count variance.</p>
             <form @submit.prevent="adjustStock" class="space-y-3">
               <div>
                 <label class="block text-[11px] font-semibold text-slate-500 mb-1">Location</label>
@@ -566,7 +567,7 @@
                 <select x-model="stockForm.type" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
                   <option value="In">Stock In (+)</option>
                   <option value="Out">Stock Out (−)</option>
-                  <option value="Adjust">Adjustment</option>
+                  <option value="Adjustment">Set quantity (physical count)</option>
                 </select>
               </div>
               <div>
@@ -596,6 +597,7 @@
                   <th class="px-4 py-3">Type</th>
                   <th class="px-4 py-3">Qty</th>
                   <th class="px-4 py-3">Remarks</th>
+                  <th class="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
@@ -607,6 +609,9 @@
                     </td>
                     <td class="px-4 py-2.5 font-semibold" x-text="m.qty"></td>
                     <td class="px-4 py-2.5 text-xs text-slate-500" x-text="m.remarks || '—'"></td>
+                    <td class="px-4 py-2.5 text-right">
+                      <button type="button" class="text-rose-600 text-xs" @click="deleteMovement(m, i)">Delete</button>
+                    </td>
                   </tr>
                 </template>
               </tbody>
@@ -626,14 +631,14 @@
               <button type="button" @click="setPurchaseDeal('stock')"
                       class="p-3 rounded-xl border text-left"
                       :class="purchaseForm.dealType === 'stock' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'">
-                <p class="font-bold text-sm">Stock me rakhna</p>
-                <p class="text-[11px] text-slate-500">Inventory badhegi. Party auto = RPG Plant - STOCK</p>
+                <p class="font-bold text-sm">Place in company stock</p>
+                <p class="text-[11px] text-slate-500">Inventory increases. Destination is locked to RPG Plant – STOCK.</p>
               </button>
               <button type="button" @click="setPurchaseDeal('direct')"
                       class="p-3 rounded-xl border text-left"
                       :class="purchaseForm.dealType === 'direct' ? 'border-amber-500 bg-amber-50' : 'border-slate-200'">
-                <p class="font-bold text-sm">Seedha party ko</p>
-                <p class="text-[11px] text-slate-500">Inventory nahi. Ledger me party Debit</p>
+                <p class="font-bold text-sm">Deliver directly to a party</p>
+                <p class="text-[11px] text-slate-500">No inventory movement. Party ledger is debited.</p>
               </button>
             </div>
             <div>
@@ -685,7 +690,7 @@
               <button type="submit" class="btn-primary px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Purchase
               </button>
-              <p class="text-xs text-slate-500">Party = <strong>RPG Plant - STOCK</strong> + Unload Date → inventory In. Normal party → seedha uske ledger me. Rate khali ho to baad me table se fill karein.</p>
+              <p class="text-xs text-slate-500">Stock purchases post Inventory IN automatically. Direct purchases post the party ledger only. Leave rate blank if it will arrive later.</p>
             </div>
           </form>
         </div>
@@ -702,7 +707,7 @@
                   <th class="px-4 py-3">Qty</th>
                   <th class="px-4 py-3">Amount</th>
                   <th class="px-4 py-3">Status</th>
-                  <th class="px-4 py-3 text-right">PDF</th>
+                  <th class="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
@@ -721,7 +726,9 @@
                     <td class="px-4 py-2.5">
                       <span class="badge" :class="r.status === 'Delivered' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'" x-text="r.status"></span>
                     </td>
-                    <td class="px-4 py-2.5 text-right">
+                    <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                      <button type="button" @click.stop="editPurchase(r)" class="text-slate-600 text-xs mr-2">Edit</button>
+                      <button type="button" @click.stop="deletePurchase(r)" class="text-rose-600 text-xs mr-2">Delete</button>
                       <button type="button" @click.stop="openPdfOptions('purchase', r)"
                               class="text-rose-600 hover:text-rose-700 text-xs font-medium" title="Download PDF">
                         <i class="fas fa-file-pdf"></i>
@@ -746,14 +753,14 @@
               <button type="button" @click="setSaleDeal('from_stock')"
                       class="p-3 rounded-xl border text-left"
                       :class="saleForm.dealType === 'from_stock' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'">
-                <p class="font-bold text-sm">Stock se bechna</p>
-                <p class="text-[11px] text-slate-500">RPG inventory ghategi + buyer ledger</p>
+                <p class="font-bold text-sm">Sell from company stock</p>
+                <p class="text-[11px] text-slate-500">Inventory OUT and buyer ledger debit.</p>
               </button>
               <button type="button" @click="setSaleDeal('direct')"
                       class="p-3 rounded-xl border text-left"
                       :class="saleForm.dealType === 'direct' ? 'border-amber-500 bg-amber-50' : 'border-slate-200'">
-                <p class="font-bold text-sm">Direct sale (stock nahi)</p>
-                <p class="text-[11px] text-slate-500">Sirf buyer ledger. Inventory same</p>
+                <p class="font-bold text-sm">Direct sale (no stock)</p>
+                <p class="text-[11px] text-slate-500">Buyer ledger only. Inventory unchanged.</p>
               </button>
             </div>
             <div>
@@ -796,7 +803,7 @@
               <button type="submit" class="btn-success px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Sale (Auto Ledger + Stock)
               </button>
-              <p class="text-xs text-slate-500 mt-2">Filling Plant me RPG/STOCK likhein to inventory Out. Direct purchase-sale ke liye pehle Purchase party name se, phir Sale same bowser se.</p>
+              <p class="text-xs text-slate-500 mt-2">“Sell from stock” reduces RPG inventory automatically. Direct sale does not touch inventory.</p>
             </div>
           </form>
         </div>
@@ -812,7 +819,7 @@
                   <th class="px-4 py-3">Party</th>
                   <th class="px-4 py-3">Qty</th>
                   <th class="px-4 py-3">Amount</th>
-                  <th class="px-4 py-3 text-right">PDF</th>
+                  <th class="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
@@ -828,7 +835,9 @@
                         <button type="button" class="underline ml-1" @click="applyPendingRate('sale', s.id, prompt('Rate per Ton?'))">set rate</button>
                       </span>
                     </td>
-                    <td class="px-4 py-2.5 text-right">
+                    <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                      <button type="button" @click.stop="editSale(s)" class="text-slate-600 text-xs mr-2">Edit</button>
+                      <button type="button" @click.stop="deleteSale(s)" class="text-rose-600 text-xs mr-2">Delete</button>
                       <button type="button" @click.stop="openPdfOptions('sale', s)"
                               class="text-rose-600 hover:text-rose-700 text-xs font-medium" title="Download PDF">
                         <i class="fas fa-file-pdf"></i>
@@ -856,9 +865,9 @@
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
               <select x-model="paymentForm.type" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                <option value="Received">Payment Received (Party se)</option>
-                <option value="Made">Payment Made (Party ko)</option>
-                <option value="Transfer">Slip Transfer (Party A → Party B)</option>
+                <option value="Received">Received from party</option>
+                <option value="Made">Paid to party</option>
+                <option value="Transfer">Slip transfer (party A → party B)</option>
               </select>
             </div>
             <div x-show="paymentForm.type !== 'Transfer'">
@@ -866,11 +875,11 @@
               <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
             </div>
             <div x-show="paymentForm.type === 'Transfer'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">From Party * (jis ne pay kiya)</label>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">From party * (who paid)</label>
               <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
             </div>
             <div x-show="paymentForm.type === 'Transfer'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">To Party * (jisko pay hua)</label>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">To party * (who received)</label>
               <input list="partyList" x-model="paymentForm.toParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
             </div>
             <div>
@@ -891,11 +900,11 @@
             </div>
             <div class="md:col-span-2 lg:col-span-3">
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Proof note</label>
-              <input type="text" x-model="paymentForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Buyer ne supplier ko direct pay kiya — screenshot/slip ref">
+              <input type="text" x-model="paymentForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Buyer paid supplier directly — slip / screenshot reference">
             </div>
             <div class="md:col-span-2 lg:col-span-3 pt-2">
               <p class="text-xs text-slate-500 mb-2" x-show="paymentForm.type === 'Transfer'">
-                Buyer ne supplier ko direct pay kiya ho to Type = Slip Transfer. From = buyer, To = supplier. TID + Slip dono ledgers ki Description me save.
+                Use slip transfer when the buyer paid the supplier directly. The same TID is written on both ledgers.
               </p>
               <button type="submit" class="btn-info px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Payment (Auto to Party Ledger)
@@ -917,6 +926,7 @@
                   <th class="px-4 py-3">TID</th>
                   <th class="px-4 py-3">Bank</th>
                   <th class="px-4 py-3 text-right">Amount</th>
+                  <th class="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
@@ -933,6 +943,11 @@
                     <td class="px-4 py-2.5 text-xs text-slate-600" x-text="p.tid || p.slip || '—'"></td>
                     <td class="px-4 py-2.5 text-xs text-slate-500" x-text="p.bank || '—'"></td>
                     <td class="px-4 py-2.5 text-right font-semibold" x-text="fmtMoney(p.amount)"></td>
+                    <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                      <button type="button" @click="editPayment(p)" class="text-slate-600 text-xs mr-2">Edit</button>
+                      <button type="button" @click="deletePayment(p)" class="text-rose-600 text-xs mr-2">Delete</button>
+                      <button type="button" @click="openPdfOptions('payment', p)" class="text-rose-600 text-xs"><i class="fas fa-file-pdf"></i></button>
+                    </td>
                   </tr>
                 </template>
               </tbody>
