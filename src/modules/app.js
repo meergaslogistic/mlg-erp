@@ -154,13 +154,13 @@ function createApp() {
           master: this.master,
           totals: this.totals
         };
-        localStorage.setItem('mlg_erp_v3', JSON.stringify(payload));
+        localStorage.setItem('mlg_erp_v4', JSON.stringify(payload));
       } catch (e) { console.warn('Storage save failed', e); }
     },
 
     loadFromStorage() {
       try {
-        const raw = localStorage.getItem('mlg_erp_v3');
+        const raw = localStorage.getItem('mlg_erp_v4');
         if (!raw) return;
         const data = JSON.parse(raw);
         if (data.parties) this.parties = data.parties;
@@ -216,45 +216,36 @@ function createApp() {
      * This is the heart of the system – every Sale / Payment / relevant Purchase
      * automatically creates a ledger entry and updates running balance.
      */
-    postToLedger(partyName, narration, debit = 0, credit = 0) {
-      let p = this.parties.find(x => x.name === partyName);
+    postToLedger(partyName, narration, debit = 0, credit = 0, extra = {}) {
+      if (!partyName) return;
+      let p = this.parties.find(x => (x.name || '').toLowerCase() === partyName.toLowerCase());
       if (!p) {
         p = {
           id: 'p' + Date.now(),
           name: partyName,
           city: '',
           balance: 0,
-          last: 'Today',
+          last: '—',
           ledger: []
         };
         this.parties.push(p);
-        if (!this.master.party.includes(partyName)) {
-          this.master.party.push(partyName);
-          this.refreshDatalists();
-        }
       }
-      const newBalance = (p.balance || 0) + (debit || 0) - (credit || 0);
+      const debitN = Number(debit) || 0;
+      const creditN = Number(credit) || 0;
+      const newBalance = (Number(p.balance) || 0) + debitN - creditN;
+      p.balance = newBalance;
+      p.last = formatDateDisplay(new Date());
       p.ledger.unshift({
         date: formatDateDisplay(new Date()),
-        narration,
-        debit: debit || 0,
-        credit: credit || 0,
+        narration: narration || '',
+        qty: extra.qty != null && extra.qty !== '' ? String(extra.qty) : '',
+        rate: extra.rate != null && extra.rate !== '' ? String(extra.rate) : '',
+        debit: debitN,
+        credit: creditN,
         balance: newBalance
       });
-      p.balance = newBalance;
-      p.last = 'Today';
-      this.saveToStorage();
     },
 
-    // ========== Calculations ==========
-    calcPurchase() {
-      this.purchaseForm.amount = calcAmount(this.purchaseForm.qty, this.purchaseForm.rate);
-    },
-    calcSale() {
-      this.saleForm.amount = calcAmount(this.saleForm.qty, this.saleForm.rate);
-    },
-
-    // ========== Transactions ==========
     savePurchase() {
       const f = this.purchaseForm;
       if (!f.loadingDate || !f.bowser || !f.party || !f.qty) {
@@ -290,7 +281,7 @@ function createApp() {
       // Auto ledger if normal party (not stock)
       if (!isRpg) {
         const amt = parseAmount(f.amount);
-        this.postToLedger(f.party, `Purchase / Loading ${f.bowser} • ${f.qty} T`, amt, 0);
+        this.postToLedger(f.party, `Purchase / Loading ${f.bowser} • ${f.qty} T`, amt, 0, { qty: f.qty, rate: f.rate });
       }
 
       this.showToast(status === 'Delivered'
@@ -323,7 +314,7 @@ function createApp() {
       });
 
       // Auto Ledger – Debit party
-      this.postToLedger(f.party, `Sale ${f.bowser} • ${f.qty} Ton`, amt, 0);
+      this.postToLedger(f.party, `Sale ${f.bowser} • ${f.qty} Ton`, amt, 0, { qty: f.qty, rate: f.rate });
 
       // Stock reduce if from RPG
       if ((f.plant || '').toUpperCase().includes('RPG') || (f.plant || '').toUpperCase().includes('STOCK')) {
@@ -588,6 +579,8 @@ function createApp() {
         const rows = (party.ledger || []).map(e => [
           e.date || '',
           e.narration || '',
+          e.qty || '',
+          e.rate ? this.fmtMoney(e.rate) : '',
           e.debit ? this.fmtMoney(e.debit) : '',
           e.credit ? this.fmtMoney(e.credit) : '',
           this.fmtMoney(e.balance)
@@ -598,7 +591,7 @@ function createApp() {
 
         doc.autoTable({
           startY: y + 6,
-          head: [['Date', 'Narration', 'Debit', 'Credit', 'Balance']],
+          head: [['Date', 'Narration', 'Qty (T)', 'Rate', 'Debit', 'Credit', 'Balance']],
           body: rows.length ? rows : [['—', 'No entries yet', '', '', '']],
           theme: 'plain',
           styles: {
@@ -611,13 +604,13 @@ function createApp() {
             fillColor: false
           },
           didParseCell: function (data) {
-            // Debit column (index 2) → red; Credit column (index 3) → green
+            // Debit col 4 → red; Credit col 5 → green
             if (data.section === 'body') {
-              if (data.column.index === 2 && data.cell.raw) {
-                data.cell.styles.textColor = [220, 38, 38]; // red
+              if (data.column.index === 4 && data.cell.raw) {
+                data.cell.styles.textColor = [220, 38, 38];
               }
-              if (data.column.index === 3 && data.cell.raw) {
-                data.cell.styles.textColor = [5, 150, 105]; // green
+              if (data.column.index === 5 && data.cell.raw) {
+                data.cell.styles.textColor = [5, 150, 105];
               }
             }
           },
@@ -632,11 +625,13 @@ function createApp() {
             fillColor: false
           },
           columnStyles: {
-            0: { cellWidth: 22 },
-            1: { cellWidth: 78 },
-            2: { cellWidth: 28, halign: 'right' },
-            3: { cellWidth: 28, halign: 'right' },
-            4: { cellWidth: 28, halign: 'right', fontStyle: 'bold' }
+            0: { cellWidth: 18 },
+            1: { cellWidth: 52 },
+            2: { cellWidth: 16, halign: 'right' },
+            3: { cellWidth: 22, halign: 'right' },
+            4: { cellWidth: 26, halign: 'right' },
+            5: { cellWidth: 26, halign: 'right' },
+            6: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }
           },
           margin: { left: 14, right: 14, top: chrome.contentTop, bottom: Math.max(bottomMargin, 14) },
           didDrawPage: async function (data) {
