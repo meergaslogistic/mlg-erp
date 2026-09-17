@@ -248,10 +248,11 @@
                 <table class="w-full text-sm">
                   <thead class="bg-slate-50">
                     <tr class="text-left text-[11px] text-slate-500 uppercase">
+                      <th class="px-3 py-2.5">S#</th>
                       <th class="px-3 py-2.5">Date</th>
-                      <th class="px-3 py-2.5">Narration</th>
-                      <th class="px-3 py-2.5 text-right">Qty (T)</th>
-                      <th class="px-3 py-2.5 text-right">Rate</th>
+                      <th class="px-3 py-2.5">Desc / Narration</th>
+                      <th class="px-3 py-2.5">Bowser No</th>
+                      <th class="px-3 py-2.5 text-right">Qty (MT)</th>
                       <th class="px-3 py-2.5 text-right">Debit</th>
                       <th class="px-3 py-2.5 text-right">Credit</th>
                       <th class="px-3 py-2.5 text-right">Balance</th>
@@ -260,17 +261,18 @@
                   <tbody class="divide-y divide-slate-100">
                     <template x-for="(e, i) in (activeParty?.ledger || [])" :key="i">
                       <tr>
+                        <td class="px-3 py-2 text-xs text-slate-400" x-text="(activeParty.ledger.length - i)"></td>
                         <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap" x-text="e.date"></td>
                         <td class="px-3 py-2" x-text="e.narration"></td>
+                        <td class="px-3 py-2 text-xs font-medium text-slate-700 whitespace-nowrap" x-text="getBowser(e) || '—'"></td>
                         <td class="px-3 py-2 text-right text-slate-600" x-text="e.qty || '—'"></td>
-                        <td class="px-3 py-2 text-right text-slate-600" x-text="e.rate ? fmtMoney(e.rate) : '—'"></td>
                         <td class="px-3 py-2 text-right text-rose-600" x-text="e.debit ? fmtMoney(e.debit) : ''"></td>
                         <td class="px-3 py-2 text-right text-emerald-600" x-text="e.credit ? fmtMoney(e.credit) : ''"></td>
                         <td class="px-3 py-2 text-right font-medium" x-text="fmtMoney(e.balance)"></td>
                       </tr>
                     </template>
                     <tr x-show="!(activeParty?.ledger || []).length">
-                      <td colspan="7" class="px-3 py-8 text-center text-slate-400 text-sm">No entries yet</td>
+                      <td colspan="8" class="px-3 py-8 text-center text-slate-400 text-sm">No entries yet</td>
                     </tr>
                   </tbody>
                 </table>
