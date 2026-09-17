@@ -215,7 +215,7 @@
         <!-- Party Ledger Panel -->
         <div x-show="activeParty" x-transition class="fixed inset-0 z-50 flex justify-end">
           <div class="absolute inset-0 bg-black/30" @click="activeParty = null"></div>
-          <div class="relative w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col" @click.stop>
+          <div class="relative w-full max-w-6xl bg-white h-full shadow-2xl flex flex-col" @click.stop>
             <div class="p-5 border-b flex items-center justify-between shrink-0 gap-3">
               <div class="min-w-0">
                 <h2 class="font-bold text-lg truncate" x-text="activeParty?.name"></h2>
@@ -252,7 +252,11 @@
                       <th class="px-3 py-2.5">Date</th>
                       <th class="px-3 py-2.5">Desc / Narration</th>
                       <th class="px-3 py-2.5">Bowser No</th>
+                      <th class="px-3 py-2.5">TID</th>
+                      <th class="px-3 py-2.5">From</th>
+                      <th class="px-3 py-2.5">To</th>
                       <th class="px-3 py-2.5 text-right">Qty (MT)</th>
+                      <th class="px-3 py-2.5 text-right">Rate</th>
                       <th class="px-3 py-2.5 text-right">Debit</th>
                       <th class="px-3 py-2.5 text-right">Credit</th>
                       <th class="px-3 py-2.5 text-right">Balance</th>
@@ -265,14 +269,18 @@
                         <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap" x-text="e.date"></td>
                         <td class="px-3 py-2" x-text="e.narration"></td>
                         <td class="px-3 py-2 text-xs font-medium text-slate-700 whitespace-nowrap" x-text="getBowser(e) || '—'"></td>
-                        <td class="px-3 py-2 text-right text-slate-600" x-text="e.qty || '—'"></td>
+                        <td class="px-3 py-2 text-xs text-slate-600 whitespace-nowrap" x-text="getTid(e) || '—'"></td>
+                        <td class="px-3 py-2 text-xs text-slate-600 whitespace-nowrap" x-text="getFrom(e) || '—'"></td>
+                        <td class="px-3 py-2 text-xs text-slate-600 whitespace-nowrap" x-text="getTo(e) || '—'"></td>
+                        <td class="px-3 py-2 text-right text-slate-600" x-text="getQty(e) || '—'"></td>
+                        <td class="px-3 py-2 text-right text-slate-600" x-text="getRate(e) ? fmtMoney(getRate(e)) : '—'"></td>
                         <td class="px-3 py-2 text-right text-rose-600" x-text="e.debit ? fmtMoney(e.debit) : ''"></td>
                         <td class="px-3 py-2 text-right text-emerald-600" x-text="e.credit ? fmtMoney(e.credit) : ''"></td>
                         <td class="px-3 py-2 text-right font-medium" x-text="fmtMoney(e.balance)"></td>
                       </tr>
                     </template>
                     <tr x-show="!(activeParty?.ledger || []).length">
-                      <td colspan="8" class="px-3 py-8 text-center text-slate-400 text-sm">No entries yet</td>
+                      <td colspan="12" class="px-3 py-8 text-center text-slate-400 text-sm">No entries yet</td>
                     </tr>
                   </tbody>
                 </table>
@@ -608,11 +616,24 @@
               <select x-model="paymentForm.type" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
                 <option value="Received">Payment Received (Party se)</option>
                 <option value="Made">Payment Made (Party ko)</option>
+                <option value="Transfer">Slip Transfer (Party A → Party B)</option>
               </select>
             </div>
-            <div>
+            <div x-show="paymentForm.type !== 'Transfer'">
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Party *</label>
-              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
+              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div x-show="paymentForm.type === 'Transfer'">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">From Party * (jis ne pay kiya)</label>
+              <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div x-show="paymentForm.type === 'Transfer'">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">To Party * (jisko pay hua)</label>
+              <input list="partyList" x-model="paymentForm.toParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">TID *</label>
+              <input type="text" x-model="paymentForm.tid" placeholder="Bank TID / Transaction ID" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Slip / Voucher No</label>
@@ -627,6 +648,9 @@
               <input type="number" x-model="paymentForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
             </div>
             <div class="md:col-span-2 lg:col-span-3 pt-2">
+              <p class="text-xs text-slate-500 mb-2" x-show="paymentForm.type === 'Transfer'">
+                Transfer: From Party ke ledger mein Credit, To Party ke ledger mein Debit. Same TID dono jagah.
+              </p>
               <button type="submit" class="btn-info px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Payment (Auto to Party Ledger)
               </button>
@@ -642,8 +666,10 @@
                 <tr class="text-left text-[11px] text-slate-500 uppercase">
                   <th class="px-4 py-3">Date</th>
                   <th class="px-4 py-3">Type</th>
-                  <th class="px-4 py-3">Party</th>
-                  <th class="px-4 py-3">Slip / Bank</th>
+                  <th class="px-4 py-3">From</th>
+                  <th class="px-4 py-3">To</th>
+                  <th class="px-4 py-3">TID</th>
+                  <th class="px-4 py-3">Bank</th>
                   <th class="px-4 py-3 text-right">Amount</th>
                 </tr>
               </thead>
@@ -652,10 +678,14 @@
                   <tr>
                     <td class="px-4 py-2.5" x-text="p.date"></td>
                     <td class="px-4 py-2.5">
-                      <span class="badge" :class="p.type === 'Received' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'" x-text="p.type"></span>
+                      <span class="badge"
+                            :class="p.type === 'Received' ? 'bg-emerald-50 text-emerald-700' : (p.type === 'Transfer' ? 'bg-indigo-50 text-indigo-700' : 'bg-rose-50 text-rose-700')"
+                            x-text="p.type"></span>
                     </td>
-                    <td class="px-4 py-2.5 font-medium" x-text="p.party"></td>
-                    <td class="px-4 py-2.5 text-xs text-slate-500" x-text="(p.slip || '') + (p.bank ? ' • ' + p.bank : '')"></td>
+                    <td class="px-4 py-2.5 font-medium text-xs" x-text="p.fromParty || (p.type === 'Received' ? p.party : '—')"></td>
+                    <td class="px-4 py-2.5 font-medium text-xs" x-text="p.toParty || (p.type === 'Made' ? p.party : '—')"></td>
+                    <td class="px-4 py-2.5 text-xs text-slate-600" x-text="p.tid || p.slip || '—'"></td>
+                    <td class="px-4 py-2.5 text-xs text-slate-500" x-text="p.bank || '—'"></td>
                     <td class="px-4 py-2.5 text-right font-semibold" x-text="fmtMoney(p.amount)"></td>
                   </tr>
                 </template>
