@@ -236,14 +236,30 @@ function createApp() {
       p.balance = newBalance;
       p.last = formatDateDisplay(new Date());
       p.ledger.unshift({
-        date: formatDateDisplay(new Date()),
+        date: extra.date ? formatDateDisplay(extra.date) : formatDateDisplay(new Date()),
         narration: narration || '',
+        bowser: extra.bowser || '',
         qty: extra.qty != null && extra.qty !== '' ? String(extra.qty) : '',
         rate: extra.rate != null && extra.rate !== '' ? String(extra.rate) : '',
         debit: debitN,
         credit: creditN,
         balance: newBalance
       });
+    },
+
+    calcPurchase() {
+      this.purchaseForm.amount = calcAmount(this.purchaseForm.qty, this.purchaseForm.rate);
+    },
+
+    calcSale() {
+      this.saleForm.amount = calcAmount(this.saleForm.qty, this.saleForm.rate);
+    },
+
+    getBowser(e) {
+      if (!e) return '';
+      if (e.bowser) return e.bowser;
+      const m = String(e.narration || '').match(/\b([A-Z]{2,4}\s?-?\s?\d{2,5})\b/i);
+      return m ? m[1].toUpperCase() : '';
     },
 
     savePurchase() {
@@ -281,7 +297,9 @@ function createApp() {
       // Auto ledger if normal party (not stock)
       if (!isRpg) {
         const amt = parseAmount(f.amount);
-        this.postToLedger(f.party, `Purchase / Loading ${f.bowser} • ${f.qty} T`, amt, 0, { qty: f.qty, rate: f.rate });
+        this.postToLedger(f.party, `Purchase / Loading • ${f.qty} MT`, amt, 0, {
+          qty: f.qty, rate: f.rate, bowser: f.bowser, date: f.loadingDate
+        });
       }
 
       this.showToast(status === 'Delivered'
@@ -314,7 +332,9 @@ function createApp() {
       });
 
       // Auto Ledger – Debit party
-      this.postToLedger(f.party, `Sale ${f.bowser} • ${f.qty} Ton`, amt, 0, { qty: f.qty, rate: f.rate });
+      this.postToLedger(f.party, `Sale • ${f.qty} MT`, amt, 0, {
+        qty: f.qty, rate: f.rate, bowser: f.bowser, date: f.date
+      });
 
       // Stock reduce if from RPG
       if ((f.plant || '').toUpperCase().includes('RPG') || (f.plant || '').toUpperCase().includes('STOCK')) {
@@ -576,11 +596,13 @@ function createApp() {
         doc.setTextColor(100, 116, 139);
         doc.text('Generated: ' + new Date().toLocaleString('en-GB'), chrome.pageW - 14, y, { align: 'right' });
 
-        const rows = (party.ledger || []).map(e => [
+        const ledgerChrono = [...(party.ledger || [])].reverse();
+        const rows = ledgerChrono.map((e, i) => [
+          String(i + 1),
           e.date || '',
           e.narration || '',
+          this.getBowser(e),
           e.qty || '',
-          e.rate ? this.fmtMoney(e.rate) : '',
           e.debit ? this.fmtMoney(e.debit) : '',
           e.credit ? this.fmtMoney(e.credit) : '',
           this.fmtMoney(e.balance)
@@ -591,8 +613,8 @@ function createApp() {
 
         doc.autoTable({
           startY: y + 6,
-          head: [['Date', 'Narration', 'Qty (T)', 'Rate', 'Debit', 'Credit', 'Balance']],
-          body: rows.length ? rows : [['—', 'No entries yet', '', '', '']],
+          head: [['S#', 'Date', 'Desc / Narration', 'Bowser No', 'Qty (MT)', 'Debit', 'Credit', 'Balance']],
+          body: rows.length ? rows : [['—', '—', 'No entries yet', '', '', '', '', '']],
           theme: 'plain',
           styles: {
             fontSize: 8,
@@ -604,12 +626,12 @@ function createApp() {
             fillColor: false
           },
           didParseCell: function (data) {
-            // Debit col 4 → red; Credit col 5 → green
+            // Debit col 5 → red; Credit col 6 → green
             if (data.section === 'body') {
-              if (data.column.index === 4 && data.cell.raw) {
+              if (data.column.index === 5 && data.cell.raw) {
                 data.cell.styles.textColor = [220, 38, 38];
               }
-              if (data.column.index === 5 && data.cell.raw) {
+              if (data.column.index === 6 && data.cell.raw) {
                 data.cell.styles.textColor = [5, 150, 105];
               }
             }
@@ -625,13 +647,14 @@ function createApp() {
             fillColor: false
           },
           columnStyles: {
-            0: { cellWidth: 18 },
-            1: { cellWidth: 52 },
-            2: { cellWidth: 16, halign: 'right' },
-            3: { cellWidth: 22, halign: 'right' },
-            4: { cellWidth: 26, halign: 'right' },
-            5: { cellWidth: 26, halign: 'right' },
-            6: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 18 },
+            2: { cellWidth: 48 },
+            3: { cellWidth: 22 },
+            4: { cellWidth: 16, halign: 'right' },
+            5: { cellWidth: 24, halign: 'right' },
+            6: { cellWidth: 24, halign: 'right' },
+            7: { cellWidth: 24, halign: 'right', fontStyle: 'bold' }
           },
           margin: { left: 14, right: 14, top: chrome.contentTop, bottom: Math.max(bottomMargin, 14) },
           didDrawPage: async function (data) {
