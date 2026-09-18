@@ -985,7 +985,7 @@ function createApp() {
       const pageH = 297;
       const wm = this._imgCache && this._imgCache['watermark.png'];
       if (!wm) return;
-      const wmW = 168;
+      const wmW = 198;
       const wmH = wmW * (916 / 1716);
       doc.addImage(wm, 'PNG', (pageW - wmW) / 2, (pageH - wmH) / 2, wmW, wmH, undefined, 'FAST');
     },
@@ -996,9 +996,10 @@ function createApp() {
       const STD_MARGIN = 14;
       const layerMode = layer || 'all';
 
-      const HEADER_H = pageW * (724 / 2172);
+      const HEADER_H = pageW * (628 / 2172);
       const FOOTER_H = pageW * (725 / 2170);
       const FOOTER_SHIFT = 14;
+      const HEADER_LOGO = { x: 6.2, y: 3.4, size: 51.2 };
 
       const useHeader = !!(opts && opts.header);
       const useFooter = !!(opts && opts.footer);
@@ -1060,15 +1061,23 @@ function createApp() {
       if (useLogo) {
         const logoImg = await this.loadAssetImage('logo.png');
         if (logoImg) {
-          const logoSize = 18;
-          doc.addImage(logoImg, 'PNG', pageW - STD_MARGIN - logoSize, useHeader ? Math.max(4, HEADER_H - logoSize - 2) : STD_MARGIN, logoSize, logoSize, undefined, 'FAST');
+          doc.addImage(
+            logoImg,
+            'PNG',
+            HEADER_LOGO.x,
+            HEADER_LOGO.y,
+            HEADER_LOGO.size,
+            HEADER_LOGO.size,
+            undefined,
+            'FAST'
+          );
         }
       }
 
       let contentTop = STD_MARGIN + 4;
       let contentBottom = pageH - STD_MARGIN;
       if (useHeader) contentTop = HEADER_H + 6;
-      else if (useLogo) contentTop = STD_MARGIN + 18;
+      else if (useLogo) contentTop = HEADER_LOGO.y + HEADER_LOGO.size + 6;
       if (useFooter) contentBottom = pageH - (FOOTER_H - FOOTER_SHIFT) - 4;
 
       return { contentTop, contentBottom, pageW, pageH, HEADER_H, FOOTER_H, useHeader, useFooter, useLogo, useWatermark, anyChrome };
