@@ -23,6 +23,7 @@ function createApp() {
     clockNow: '',
     clockDate: '',
     greeting: 'Welcome',
+    greetIcon: '☀️',
     pdfOptions: { show: false, header: true, footer: true, logo: false, type: null, data: null },
 
     titles: {
@@ -128,7 +129,9 @@ function createApp() {
       this.clockNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
       this.clockDate = now.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
       const h = now.getHours();
-      this.greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+      if (h < 12) { this.greeting = 'Good Morning'; this.greetIcon = '☀️'; }
+      else if (h < 17) { this.greeting = 'Good Afternoon'; this.greetIcon = '🌤️'; }
+      else { this.greeting = 'Good Evening'; this.greetIcon = '🌙'; }
     },
 
     openBusinessProfile() {
