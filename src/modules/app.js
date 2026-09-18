@@ -24,7 +24,7 @@ function createApp() {
     clockDate: '',
     greeting: 'Welcome',
     greetIcon: '☀️',
-    pdfOptions: { show: false, header: true, footer: true, logo: false, type: null, data: null },
+    pdfOptions: { show: false, header: true, footer: true, logo: false, watermark: true, type: null, data: null },
 
     titles: {
       dashboard: 'Dashboard',
@@ -79,7 +79,7 @@ function createApp() {
     },
     paymentForm: {
       date: '', type: 'Received', party: '', fromParty: '', toParty: '',
-      slip: '', tid: '', bank: '', amount: '', remarks: ''
+      slip: '', tid: '', bank: '', amount: '', remarks: '', proofName: '', proofData: ''
     },
     stockForm: {
       location: 'RPG Plant – STOCK', type: 'In', qty: '', notes: ''
@@ -454,6 +454,8 @@ function createApp() {
         bank: row.bank || '',
         amount: row.amount || '',
         remarks: row.remarks || '',
+        proofName: row.proofName || '',
+        proofData: row.proofData || '',
         editingId: row.id
       };
       this.go('payment');
@@ -763,7 +765,9 @@ function createApp() {
           tid,
           bank: f.bank,
           amount: amt,
-          remarks: note
+          remarks: note,
+          proofName: f.proofName || '',
+          proofData: f.proofData || ''
         });
         this.postToLedger(
           f.fromParty,
@@ -798,7 +802,9 @@ function createApp() {
           tid,
           bank: f.bank,
           amount: amt,
-          remarks: note
+          remarks: note,
+          proofName: f.proofName || '',
+          proofData: f.proofData || ''
         });
         if (f.type === 'Received') {
           this.postToLedger(
@@ -820,7 +826,7 @@ function createApp() {
 
       this.paymentForm = {
         date: '', type: 'Received', party: '', fromParty: '', toParty: '',
-        slip: '', tid: '', bank: '', amount: '', remarks: '', editingId: null
+        slip: '', tid: '', bank: '', amount: '', remarks: '', proofName: '', proofData: '', editingId: null
       };
       this.saveToStorage();
     },
@@ -885,12 +891,48 @@ function createApp() {
       }
     },
 
+    onProofFile(ev) {
+      const file = ev && ev.target && ev.target.files && ev.target.files[0];
+      if (!file) {
+        this.paymentForm.proofName = '';
+        this.paymentForm.proofData = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const raw = String(reader.result || '');
+        const img = new Image();
+        img.onload = () => {
+          const maxW = 1280;
+          const scale = img.width > maxW ? maxW / img.width : 1;
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * scale);
+          c.height = Math.round(img.height * scale);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          this.paymentForm.proofName = file.name;
+          this.paymentForm.proofData = c.toDataURL('image/jpeg', 0.72);
+        };
+        img.onerror = () => {
+          this.paymentForm.proofName = file.name;
+          this.paymentForm.proofData = raw;
+        };
+        img.src = raw;
+      };
+      reader.readAsDataURL(file);
+    },
+
+    clearProof() {
+      this.paymentForm.proofName = '';
+      this.paymentForm.proofData = '';
+    },
+
     openPdfOptions(type, data) {
       this.pdfOptions = {
         show: true,
         header: true,
         footer: true,
         logo: false,
+        watermark: true,
         type: type,
         data: data
       };
@@ -944,14 +986,14 @@ function createApp() {
       const STD_MARGIN = 14;
       const FIXED = 60; // 6cm
 
-      const HEADER_H = pageW * (715 / 2600);   // ~57.75mm natural
-      const FOOTER_H = pageW * (1555 / 2600);  // ~125.6mm natural full watermark
-      const FOOTER_BAR_H = pageW * (436 / 2600); // ~35mm solid bar
+      const HEADER_H = pageW * (724 / 2172);   // native header ratio, pinned to top
+      const FOOTER_H = pageW * (725 / 2170);   // native footer ratio, pinned to bottom
 
       const useHeader = !!(opts && opts.header);
       const useFooter = !!(opts && opts.footer);
       const useLogo = !!(opts && opts.logo);
-      const anyChrome = useHeader || useFooter || useLogo;
+      const useWatermark = opts && opts.watermark !== false;
+      const anyChrome = useHeader || useFooter || useLogo || useWatermark;
 
       // Border rules:
       // - No checkbox → full complete page border
@@ -978,39 +1020,44 @@ function createApp() {
         doc.line(pageW - 4.6, sideTop, pageW - 4.6, sideBottom);
       }
 
-      // Footer FIRST (watermark under content)
+      if (useWatermark) {
+        const wm = await this.loadAssetImage('watermark.png');
+        if (wm) {
+          const wmW = 118;
+          const wmH = wmW * (916 / 1716);
+          doc.addImage(wm, 'PNG', (pageW - wmW) / 2, (pageH - wmH) / 2, wmW, wmH, undefined, 'FAST');
+        }
+      }
+
       if (useFooter) {
         const footerImg = await this.loadAssetImage('footer.png');
         if (footerImg) {
-          doc.addImage(footerImg, 'PNG', -1, pageH - FOOTER_H, pageW + 2, FOOTER_H, undefined, 'FAST');
+          doc.addImage(footerImg, 'PNG', 0, pageH - FOOTER_H, pageW, FOOTER_H, undefined, 'FAST');
         }
       }
 
-      // Header
       if (useHeader) {
         const headerImg = await this.loadAssetImage('header.png');
         if (headerImg) {
-          // Slight horizontal bleed (-1mm … +1mm) removes hairline white gap on sides when printing
-          doc.addImage(headerImg, 'PNG', -1, 0, pageW + 2, HEADER_H, undefined, 'FAST');
+          doc.addImage(headerImg, 'PNG', 0, 0, pageW, HEADER_H, undefined, 'FAST');
         }
       }
 
-      // Logo
       if (useLogo) {
         const logoImg = await this.loadAssetImage('logo.png');
         if (logoImg) {
-          const logoSize = 20;
-          doc.addImage(logoImg, 'PNG', pageW - STD_MARGIN - logoSize, useHeader ? 5 : STD_MARGIN, logoSize, logoSize, undefined, 'FAST');
+          const logoSize = 18;
+          doc.addImage(logoImg, 'PNG', pageW - STD_MARGIN - logoSize, useHeader ? Math.max(4, HEADER_H - logoSize - 2) : STD_MARGIN, logoSize, logoSize, undefined, 'FAST');
         }
       }
 
-      // Content margins
       let contentTop = STD_MARGIN + 4;
       let contentBottom = pageH - STD_MARGIN;
-      if (useHeader || useLogo) contentTop = FIXED;      // 6cm from top
-      if (useFooter) contentBottom = pageH - FIXED;     // 6cm from bottom
+      if (useHeader) contentTop = HEADER_H + 6;
+      else if (useLogo) contentTop = STD_MARGIN + 18;
+      if (useFooter) contentBottom = pageH - FOOTER_H - 4;
 
-      return { contentTop, contentBottom, pageW, pageH, HEADER_H, FOOTER_H, useHeader, useFooter, useLogo, anyChrome };
+      return { contentTop, contentBottom, pageW, pageH, HEADER_H, FOOTER_H, useHeader, useFooter, useLogo, useWatermark, anyChrome };
     },
 
     async downloadPartyLedgerPDF(party, opts, mode) {
@@ -1187,6 +1234,7 @@ function createApp() {
           fields.push(['To Party', entry.toParty || '—']);
           fields.push(['Bank / Account', entry.bank || '—']);
           fields.push(['Remarks', entry.remarks || '—']);
+          fields.push(['Proof file', entry.proofName || (entry.proofData ? 'Attached' : '—')]);
           fields.push(['Amount (PKR)', this.fmtMoney(entry.amount)]);
         }
 
@@ -1205,6 +1253,19 @@ function createApp() {
         doc.setDrawColor(226, 232, 240);
         doc.setLineWidth(0.3);
         doc.line(20, y, chrome.pageW - 20, y);
+
+        if (type === 'payment' && entry.proofData) {
+          y += 8;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(15, 23, 42);
+          doc.text('Transaction proof', 20, y);
+          y += 4;
+          try {
+            const fmt = String(entry.proofData).indexOf('image/png') >= 0 ? 'PNG' : 'JPEG';
+            doc.addImage(entry.proofData, fmt, 20, y, 80, 50);
+          } catch (e) {}
+        }
 
         const safe = (entry.party || entry.bowser || 'Entry').replace(/[^a-z0-9]/gi, '_');
         const fname = type + '_' + safe + '_' + (entry.date || 'doc') + '.pdf';
