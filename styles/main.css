@@ -13,6 +13,14 @@
   --radius-sm: 14px;
 }
 
+@font-face {
+  font-family: 'JameelNoori';
+  src: url('../assets/fonts/JameelNooriNastaleeq.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -219,8 +227,25 @@ html, body {
 .dash-hero h2 { margin: 0 0 4px; font-size: 19px; font-weight: 800; }
 .dash-hero p { margin: 0; font-size: 12.5px; color: #c3d0ea; }
 .greet-icon { display: inline-block; animation: waveHand 2.4s ease-in-out infinite; transform-origin: 70% 70%; }
-.hero-right { display: flex; align-items: center; gap: 18px; position: relative; z-index: 1; flex-wrap: wrap; justify-content: flex-end; }
-.urdu-tagline { font-size: 16px; color: #f0d78c; white-space: nowrap; }
+.hero-right { display: flex; align-items: center; gap: 22px; position: relative; z-index: 1; flex-wrap: wrap; justify-content: flex-end; }
+.vip-slogan { text-align: right; }
+.vip-slogan-en {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f0d78c;
+  margin: 0 0 4px;
+}
+.urdu-tagline {
+  font-family: 'JameelNoori', 'Noto Nastaliq Urdu', serif;
+  direction: rtl;
+  unicode-bidi: isolate;
+  font-size: 20px;
+  line-height: 1.7;
+  color: #f6e2a8;
+  white-space: nowrap;
+}
 .hero-clock { font-size: 11px; color: #c3d0ea; text-align: left; }
 .hero-clock b { display: block; font-size: 17px; color: #fff; font-weight: 700; letter-spacing: .6px; margin-top: 2px; }
 
