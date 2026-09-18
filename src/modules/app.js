@@ -24,7 +24,7 @@ function createApp() {
     clockDate: '',
     greeting: 'Welcome',
     greetIcon: '☀️',
-    pdfOptions: { show: false, header: true, footer: true, logo: false, watermark: true, type: null, data: null },
+    pdfOptions: { show: false, header: false, footer: false, logo: false, watermark: true, type: null, data: null },
 
     titles: {
       dashboard: 'Dashboard',
@@ -207,6 +207,11 @@ function createApp() {
           el.innerHTML = (this.master[k] || []).map(v => `<option value="${v}">`).join('');
         }
       });
+      const loadFrom = document.getElementById('loadFromList');
+      if (loadFrom) {
+        const merged = [...new Set([...(this.master.source || []), ...(this.master.plant || [])])];
+        loadFrom.innerHTML = merged.map(v => `<option value="${v}">`).join('');
+      }
     },
 
     // ========== Persistence (LocalStorage) ==========
@@ -411,8 +416,8 @@ function createApp() {
         bowser: row.bowser || '',
         party: row.party || '',
         city: row.city || '',
-        plant: row.plant || '',
-        source: row.source || '',
+        plant: row.plant || row.source || '',
+        source: row.source || row.plant || '',
         qty: row.qty || '',
         rate: row.rate || '',
         amount: row.amount || '',
@@ -607,8 +612,8 @@ function createApp() {
         bowser: f.bowser,
         party: f.party,
         city: f.city,
-        plant: f.plant,
-        source: f.source,
+        plant: f.source || f.plant,
+        source: f.source || f.plant,
         remarks: f.remarks,
         qty: f.qty,
         rate: f.rate || '',
@@ -929,8 +934,8 @@ function createApp() {
     openPdfOptions(type, data) {
       this.pdfOptions = {
         show: true,
-        header: true,
-        footer: true,
+        header: false,
+        footer: false,
         logo: false,
         watermark: true,
         type: type,
@@ -996,10 +1001,10 @@ function createApp() {
       const STD_MARGIN = 14;
       const layerMode = layer || 'all';
 
-      const HEADER_H = pageW * (628 / 2172);
+      const HEADER_H = pageW * (547 / 2172);
       const FOOTER_H = pageW * (725 / 2170);
       const FOOTER_SHIFT = 14;
-      const HEADER_LOGO = { x: 6.2, y: 3.4, size: 51.2 };
+      const HEADER_LOGO = { x: 6.67, y: 7.44, size: 43.9 };
 
       const useHeader = !!(opts && opts.header);
       const useFooter = !!(opts && opts.footer);
@@ -1090,7 +1095,7 @@ function createApp() {
       try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const optsSafe = opts || { header: true, footer: true, logo: false, watermark: true };
+        const optsSafe = opts || { header: false, footer: false, logo: false, watermark: true };
         await this.loadAssetImage('watermark.png');
         await this.loadAssetImage('header.png');
         await this.loadAssetImage('footer.png');
@@ -1211,7 +1216,7 @@ function createApp() {
       try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const chrome = await this.applyPageChrome(doc, opts || { header: true, footer: true, logo: false });
+        const chrome = await this.applyPageChrome(doc, opts || { header: false, footer: false, logo: false, watermark: true });
         let y = chrome.contentTop;
 
         const titles = {
