@@ -20,6 +20,9 @@ function createApp() {
     newPartyCity: '',
     selectedInv: 'rpg',
     toast: { show: false, msg: '' },
+    clockNow: '',
+    clockDate: '',
+    greeting: 'Welcome',
     pdfOptions: { show: false, header: true, footer: true, logo: false, type: null, data: null },
 
     titles: {
@@ -116,6 +119,20 @@ function createApp() {
       this.refreshDatalists();
       this.loadFromStorage();
       this.recalcTotals();
+      this.tickClock();
+      this._clockTimer = setInterval(() => this.tickClock(), 1000);
+    },
+
+    tickClock() {
+      const now = new Date();
+      this.clockNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      this.clockDate = now.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+      const h = now.getHours();
+      this.greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    },
+
+    openBusinessProfile() {
+      this.showToast('Business profile — coming soon');
     },
 
     startWork(kind) {
