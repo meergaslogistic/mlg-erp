@@ -70,7 +70,10 @@ function createApp() {
     purchaseForm: {
       dealType: 'stock',
       loadingDate: '', bowser: '', party: 'RPG Plant - STOCK', city: '', plant: '',
-      qty: '', rate: '', amount: '', unloadDate: '', source: '', remarks: ''
+      qty: '', rate: '', amount: '', unloadDate: '', source: '', remarks: '',
+      splits: [
+        { destType: 'stock', party: 'RPG Plant - STOCK', city: '', qty: '', unloadDate: '' }
+      ]
     },
     saleForm: {
       dealType: 'from_stock',
@@ -164,7 +167,37 @@ function createApp() {
 
     setPurchaseDeal(type) {
       this.purchaseForm.dealType = type;
-      if (type === 'stock') this.purchaseForm.party = 'RPG Plant - STOCK';
+      if (type === 'stock') {
+        this.purchaseForm.party = 'RPG Plant - STOCK';
+        this.purchaseForm.splits = [
+          { destType: 'stock', party: 'RPG Plant - STOCK', city: '', qty: this.purchaseForm.qty || '', unloadDate: '' }
+        ];
+      } else {
+        this.purchaseForm.party = '';
+        this.purchaseForm.splits = [
+          { destType: 'party', party: '', city: '', qty: this.purchaseForm.qty || '', unloadDate: '' }
+        ];
+      }
+    },
+
+    addPurchaseSplit() {
+      if (!this.purchaseForm.splits) this.purchaseForm.splits = [];
+      this.purchaseForm.splits.push({ destType: 'party', party: '', city: '', qty: '', unloadDate: '' });
+      this.purchaseForm.dealType = this.purchaseForm.splits.length > 1 ? 'split' : this.purchaseForm.dealType;
+    },
+
+    removePurchaseSplit(i) {
+      if (!this.purchaseForm.splits || this.purchaseForm.splits.length <= 1) return;
+      this.purchaseForm.splits.splice(i, 1);
+    },
+
+    purchaseSplitQtyTotal() {
+      return (this.purchaseForm.splits || []).reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+    },
+
+    onSplitTypeChange(row) {
+      if (row.destType === 'stock') row.party = 'RPG Plant - STOCK';
+      else if (row.party === 'RPG Plant - STOCK') row.party = '';
     },
 
     setSaleDeal(type) {
@@ -410,8 +443,24 @@ function createApp() {
     },
 
     editPurchase(row) {
+      const dealType = row.dealType || ((row.party || '').toUpperCase().includes('STOCK') ? 'stock' : 'direct');
+      const splits = (row.splits && row.splits.length)
+        ? row.splits.map(s => ({
+            destType: s.destType || 'party',
+            party: s.party || '',
+            city: s.city || '',
+            qty: s.qty || '',
+            unloadDate: s.unloadDate || ''
+          }))
+        : [{
+            destType: dealType === 'stock' ? 'stock' : 'party',
+            party: dealType === 'stock' ? 'RPG Plant - STOCK' : (row.party || ''),
+            city: row.city || '',
+            qty: row.qty || '',
+            unloadDate: row.unloadDate || ''
+          }];
       this.purchaseForm = {
-        dealType: row.dealType || ((row.party || '').toUpperCase().includes('STOCK') ? 'stock' : 'direct'),
+        dealType,
         loadingDate: row.date || '',
         bowser: row.bowser || '',
         party: row.party || '',
@@ -423,6 +472,7 @@ function createApp() {
         amount: row.amount || '',
         unloadDate: row.unloadDate || '',
         remarks: row.remarks || '',
+        splits,
         editingId: row.id
       };
       this.go('purchase');
@@ -591,10 +641,45 @@ function createApp() {
 
     savePurchase() {
       const f = this.purchaseForm;
-      if (!f.loadingDate || !f.bowser || !f.party || !f.qty) {
-        this.showToast('Date, bowser, party and quantity are required. Rate can be added later.');
+      if (!f.loadingDate || !f.bowser || !f.qty) {
+        this.showToast('Loading date, bowser and quantity are required. Rate can be added later.');
         return;
       }
+      let splits = (f.splits || []).map(s => ({
+        destType: s.destType === 'stock' || String(s.party || '').toUpperCase().includes('STOCK') ? 'stock' : 'party',
+        party: s.destType === 'stock' ? 'RPG Plant - STOCK' : (s.party || '').trim(),
+        city: s.city || '',
+        qty: s.qty,
+        unloadDate: s.unloadDate || ''
+      })).filter(s => parseFloat(s.qty) > 0);
+
+      if (!splits.length) {
+        if (!f.party) {
+          this.showToast('Add at least one destination with quantity.');
+          return;
+        }
+        splits = [{
+          destType: f.dealType === 'stock' ? 'stock' : 'party',
+          party: f.party,
+          city: f.city || '',
+          qty: f.qty,
+          unloadDate: f.unloadDate || ''
+        }];
+      }
+
+      const missingParty = splits.find(s => s.destType === 'party' && !s.party);
+      if (missingParty) {
+        this.showToast('Each party destination needs a party name.');
+        return;
+      }
+
+      const splitTotal = splits.reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+      const loadQty = parseFloat(f.qty) || 0;
+      if (splitTotal - loadQty > 0.001) {
+        this.showToast('Destination quantities cannot exceed loaded quantity.');
+        return;
+      }
+
       if (f.editingId) {
         const old = this.purchases.find(x => x.id === f.editingId);
         if (old) {
@@ -603,15 +688,27 @@ function createApp() {
           this.purchases = this.purchases.filter(x => x.id !== old.id);
         }
       }
-      if (f.dealType === 'stock' && !f.unloadDate) f.unloadDate = f.loadingDate;
-      const status = f.dealType === 'stock' ? 'Delivered' : (f.unloadDate ? 'Delivered' : 'On Route');
-      const isRpg = f.dealType === 'stock' || (f.party || '').toUpperCase().includes('RPG') || (f.party || '').toUpperCase().includes('STOCK');
+
+      splits = splits.map(s => {
+        if (s.destType === 'stock' && !s.unloadDate) s.unloadDate = f.loadingDate;
+        return s;
+      });
+
+      const hasStock = splits.some(s => s.destType === 'stock');
+      const hasParty = splits.some(s => s.destType === 'party');
+      const dealType = hasStock && hasParty ? 'split' : (hasStock ? 'stock' : 'direct');
+      const allDelivered = splits.every(s => s.unloadDate || s.destType === 'stock');
+      const status = allDelivered ? 'Delivered' : (splitTotal < loadQty ? 'Partial / On Route' : 'On Route');
+      const partyLabel = dealType === 'split'
+        ? splits.map(s => (s.destType === 'stock' ? 'STOCK' : s.party) + ' ' + s.qty + 'T').join(' + ')
+        : splits[0].party;
+
       const rec = {
         id: Date.now(),
         date: f.loadingDate,
         bowser: f.bowser,
-        party: f.party,
-        city: f.city,
+        party: partyLabel,
+        city: splits[0].city || f.city || '',
         plant: f.source || f.plant,
         source: f.source || f.plant,
         remarks: f.remarks,
@@ -619,38 +716,54 @@ function createApp() {
         rate: f.rate || '',
         amount: f.rate ? calcAmount(f.qty, f.rate) : '',
         status,
-        unloadDate: f.unloadDate || '',
+        unloadDate: splits.map(s => s.unloadDate).filter(Boolean).join(', '),
         ratePending: !f.rate,
-        dealType: f.dealType || (isRpg ? 'stock' : 'direct')
+        dealType,
+        splits
       };
       this.purchases.unshift(rec);
 
-      if (isRpg && status === 'Delivered') {
-        this.applyStockMove(
-          'In',
-          f.qty,
-          `${f.bowser} – ${f.source || f.remarks || 'Stock purchase'}`,
-          formatDateDisplay(f.unloadDate || f.loadingDate),
-          rec.id
-        );
-      }
+      splits.forEach(s => {
+        const q = parseFloat(s.qty) || 0;
+        const lineAmt = f.rate ? calcAmount(q, f.rate) : '';
+        if (s.destType === 'stock') {
+          this.applyStockMove(
+            'In',
+            q,
+            `${f.bowser} – ${s.qty}T to stock` + (f.source ? ` from ${f.source}` : ''),
+            formatDateDisplay(s.unloadDate || f.loadingDate),
+            rec.id
+          );
+        } else {
+          this.postToLedger(
+            s.party,
+            this.rebuildLedgerNarration('Purchase / Loading', {
+              ...f,
+              party: s.party,
+              qty: s.qty,
+              amount: lineAmt,
+              remarks: (f.remarks || '') + (splits.length > 1 ? ` • Split ${s.qty}T` : '')
+            }),
+            parseAmount(lineAmt),
+            0,
+            {
+              qty: s.qty, rate: f.rate, bowser: f.bowser, date: f.loadingDate,
+              sourceType: 'purchase', sourceId: rec.id
+            }
+          );
+        }
+      });
 
-      // Direct party purchase (not stock): ledger me record — amount 0 ho to Rate pending
-      if (!isRpg) {
-        const amt = parseAmount(rec.amount);
-        this.postToLedger(f.party, this.rebuildLedgerNarration('Purchase / Loading', f), amt, 0, {
-          qty: f.qty, rate: f.rate, bowser: f.bowser, date: f.loadingDate,
-          sourceType: 'purchase', sourceId: rec.id
-        });
-      }
-
-      this.showToast(isRpg
-        ? (status === 'Delivered' ? 'Purchase STOCK me In ho gaya' : 'Purchase On Route — unload par STOCK In hoga')
-        : (rec.ratePending ? 'Purchase party ledger me • Rate pending' : 'Purchase party ledger me save'));
+      this.showToast(dealType === 'split'
+        ? 'Split purchase saved — stock and party ledgers updated'
+        : (dealType === 'stock' ? 'Purchase posted to company stock' : 'Purchase posted to party ledger'));
       this.purchaseForm = {
-        dealType: f.dealType || 'stock',
-        loadingDate: '', bowser: '', party: isRpg ? 'RPG Plant - STOCK' : '', city: '', plant: '',
-        qty: '', rate: '', amount: '', unloadDate: '', source: '', remarks: '', editingId: null
+        dealType: dealType === 'direct' ? 'direct' : 'stock',
+        loadingDate: '', bowser: '', party: dealType === 'direct' ? '' : 'RPG Plant - STOCK', city: '', plant: '',
+        qty: '', rate: '', amount: '', unloadDate: '', source: '', remarks: '', editingId: null,
+        splits: dealType === 'direct'
+          ? [{ destType: 'party', party: '', city: '', qty: '', unloadDate: '' }]
+          : [{ destType: 'stock', party: 'RPG Plant - STOCK', city: '', qty: '', unloadDate: '' }]
       };
       this.recalcTotals();
       this.saveToStorage();
