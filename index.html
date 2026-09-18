@@ -653,42 +653,42 @@
                 <p class="text-[11px] text-slate-500">No inventory movement. Party ledger is debited.</p>
               </button>
             </div>
+            <p class="md:col-span-2 lg:col-span-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">1. Loading</p>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loading Date *</label>
               <input type="date" x-model="purchaseForm.loadingDate" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loaded from</label>
+              <input list="loadFromList" x-model="purchaseForm.source" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Plant, border, or supplier where the bowser was loaded">
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser *</label>
               <input list="bowserList" x-model="purchaseForm.bowser" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
             </div>
             <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Party / Destination *</label>
-              <input list="partyList" x-model="purchaseForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required
-                     :readonly="purchaseForm.dealType === 'stock'">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label>
-              <input list="cityList" x-model="purchaseForm.city" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Filling Plant / Boarder</label>
-              <input list="plantList" x-model="purchaseForm.plant" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Source / Description</label>
-              <input list="sourceList" x-model="purchaseForm.source" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Load Qty (Ton) *</label>
               <input type="number" step="0.001" x-model="purchaseForm.qty" @input="calcPurchase" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
             </div>
             <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate (optional — baad mein)</label>
-              <input type="number" x-model="purchaseForm.rate" @input="calcPurchase" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Agar pata nahi to khali chhoren">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate (optional)</label>
+              <input type="number" x-model="purchaseForm.rate" @input="calcPurchase" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Leave blank if rate will come later">
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount (auto)</label>
               <input type="text" x-model="purchaseForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50" readonly>
+            </div>
+
+            <p class="md:col-span-2 lg:col-span-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 mt-1">2. Destination</p>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Destination party *</label>
+              <input list="partyList" x-model="purchaseForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required
+                     :readonly="purchaseForm.dealType === 'stock'"
+                     placeholder="Where the load is going">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Destination city</label>
+              <input list="cityList" x-model="purchaseForm.city" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Unloading Date</label>
@@ -696,7 +696,7 @@
             </div>
             <div class="md:col-span-2 lg:col-span-3">
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Details</label>
-              <input type="text" x-model="purchaseForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Jo bhi detail / proof note ledger me jana chahiye">
+              <input type="text" x-model="purchaseForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Any note that should appear on the party ledger">
             </div>
             <div class="md:col-span-2 lg:col-span-3 flex flex-wrap items-center gap-3 pt-2">
               <button type="submit" class="btn-primary px-6 py-2.5 text-sm">
@@ -1092,7 +1092,7 @@
           <input type="checkbox" x-model="pdfOptions.logo" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
           <div>
             <p class="text-sm font-semibold">Logo</p>
-            <p class="text-[11px] text-slate-400">Small circular logo</p>
+            <p class="text-[11px] text-slate-400">Same circular mark cropped from the letterhead, same top-left position</p>
           </div>
         </label>
         <label class="flex items-center gap-3 p-3 rounded-xl border border-teal-200 bg-teal-50/40 hover:bg-teal-50 cursor-pointer">
@@ -1127,6 +1127,7 @@
   <datalist id="plantList"></datalist>
   <datalist id="bankList"></datalist>
   <datalist id="sourceList"></datalist>
+  <datalist id="loadFromList"></datalist>
 
   <!-- Load order: data → helpers → app → Alpine (100% reliable, no modules) -->
   <script src="./src/utils/helpers.js"></script>
