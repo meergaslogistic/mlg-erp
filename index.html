@@ -914,6 +914,16 @@
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Proof note</label>
               <input type="text" x-model="paymentForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Buyer paid supplier directly — slip / screenshot reference">
             </div>
+            <div class="md:col-span-2 lg:col-span-3">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Transaction proof (optional)</label>
+              <p class="text-[11px] text-slate-400 mb-2">Attach a slip photo, bank screenshot, or clip. Stored with this payment and printed on the voucher.</p>
+              <div class="flex flex-wrap items-center gap-3">
+                <input type="file" accept="image/*,.pdf" @change="onProofFile($event)" class="text-xs">
+                <span class="text-xs text-teal-700" x-show="paymentForm.proofName" x-text="paymentForm.proofName"></span>
+                <button type="button" class="text-xs text-rose-600" x-show="paymentForm.proofData" @click="clearProof()">Remove</button>
+              </div>
+              <img x-show="paymentForm.proofData" :src="paymentForm.proofData" alt="Proof preview" class="mt-3 max-h-28 rounded-lg border border-slate-200">
+            </div>
             <div class="md:col-span-2 lg:col-span-3 pt-2">
               <p class="text-xs text-slate-500 mb-2" x-show="paymentForm.type === 'Transfer'">
                 Use slip transfer when the buyer paid the supplier directly. The same TID is written on both ledgers.
@@ -1082,7 +1092,14 @@
           <input type="checkbox" x-model="pdfOptions.logo" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
           <div>
             <p class="text-sm font-semibold">Logo</p>
-            <p class="text-[11px] text-slate-400">Standalone logo watermark</p>
+            <p class="text-[11px] text-slate-400">Small circular logo</p>
+          </div>
+        </label>
+        <label class="flex items-center gap-3 p-3 rounded-xl border border-teal-200 bg-teal-50/40 hover:bg-teal-50 cursor-pointer">
+          <input type="checkbox" x-model="pdfOptions.watermark" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
+          <div>
+            <p class="text-sm font-semibold">Watermark</p>
+            <p class="text-[11px] text-slate-400">Centered faded mark under content (on by default)</p>
           </div>
         </label>
       </div>
