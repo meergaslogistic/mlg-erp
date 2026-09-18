@@ -1093,28 +1093,28 @@ function createApp() {
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(13);
         doc.setTextColor(15, 23, 42);
-        doc.text('PARTY LEDGER', 14, y);
+        doc.text('PARTY LEDGER', 8, y);
 
         y += 6;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
         doc.setTextColor(71, 85, 105);
-        doc.text((party.name || '') + (party.city ? '  •  ' + party.city : ''), 14, y);
+        doc.text((party.name || '') + (party.city ? '  •  ' + party.city : ''), 8, y);
 
         y += 8;
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(10);
         doc.setTextColor(15, 23, 42);
-        doc.text('Outstanding Balance:', 14, y);
+        doc.text('Outstanding Balance:', 8, y);
 
         const bal = Number(party.balance || 0);
         doc.setTextColor(bal > 0 ? 220 : 5, bal > 0 ? 38 : 150, bal > 0 ? 38 : 105);
-        doc.text(this.fmtMoney(bal) + ' PKR', 62, y);
+        doc.text(this.fmtMoney(bal) + ' PKR', 56, y);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setTextColor(100, 116, 139);
-        doc.text('Generated: ' + new Date().toLocaleString('en-GB'), chrome.pageW - 14, y, { align: 'right' });
+        doc.text('Generated: ' + new Date().toLocaleString('en-GB'), chrome.pageW - 8, y, { align: 'right' });
 
         const ledgerChrono = [...(party.ledger || [])].reverse();
         const rows = ledgerChrono.map((e, i) => [
@@ -1164,14 +1164,14 @@ function createApp() {
             fillColor: false
           },
           columnStyles: {
-            0: { cellWidth: 12, halign: 'center' },
-            1: { cellWidth: 22 },
-            2: { cellWidth: 88 },
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 20 },
+            2: { cellWidth: 84 },
             3: { cellWidth: 24, halign: 'right' },
             4: { cellWidth: 24, halign: 'right' },
             5: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }
           },
-          margin: { left: 14, right: 14, top: chrome.contentTop, bottom: Math.max(bottomMargin, 14) },
+          margin: { left: 8, right: 8, top: chrome.contentTop, bottom: Math.max(bottomMargin, 14) },
           willDrawPage: function (data) {
             if (data.pageNumber > 1 && optsSafe.watermark !== false) {
               self.drawWatermark(doc);
