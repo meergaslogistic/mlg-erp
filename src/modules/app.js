@@ -1018,9 +1018,8 @@ function createApp() {
         doc.setLineWidth(0.3);
         doc.rect(4.6, 4.6, pageW - 9.2, pageH - 9.2);
       } else {
-        // Side borders only, from 6cm top to 6cm bottom
-        const sideTop = FIXED;
-        const sideBottom = pageH - FIXED;
+        const sideTop = useHeader ? HEADER_H : 14;
+        const sideBottom = useFooter ? (pageH - (FOOTER_H - FOOTER_SHIFT)) : (pageH - 14);
         doc.setDrawColor(15, 23, 42);
         doc.setLineWidth(0.7);
         doc.line(3.5, sideTop, 3.5, sideBottom);           // left
