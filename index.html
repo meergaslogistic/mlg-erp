@@ -644,13 +644,13 @@
                       class="p-3 rounded-xl border text-left"
                       :class="purchaseForm.dealType === 'stock' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'">
                 <p class="font-bold text-sm">Place in company stock</p>
-                <p class="text-[11px] text-slate-500">Inventory increases. Destination is locked to RPG Plant – STOCK.</p>
+                <p class="text-[11px] text-slate-500">Starts with one stock line. Add more destinations if part of the load goes to a party.</p>
               </button>
               <button type="button" @click="setPurchaseDeal('direct')"
                       class="p-3 rounded-xl border text-left"
                       :class="purchaseForm.dealType === 'direct' ? 'border-amber-500 bg-amber-50' : 'border-slate-200'">
                 <p class="font-bold text-sm">Deliver directly to a party</p>
-                <p class="text-[11px] text-slate-500">No inventory movement. Party ledger is debited.</p>
+                <p class="text-[11px] text-slate-500">Starts with one party line. Add a stock line if leftover quantity goes to RPG.</p>
               </button>
             </div>
             <p class="md:col-span-2 lg:col-span-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">1. Loading</p>
@@ -679,20 +679,49 @@
               <input type="text" x-model="purchaseForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50" readonly>
             </div>
 
-            <p class="md:col-span-2 lg:col-span-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400 mt-1">2. Destination</p>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Destination party *</label>
-              <input list="partyList" x-model="purchaseForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required
-                     :readonly="purchaseForm.dealType === 'stock'"
-                     placeholder="Where the load is going">
+            <div class="md:col-span-2 lg:col-span-3 flex items-center justify-between mt-1">
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">2. Destinations — one load can split</p>
+              <button type="button" @click="addPurchaseSplit()" class="text-xs font-semibold text-teal-700 hover:underline">
+                + Add destination
+              </button>
             </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Destination city</label>
-              <input list="cityList" x-model="purchaseForm.city" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Unloading Date</label>
-              <input type="date" x-model="purchaseForm.unloadDate" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            <div class="md:col-span-2 lg:col-span-3 space-y-3">
+              <template x-for="(line, si) in purchaseForm.splits" :key="si">
+                <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/60">
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
+                    <select x-model="line.destType" @change="onSplitTypeChange(line)" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                      <option value="stock">Company stock</option>
+                      <option value="party">Trading party</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Destination</label>
+                    <input list="partyList" x-model="line.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+                           :readonly="line.destType === 'stock'" placeholder="Party name">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label>
+                    <input list="cityList" x-model="line.city" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty (Ton) *</label>
+                    <input type="number" step="0.001" x-model="line.qty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                  </div>
+                  <div class="flex gap-2">
+                    <div class="flex-1">
+                      <label class="block text-[11px] font-semibold text-slate-500 mb-1">Unload date</label>
+                      <input type="date" x-model="line.unloadDate" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                    </div>
+                    <button type="button" class="self-end mb-1 text-rose-600 text-xs" x-show="purchaseForm.splits.length > 1" @click="removePurchaseSplit(si)">✕</button>
+                  </div>
+                </div>
+              </template>
+              <p class="text-[11px] text-slate-500">
+                Allocated <span class="font-semibold" x-text="purchaseSplitQtyTotal()"></span> T
+                of loaded <span class="font-semibold" x-text="purchaseForm.qty || 0"></span> T.
+                Leftover stays on route until you add another destination.
+              </p>
             </div>
             <div class="md:col-span-2 lg:col-span-3">
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Details</label>
@@ -702,7 +731,7 @@
               <button type="submit" class="btn-primary px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Purchase
               </button>
-              <p class="text-xs text-slate-500">Stock purchases post Inventory IN automatically. Direct purchases post the party ledger only. Leave rate blank if it will arrive later.</p>
+              <p class="text-xs text-slate-500">Each destination line posts separately: stock lines increase inventory, party lines debit that party’s ledger. Rate can stay blank.</p>
             </div>
           </form>
         </div>
