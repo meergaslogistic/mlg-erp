@@ -980,14 +980,25 @@ function createApp() {
       }
     },
 
-    async applyPageChrome(doc, opts, pageNumber) {
+    drawWatermark(doc) {
+      const pageW = 210;
+      const pageH = 297;
+      const wm = this._imgCache && this._imgCache['watermark.png'];
+      if (!wm) return;
+      const wmW = 168;
+      const wmH = wmW * (916 / 1716);
+      doc.addImage(wm, 'PNG', (pageW - wmW) / 2, (pageH - wmH) / 2, wmW, wmH, undefined, 'FAST');
+    },
+
+    async applyPageChrome(doc, opts, pageNumber, layer) {
       const pageW = 210;
       const pageH = 297;
       const STD_MARGIN = 14;
-      const FIXED = 60; // 6cm
+      const layerMode = layer || 'all';
 
-      const HEADER_H = pageW * (724 / 2172);   // native header ratio, pinned to top
-      const FOOTER_H = pageW * (725 / 2170);   // native footer ratio, pinned to bottom
+      const HEADER_H = pageW * (724 / 2172);
+      const FOOTER_H = pageW * (725 / 2170);
+      const FOOTER_SHIFT = 14;
 
       const useHeader = !!(opts && opts.header);
       const useFooter = !!(opts && opts.footer);
@@ -1020,19 +1031,23 @@ function createApp() {
         doc.line(pageW - 4.6, sideTop, pageW - 4.6, sideBottom);
       }
 
-      if (useWatermark) {
-        const wm = await this.loadAssetImage('watermark.png');
-        if (wm) {
-          const wmW = 118;
-          const wmH = wmW * (916 / 1716);
-          doc.addImage(wm, 'PNG', (pageW - wmW) / 2, (pageH - wmH) / 2, wmW, wmH, undefined, 'FAST');
-        }
+      if ((layerMode === 'all' || layerMode === 'under') && useWatermark) {
+        await this.loadAssetImage('watermark.png');
+        this.drawWatermark(doc);
+      }
+
+      if (layerMode === 'under') {
+        let contentTopU = STD_MARGIN + 4;
+        let contentBottomU = pageH - STD_MARGIN;
+        if (useHeader) contentTopU = HEADER_H + 6;
+        if (useFooter) contentBottomU = pageH - (FOOTER_H - FOOTER_SHIFT) - 4;
+        return { contentTop: contentTopU, contentBottom: contentBottomU, pageW, pageH, HEADER_H, FOOTER_H, useHeader, useFooter, useLogo, useWatermark, anyChrome };
       }
 
       if (useFooter) {
         const footerImg = await this.loadAssetImage('footer.png');
         if (footerImg) {
-          doc.addImage(footerImg, 'PNG', 0, pageH - FOOTER_H, pageW, FOOTER_H, undefined, 'FAST');
+          doc.addImage(footerImg, 'PNG', 0, pageH - FOOTER_H + FOOTER_SHIFT, pageW, FOOTER_H, undefined, 'FAST');
         }
       }
 
@@ -1055,7 +1070,7 @@ function createApp() {
       let contentBottom = pageH - STD_MARGIN;
       if (useHeader) contentTop = HEADER_H + 6;
       else if (useLogo) contentTop = STD_MARGIN + 18;
-      if (useFooter) contentBottom = pageH - FOOTER_H - 4;
+      if (useFooter) contentBottom = pageH - (FOOTER_H - FOOTER_SHIFT) - 4;
 
       return { contentTop, contentBottom, pageW, pageH, HEADER_H, FOOTER_H, useHeader, useFooter, useLogo, useWatermark, anyChrome };
     },
@@ -1067,10 +1082,13 @@ function createApp() {
       try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const optsSafe = opts || { header: true, footer: true, logo: false };
+        const optsSafe = opts || { header: true, footer: true, logo: false, watermark: true };
+        await this.loadAssetImage('watermark.png');
+        await this.loadAssetImage('header.png');
+        await this.loadAssetImage('footer.png');
+        await this.loadAssetImage('logo.png');
 
-        // Draw chrome on page 1
-        let chrome = await this.applyPageChrome(doc, optsSafe, 1);
+        let chrome = await this.applyPageChrome(doc, optsSafe, 1, 'all');
         let y = chrome.contentTop;
 
         doc.setFont('helvetica', 'bold');
@@ -1155,23 +1173,17 @@ function createApp() {
             5: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }
           },
           margin: { left: 14, right: 14, top: chrome.contentTop, bottom: Math.max(bottomMargin, 14) },
-          didDrawPage: async function (data) {
-            // Re-apply header/footer/border on every page (multi-page)
-            if (data.pageNumber > 1) {
-              // Note: autoTable calls this after page is added; we redraw chrome
-              // Using sync image cache so no await needed on page 2+
+          willDrawPage: function (data) {
+            if (data.pageNumber > 1 && optsSafe.watermark !== false) {
+              self.drawWatermark(doc);
             }
           }
         });
 
-        // Redraw chrome on all pages (footer under content already on p1;
-        // for extra pages need header/footer)
         const totalPages = doc.internal.getNumberOfPages();
-        for (let p = 1; p <= totalPages; p++) {
+        for (let p = 2; p <= totalPages; p++) {
           doc.setPage(p);
-          if (p > 1) {
-            await self.applyPageChrome(doc, optsSafe, p);
-          }
+          await self.applyPageChrome(doc, optsSafe, p, 'over');
         }
 
         const safeName = (party.name || 'Party').replace(/[^a-z0-9]/gi, '_');
