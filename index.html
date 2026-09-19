@@ -225,15 +225,15 @@
           <div class="grid md:grid-cols-3 gap-3">
             <div class="rounded-xl border bg-emerald-50 p-4 text-sm">
               <p class="font-bold text-emerald-800">Received</p>
-              <p class="text-xs text-slate-600 mt-1">Party → Meer Gas. Ledger Credit. Payment voucher.</p>
+              <p class="text-xs text-slate-600 mt-1">Party → MLG bank. Party Credit + company bank Debit. Split across multiple MLG accounts if needed.</p>
             </div>
             <div class="rounded-xl border bg-rose-50 p-4 text-sm">
               <p class="font-bold text-rose-800">Made</p>
-              <p class="text-xs text-slate-600 mt-1">Meer Gas → Party. Ledger Debit. Payment voucher.</p>
+              <p class="text-xs text-slate-600 mt-1">MLG → one or many parties. Each payee Debit + MLG bank Credit.</p>
             </div>
             <div class="rounded-xl border bg-indigo-50 p-4 text-sm">
-              <p class="font-bold text-indigo-800">Slip transfer</p>
-              <p class="text-xs text-slate-600 mt-1">Buyer → Supplier directly. Both ledgers + same TID.</p>
+              <p class="font-bold text-indigo-800">Slip / instructed</p>
+              <p class="text-xs text-slate-600 mt-1">One payer → one party, many parties, or many accounts of the same party. Both ledgers per line.</p>
             </div>
           </div>
           <div class="h-8 w-px bg-slate-300 ml-6 my-1"></div>
@@ -305,11 +305,11 @@
                   <td class="py-3">Same payment columns</td>
                 </tr>
                 <tr>
-                  <td class="py-3 pr-3 font-semibold">Slip transfer</td>
+                  <td class="py-3 pr-3 font-semibold">Slip / split transfer</td>
                   <td class="py-3 pr-3">Payments</td>
                   <td class="py-3 pr-3">—</td>
-                  <td class="py-3 pr-3">From = Credit · To = Debit</td>
-                  <td class="py-3">Date, Transfer, From Party, To Party, TID (both ledgers), Slip, Bank, Amount, Proof note</td>
+                  <td class="py-3 pr-3">Payer Credit + each receiver Debit (1 line = 1 account / party)</td>
+                  <td class="py-3">Date, From, To / Account lines (Party, Bank, TID, Slip, Amount), Proof note</td>
                 </tr>
                 <tr>
                   <td class="py-3 pr-3 font-semibold">Rate update later</td>
@@ -905,47 +905,98 @@
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
-              <select x-model="paymentForm.type" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                <option value="Received">Received from party</option>
-                <option value="Made">Paid to party</option>
-                <option value="Transfer">Slip transfer (party A → party B)</option>
+              <select x-model="paymentForm.type" @change="onPaymentTypeChange()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                <option value="Received">Received from party (into MLG account)</option>
+                <option value="Made">Paid to party (from MLG account)</option>
+                <option value="Transfer">Instructed / slip (party paid party)</option>
               </select>
             </div>
-            <div x-show="paymentForm.type !== 'Transfer'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Party *</label>
-              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            <div x-show="paymentForm.type === 'Received'">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Received from *</label>
+              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Payer party">
+            </div>
+            <div x-show="paymentForm.type === 'Made'">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Default payee (optional)</label>
+              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Used if a line has no party">
             </div>
             <div x-show="paymentForm.type === 'Transfer'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">From party * (who paid)</label>
-              <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div x-show="paymentForm.type === 'Transfer'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">To party * (who received)</label>
-              <input list="partyList" x-model="paymentForm.toParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Payer / From party *</label>
+              <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Who paid">
             </div>
             <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">TID *</label>
-              <input type="text" x-model="paymentForm.tid" placeholder="Bank TID / Transaction ID" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Slip / Voucher No</label>
-              <input type="text" x-model="paymentForm.slip" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bank / Account</label>
-              <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount *</label>
-              <input type="number" x-model="paymentForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Default bank / account</label>
+              <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Copied onto new lines">
             </div>
             <div class="md:col-span-2 lg:col-span-3">
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Proof note</label>
               <input type="text" x-model="paymentForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="e.g. Buyer paid supplier directly — slip / screenshot reference">
             </div>
+
+            <div class="md:col-span-2 lg:col-span-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div>
+                  <p class="text-sm font-semibold text-slate-800">Allocation lines</p>
+                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Received'">1-to-1 or split: same party, different MLG accounts / TIDs.</p>
+                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Made'">Pay one party, many parties, or many accounts — one save updates every ledger.</p>
+                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Transfer'">Case A: one payer → many parties. Case B: one payer → same party, many bank accounts.</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-[11px] text-slate-500 uppercase">Total</p>
+                  <p class="text-sm font-bold text-slate-900" x-text="fmtMoney(paymentLinesTotal())"></p>
+                </div>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm min-w-[720px]">
+                  <thead>
+                    <tr class="text-left text-[10px] uppercase text-slate-500">
+                      <th class="pb-2 pr-2" x-text="paymentForm.type === 'Received' ? 'MLG account / bank' : 'Party / receiver'"></th>
+                      <th class="pb-2 pr-2" x-show="paymentForm.type !== 'Received'">Bank / account</th>
+                      <th class="pb-2 pr-2">TID</th>
+                      <th class="pb-2 pr-2">Slip</th>
+                      <th class="pb-2 pr-2 w-32">Amount *</th>
+                      <th class="pb-2 w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <template x-for="(line, idx) in paymentForm.lines" :key="idx">
+                      <tr>
+                        <td class="pr-2 pb-2">
+                          <input x-show="paymentForm.type === 'Received'" list="bankList" x-model="line.bank" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="Our bank / account">
+                          <input x-show="paymentForm.type !== 'Received'" list="partyList" x-model="line.party" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="Receiving party">
+                        </td>
+                        <td class="pr-2 pb-2" x-show="paymentForm.type !== 'Received'">
+                          <input list="bankList" x-model="line.bank" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="Their / that account">
+                        </td>
+                        <td class="pr-2 pb-2">
+                          <input type="text" x-model="line.tid" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="TID">
+                        </td>
+                        <td class="pr-2 pb-2">
+                          <input type="text" x-model="line.slip" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Slip no">
+                        </td>
+                        <td class="pr-2 pb-2">
+                          <input type="number" step="any" x-model="line.amount" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="0">
+                        </td>
+                        <td class="pb-2">
+                          <button type="button" class="text-rose-500 text-xs" @click="removePaymentLine(idx)" title="Remove line">✕</button>
+                        </td>
+                      </tr>
+                    </template>
+                  </tbody>
+                </table>
+              </div>
+              <div class="flex flex-wrap gap-2 mt-1">
+                <button type="button" class="text-xs font-semibold text-blue-700 bg-white border border-blue-200 rounded-lg px-3 py-1.5" @click="addPaymentLine('party')">
+                  + Add another party
+                </button>
+                <button type="button" class="text-xs font-semibold text-indigo-700 bg-white border border-indigo-200 rounded-lg px-3 py-1.5" @click="addPaymentLine('account')">
+                  + Add another account (same party)
+                </button>
+              </div>
+            </div>
+
             <div class="md:col-span-2 lg:col-span-3">
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Transaction proof (optional)</label>
-              <p class="text-[11px] text-slate-400 mb-2">Attach a slip photo, bank screenshot, or clip. Stored with this payment and printed on the voucher.</p>
+              <p class="text-[11px] text-slate-400 mb-2">Attach one slip / screenshot for this whole payment. Printed on the voucher.</p>
               <div class="flex flex-wrap items-center gap-3">
                 <input type="file" accept="image/*,.pdf" @change="onProofFile($event)" class="text-xs">
                 <span class="text-xs text-teal-700" x-show="paymentForm.proofName" x-text="paymentForm.proofName"></span>
@@ -953,13 +1004,14 @@
               </div>
               <img x-show="paymentForm.proofData" :src="paymentForm.proofData" alt="Proof preview" class="mt-3 max-h-28 rounded-lg border border-slate-200">
             </div>
-            <div class="md:col-span-2 lg:col-span-3 pt-2">
-              <p class="text-xs text-slate-500 mb-2" x-show="paymentForm.type === 'Transfer'">
-                Use slip transfer when the buyer paid the supplier directly. The same TID is written on both ledgers.
+            <div class="md:col-span-2 lg:col-span-3 pt-1">
+              <p class="text-xs text-slate-500 mb-3">
+                One save posts every line to the payer and the receiver ledgers. Date, payer and note are typed once — only account / TID / amount change per line.
               </p>
               <button type="submit" class="btn-info px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Payment (Auto to Party Ledger)
               </button>
+              <span class="text-xs text-amber-700 ml-3" x-show="paymentForm.editingId">Editing existing payment — save replaces both ledgers</span>
             </div>
           </form>
         </div>
@@ -987,11 +1039,11 @@
                     <td class="px-4 py-2.5">
                       <span class="badge"
                             :class="p.type === 'Received' ? 'bg-emerald-50 text-emerald-700' : (p.type === 'Transfer' ? 'bg-indigo-50 text-indigo-700' : 'bg-rose-50 text-rose-700')"
-                            x-text="p.type"></span>
+                            x-text="p.type + ((p.lines && p.lines.length > 1) ? (' ×' + p.lines.length) : '')"></span>
                     </td>
-                    <td class="px-4 py-2.5 font-medium text-xs" x-text="p.fromParty || (p.type === 'Received' ? p.party : '—')"></td>
-                    <td class="px-4 py-2.5 font-medium text-xs" x-text="p.toParty || (p.type === 'Made' ? p.party : '—')"></td>
-                    <td class="px-4 py-2.5 text-xs text-slate-600" x-text="p.tid || p.slip || '—'"></td>
+                    <td class="px-4 py-2.5 font-medium text-xs" x-text="paymentFromLabel(p)"></td>
+                    <td class="px-4 py-2.5 font-medium text-xs" x-text="paymentTargetLabel(p)"></td>
+                    <td class="px-4 py-2.5 text-xs text-slate-600" x-text="p.tid || p.slip || ((p.lines && p.lines[0] && (p.lines[0].tid || p.lines[0].slip)) || '—')"></td>
                     <td class="px-4 py-2.5 text-xs text-slate-500" x-text="p.bank || '—'"></td>
                     <td class="px-4 py-2.5 text-right font-semibold" x-text="fmtMoney(p.amount)"></td>
                     <td class="px-4 py-2.5 text-right whitespace-nowrap">
