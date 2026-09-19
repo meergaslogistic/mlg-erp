@@ -621,22 +621,22 @@
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
               <select x-model="paymentForm.type" @change="onPaymentTypeChange()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                <option value="Received">Party se paise aaye</option>
-                <option value="Made">Party ko paise diye</option>
-                <option value="Transfer">Party ne doosri party ko diye</option>
+                <option value="Received">Received from party</option>
+                <option value="Made">Paid to party</option>
+                <option value="Transfer">Party paid another party</option>
               </select>
             </div>
             <div x-show="paymentForm.type === 'Received'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Kis party se aaye *</label>
-              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Party name">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">From party *</label>
+              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Who paid us">
             </div>
             <div x-show="paymentForm.type === 'Made'">
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Party (optional)</label>
               <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
             </div>
             <div x-show="paymentForm.type === 'Transfer'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Kis ne pay kiya *</label>
-              <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Payer party">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Who paid *</label>
+              <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Payer name">
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bank</label>
@@ -653,7 +653,7 @@
               </div>
               <template x-for="(line, idx) in paymentForm.lines" :key="idx">
                 <div class="grid md:grid-cols-5 gap-2 mb-2">
-                  <input x-show="paymentForm.type === 'Received'" list="bankList" x-model="line.bank" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Hamara bank">
+                  <input x-show="paymentForm.type === 'Received'" list="bankList" x-model="line.bank" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Our bank">
                   <input x-show="paymentForm.type !== 'Received'" list="partyList" x-model="line.party" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Party">
                   <input x-show="paymentForm.type !== 'Received'" list="bankList" x-model="line.bank" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Bank">
                   <input type="text" x-model="line.tid" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="TID">
@@ -662,8 +662,8 @@
                 </div>
               </template>
               <div class="flex gap-2 mt-2">
-                <button type="button" class="text-xs font-semibold text-blue-700" @click="addPaymentLine('party')">+ Doosri party</button>
-                <button type="button" class="text-xs font-semibold text-indigo-700" @click="addPaymentLine('account')">+ Same party ka doosra account</button>
+                <button type="button" class="text-xs font-semibold text-blue-700" @click="addPaymentLine('party')">+ Add party</button>
+                <button type="button" class="text-xs font-semibold text-indigo-700" @click="addPaymentLine('account')">+ Add another account</button>
                 <button type="button" class="text-xs text-rose-600" @click="removePaymentLine(paymentForm.lines.length-1)">Remove last</button>
               </div>
             </div>

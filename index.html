@@ -906,39 +906,39 @@
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
               <select x-model="paymentForm.type" @change="onPaymentTypeChange()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                <option value="Received">Party se paise aaye</option>
-                <option value="Made">Party ko paise diye</option>
-                <option value="Transfer">Party ne doosri party ko diye</option>
+                <option value="Received">Received from party</option>
+                <option value="Made">Paid to party</option>
+                <option value="Transfer">Party paid another party</option>
               </select>
             </div>
             <div x-show="paymentForm.type === 'Received'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Kis party se aaye *</label>
-              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Party name">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">From party *</label>
+              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Who paid us">
             </div>
             <div x-show="paymentForm.type === 'Made'">
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Party (optional)</label>
-              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Neeche line khali ho to ye use hoga">
+              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Used if a line has no party">
             </div>
             <div x-show="paymentForm.type === 'Transfer'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Kis ne pay kiya *</label>
-              <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Payer party">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Who paid *</label>
+              <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Payer name">
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bank</label>
-              <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Common bank (optional)">
+              <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Optional default bank">
             </div>
             <div class="md:col-span-2 lg:col-span-3">
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Note</label>
-              <input type="text" x-model="paymentForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Short note — slip / screenshot ref">
+              <input type="text" x-model="paymentForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Short note or slip reference">
             </div>
 
             <div class="md:col-span-2 lg:col-span-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
               <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <div>
                   <p class="text-sm font-semibold text-slate-800">Payment details</p>
-                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Received'">Paise kis bank mein aaye — ek bank ya kai banks.</p>
-                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Made'">Kis party / account ko diya — ek ya kai.</p>
-                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Transfer'">Ek party ne kai parties ko diya, ya ek party ke kai accounts mein daala.</p>
+                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Received'">Which bank received the money — one bank or more.</p>
+                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Made'">Who we paid — one party, many parties, or many accounts.</p>
+                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Transfer'">One party paid others, or paid into many accounts of one party.</p>
                 </div>
                 <div class="text-right">
                   <p class="text-[11px] text-slate-500 uppercase">Total</p>
@@ -949,7 +949,7 @@
                 <table class="w-full text-sm min-w-[720px]">
                   <thead>
                     <tr class="text-left text-[10px] uppercase text-slate-500">
-                      <th class="pb-2 pr-2" x-text="paymentForm.type === 'Received' ? 'Hamara bank' : 'Party'"></th>
+                      <th class="pb-2 pr-2" x-text="paymentForm.type === 'Received' ? 'Our bank' : 'Party'"></th>
                       <th class="pb-2 pr-2" x-show="paymentForm.type !== 'Received'">Bank</th>
                       <th class="pb-2 pr-2">TID</th>
                       <th class="pb-2 pr-2">Slip</th>
@@ -961,8 +961,8 @@
                     <template x-for="(line, idx) in paymentForm.lines" :key="idx">
                       <tr>
                         <td class="pr-2 pb-2">
-                          <input x-show="paymentForm.type === 'Received'" list="bankList" x-model="line.bank" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="Bank name">
-                          <input x-show="paymentForm.type !== 'Received'" list="partyList" x-model="line.party" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="Party name">
+                          <input x-show="paymentForm.type === 'Received'" list="bankList" x-model="line.bank" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="Our bank">
+                          <input x-show="paymentForm.type !== 'Received'" list="partyList" x-model="line.party" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="Party">
                         </td>
                         <td class="pr-2 pb-2" x-show="paymentForm.type !== 'Received'">
                           <input list="bankList" x-model="line.bank" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="Bank / account">
@@ -986,17 +986,17 @@
               </div>
               <div class="flex flex-wrap gap-2 mt-1">
                 <button type="button" class="text-xs font-semibold text-blue-700 bg-white border border-blue-200 rounded-lg px-3 py-1.5" @click="addPaymentLine('party')">
-                  + Doosri party
+                  + Add party
                 </button>
                 <button type="button" class="text-xs font-semibold text-indigo-700 bg-white border border-indigo-200 rounded-lg px-3 py-1.5" @click="addPaymentLine('account')">
-                  + Same party ka doosra account
+                  + Add another account
                 </button>
               </div>
             </div>
 
             <div class="md:col-span-2 lg:col-span-3">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Slip / screenshot (optional)</label>
-              <p class="text-[11px] text-slate-400 mb-2">Ek photo attach karo. Voucher pe print hogi.</p>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Photo / slip (optional)</label>
+              <p class="text-[11px] text-slate-400 mb-2">One image for this payment. It prints on the voucher.</p>
               <div class="flex flex-wrap items-center gap-3">
                 <input type="file" accept="image/*,.pdf" @change="onProofFile($event)" class="text-xs">
                 <span class="text-xs text-teal-700" x-show="paymentForm.proofName" x-text="paymentForm.proofName"></span>
@@ -1006,12 +1006,12 @@
             </div>
             <div class="md:col-span-2 lg:col-span-3 pt-1">
               <p class="text-xs text-slate-500 mb-3">
-                Save dabate hi dono sides ke ledger update ho jate hain. Date aur party ek dafa, baqi lines alag.
+                Save updates both ledgers. Enter date and party once; add extra lines only when needed.
               </p>
               <button type="submit" class="btn-info px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Payment
               </button>
-              <span class="text-xs text-amber-700 ml-3" x-show="paymentForm.editingId">Edit mode — save se purani entry replace hogi</span>
+              <span class="text-xs text-amber-700 ml-3" x-show="paymentForm.editingId">Edit mode — save will replace this payment</span>
             </div>
           </form>
         </div>
