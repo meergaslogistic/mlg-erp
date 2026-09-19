@@ -82,7 +82,8 @@ function createApp() {
     },
     paymentForm: {
       date: '', type: 'Received', party: '', fromParty: '', toParty: '',
-      slip: '', tid: '', bank: '', amount: '', remarks: '', proofName: '', proofData: ''
+      slip: '', tid: '', bank: '', amount: '', remarks: '', proofName: '', proofData: '',
+      lines: [{ party: '', bank: '', tid: '', slip: '', amount: '', note: '' }]
     },
     stockForm: {
       location: 'RPG Plant – STOCK', type: 'In', qty: '', notes: ''
@@ -125,6 +126,10 @@ function createApp() {
       this.recalcTotals();
       this.tickClock();
       this._clockTimer = setInterval(() => this.tickClock(), 1000);
+      if (!this.paymentForm.date) this.paymentForm.date = today();
+      if (!this.paymentForm.lines || !this.paymentForm.lines.length) {
+        this.paymentForm.lines = [this.blankPaymentLine()];
+      }
     },
 
     tickClock() {
@@ -331,7 +336,8 @@ function createApp() {
           city: '',
           balance: 0,
           last: '—',
-          ledger: []
+          ledger: [],
+          isBank: !!(extra.isBank || String(partyName).indexOf('MLG • ') === 0)
         };
         this.parties.push(p);
       }
@@ -498,8 +504,25 @@ function createApp() {
     },
 
     editPayment(row) {
+      const lines = (row.lines && row.lines.length)
+        ? row.lines.map(l => ({
+            party: l.party || '',
+            bank: l.bank || '',
+            tid: l.tid || '',
+            slip: l.slip || '',
+            amount: l.amount || '',
+            note: l.note || ''
+          }))
+        : [{
+            party: row.type === 'Transfer' ? (row.toParty || '') : (row.party || row.toParty || ''),
+            bank: row.bank || '',
+            tid: row.tid || '',
+            slip: row.slip || '',
+            amount: row.amount || '',
+            note: ''
+          }];
       this.paymentForm = {
-        date: row.date || '',
+        date: row.date || today(),
         type: row.type || 'Received',
         party: row.party || '',
         fromParty: row.fromParty || '',
@@ -511,7 +534,8 @@ function createApp() {
         remarks: row.remarks || '',
         proofName: row.proofName || '',
         proofData: row.proofData || '',
-        editingId: row.id
+        editingId: row.id,
+        lines
       };
       this.go('payment');
       this.showToast('Edit mode — save to replace this payment');
@@ -856,96 +880,237 @@ function createApp() {
       this.saveToStorage();
     },
 
+    blankPaymentLine(bank) {
+      return { party: '', bank: bank || '', tid: '', slip: '', amount: '', note: '' };
+    },
+
+    resetPaymentForm(type) {
+      const lastBank = (this.paymentForm && this.paymentForm.bank) || '';
+      const keepType = type || (this.paymentForm && this.paymentForm.type) || 'Received';
+      this.paymentForm = {
+        date: today(),
+        type: keepType,
+        party: '', fromParty: '', toParty: '',
+        slip: '', tid: '', bank: lastBank, amount: '',
+        remarks: '', proofName: '', proofData: '', editingId: null,
+        lines: [this.blankPaymentLine(lastBank)]
+      };
+    },
+
+    onPaymentTypeChange() {
+      if (!this.paymentForm.lines || !this.paymentForm.lines.length) {
+        this.paymentForm.lines = [this.blankPaymentLine(this.paymentForm.bank)];
+      }
+    },
+
+    addPaymentLine(kind) {
+      if (!this.paymentForm.lines) this.paymentForm.lines = [];
+      const last = this.paymentForm.lines[this.paymentForm.lines.length - 1] || {};
+      const row = this.blankPaymentLine(this.paymentForm.bank || last.bank || '');
+      if (this.paymentForm.type === 'Received') {
+        row.party = this.paymentForm.party || '';
+      } else if (kind === 'account') {
+        row.party = last.party || this.paymentForm.toParty || this.paymentForm.party || '';
+        row.bank = '';
+      }
+      this.paymentForm.lines.push(row);
+    },
+
+    removePaymentLine(idx) {
+      if (!this.paymentForm.lines) return;
+      if (this.paymentForm.lines.length <= 1) {
+        this.paymentForm.lines.splice(0, 1, this.blankPaymentLine(this.paymentForm.bank));
+        return;
+      }
+      this.paymentForm.lines.splice(idx, 1);
+    },
+
+    paymentLinesTotal() {
+      return (this.paymentForm.lines || []).reduce((s, l) => s + (parseFloat(l.amount) || 0), 0);
+    },
+
+    companyLedgerName(bank) {
+      const b = String(bank || '').trim();
+      return b ? ('MLG • ' + b) : 'MLG • Cash / Bank';
+    },
+
+    paymentRefNote(line, header) {
+      const tid = (line.tid || header.tid || '').trim();
+      const slip = (line.slip || header.slip || '').trim();
+      const bank = (line.bank || header.bank || '').trim();
+      const extra = (line.note || header.remarks || '').trim();
+      return (tid ? ` • TID ${tid}` : '') + (slip ? ` • Slip ${slip}` : '') + (bank ? ` • ${bank}` : '') + (extra ? ` • ${extra}` : '');
+    },
+
+    normalizePaymentLines() {
+      const f = this.paymentForm;
+      let lines = (f.lines || []).map(l => ({
+        party: String(l.party || '').trim(),
+        bank: String(l.bank || f.bank || '').trim(),
+        tid: String(l.tid || '').trim(),
+        slip: String(l.slip || '').trim(),
+        amount: parseFloat(l.amount) || 0,
+        note: String(l.note || '').trim()
+      })).filter(l => l.amount > 0);
+
+      if (!lines.length && (parseFloat(f.amount) || 0) > 0) {
+        lines = [{
+          party: String(f.type === 'Transfer' ? f.toParty : f.party || '').trim(),
+          bank: String(f.bank || '').trim(),
+          tid: String(f.tid || '').trim(),
+          slip: String(f.slip || '').trim(),
+          amount: parseFloat(f.amount) || 0,
+          note: ''
+        }];
+      }
+      return lines;
+    },
+
+    findDuplicatePaymentTid(tid, excludeId) {
+      const t = String(tid || '').trim().toLowerCase();
+      if (!t) return null;
+      return (this.payments || []).find(p => {
+        if (excludeId && String(p.id) === String(excludeId)) return false;
+        if (String(p.tid || '').trim().toLowerCase() === t) return p;
+        return (p.lines || []).some(l => String(l.tid || '').trim().toLowerCase() === t);
+      }) || null;
+    },
+
+    paymentTargetLabel(p) {
+      if (!p) return '—';
+      if (p.lines && p.lines.length) {
+        const names = [];
+        p.lines.forEach(l => {
+          const n = l.party || p.toParty || p.party;
+          if (n && names.indexOf(n) === -1) names.push(n);
+        });
+        if (names.length) return names.join(', ');
+      }
+      return p.toParty || (p.type === 'Made' || p.type === 'Received' ? p.party : '') || '—';
+    },
+
+    paymentFromLabel(p) {
+      if (!p) return '—';
+      if (p.fromParty) return p.fromParty;
+      if (p.type === 'Received') return p.party || '—';
+      if (p.type === 'Made') return p.fromParty || 'MLG';
+      return p.party || '—';
+    },
+
     savePayment() {
       const f = this.paymentForm;
-      const amt = parseFloat(f.amount) || 0;
-      const tid = (f.tid || f.slip || '').trim();
+      if (!f.date) {
+        this.showToast('Date is required');
+        return;
+      }
+      const lines = this.normalizePaymentLines();
+      if (!lines.length) {
+        this.showToast('Add at least one amount line');
+        return;
+      }
+
+      const type = f.type || 'Received';
+      let fromParty = '';
+      if (type === 'Received') fromParty = String(f.party || f.fromParty || '').trim();
+      else if (type === 'Made') fromParty = 'MLG';
+      else fromParty = String(f.fromParty || f.party || '').trim();
+
+      if (type === 'Received' && !fromParty) {
+        this.showToast('Received: party name is required');
+        return;
+      }
+      if (type === 'Transfer' && !fromParty) {
+        this.showToast('Transfer: payer (From party) is required');
+        return;
+      }
+
+      const filled = lines.map(l => {
+        const party = type === 'Received'
+          ? fromParty
+          : (l.party || String(f.toParty || f.party || '').trim());
+        const tid = l.tid || String(f.tid || '').trim();
+        const slip = l.slip || String(f.slip || '').trim();
+        return { ...l, party, tid, slip };
+      });
+
+      const missingParty = filled.find(l => !l.party);
+      if (missingParty) {
+        this.showToast(type === 'Made' ? 'Each line needs the party you paid' : 'Each line needs the receiving party');
+        return;
+      }
+      const missingRef = filled.find(l => !l.tid && !l.slip);
+      if (missingRef) {
+        this.showToast('Each line needs TID or Slip / Voucher No');
+        return;
+      }
+
+      for (const l of filled) {
+        const dup = this.findDuplicatePaymentTid(l.tid, f.editingId);
+        if (dup) {
+          this.showToast('TID ' + l.tid + ' already used on ' + (dup.date || 'another payment') + ' — change TID or edit that entry');
+          return;
+        }
+      }
+
       if (f.editingId) {
         this.removeLedgerBySource('payment', f.editingId);
         this.payments = this.payments.filter(x => x.id !== f.editingId);
       }
 
-      if (f.type === 'Transfer') {
-        if (!f.date || !f.fromParty || !f.toParty || !f.amount) {
-          this.showToast('Transfer: Date, From Party, To Party, Amount required');
-          return;
-        }
-        const note = (f.remarks || '').trim();
-        const payId = Date.now();
-        this.payments.unshift({
-          id: payId,
-          date: f.date,
-          type: 'Transfer',
-          party: f.fromParty + ' → ' + f.toParty,
-          fromParty: f.fromParty,
-          toParty: f.toParty,
-          slip: f.slip,
-          tid,
-          bank: f.bank,
-          amount: amt,
-          remarks: note,
-          proofName: f.proofName || '',
-          proofData: f.proofData || ''
-        });
-        this.postToLedger(
-          f.fromParty,
-          `Direct / Slip payment to ${f.toParty}` + (tid ? ` • TID ${tid}` : '') + (f.slip ? ` • Slip ${f.slip}` : '') + (f.bank ? ` • ${f.bank}` : '') + (note ? ` • ${note}` : ''),
-          0, amt,
-          { date: f.date, tid, fromParty: f.fromParty, toParty: f.toParty, sourceType: 'payment', sourceId: payId }
-        );
-        this.postToLedger(
-          f.toParty,
-          `Direct / Slip received from ${f.fromParty}` + (tid ? ` • TID ${tid}` : '') + (f.slip ? ` • Slip ${f.slip}` : '') + (f.bank ? ` • ${f.bank}` : '') + (note ? ` • ${note}` : ''),
-          amt, 0,
-          { date: f.date, tid, fromParty: f.fromParty, toParty: f.toParty, sourceType: 'payment', sourceId: payId }
-        );
-        this.showToast('Transfer saved on both ledgers with TID / slip');
-      } else {
-        if (!f.date || !f.party || !f.amount) {
-          this.showToast('Please fill required fields');
-          return;
-        }
-        const fromParty = f.type === 'Received' ? f.party : (f.fromParty || 'Self');
-        const toParty = f.type === 'Made' ? f.party : (f.toParty || 'Self');
-        const note = (f.remarks || '').trim();
-        const payId = Date.now();
-        this.payments.unshift({
-          id: payId,
-          date: f.date,
-          type: f.type,
-          party: f.party,
-          fromParty,
-          toParty,
-          slip: f.slip,
-          tid,
-          bank: f.bank,
-          amount: amt,
-          remarks: note,
-          proofName: f.proofName || '',
-          proofData: f.proofData || ''
-        });
-        if (f.type === 'Received') {
-          this.postToLedger(
-            f.party,
-            `Payment Received` + (tid ? ` • TID ${tid}` : '') + (f.slip ? ` • Slip ${f.slip}` : '') + (f.bank ? ` • ${f.bank}` : '') + (note ? ` • ${note}` : ''),
-            0, amt,
-            { date: f.date, tid, fromParty, toParty, sourceType: 'payment', sourceId: payId }
-          );
-        } else {
-          this.postToLedger(
-            f.party,
-            `Payment Made` + (tid ? ` • TID ${tid}` : '') + (f.slip ? ` • Slip ${f.slip}` : '') + (f.bank ? ` • ${f.bank}` : '') + (note ? ` • ${note}` : ''),
-            amt, 0,
-            { date: f.date, tid, fromParty, toParty, sourceType: 'payment', sourceId: payId }
-          );
-        }
-        this.showToast('Payment saved to party ledger');
-      }
+      const total = filled.reduce((s, l) => s + l.amount, 0);
+      const toNames = [...new Set(filled.map(l => l.party))];
+      const first = filled[0];
+      const note = String(f.remarks || '').trim();
+      const payId = f.editingId || Date.now();
+      const toLabel = toNames.join(', ');
+      const displayParty = type === 'Transfer'
+        ? (fromParty + ' → ' + toLabel)
+        : (type === 'Received' ? fromParty : toLabel);
 
-      this.paymentForm = {
-        date: '', type: 'Received', party: '', fromParty: '', toParty: '',
-        slip: '', tid: '', bank: '', amount: '', remarks: '', proofName: '', proofData: '', editingId: null
-      };
+      this.payments.unshift({
+        id: payId,
+        date: f.date,
+        type,
+        party: displayParty,
+        fromParty,
+        toParty: type === 'Received' ? this.companyLedgerName(first.bank) : toLabel,
+        slip: first.slip,
+        tid: first.tid,
+        bank: first.bank || f.bank || '',
+        amount: total,
+        remarks: note,
+        proofName: f.proofName || '',
+        proofData: f.proofData || '',
+        lines: filled
+      });
+
+      filled.forEach(l => {
+        const extra = {
+          date: f.date,
+          tid: l.tid,
+          fromParty,
+          toParty: type === 'Received' ? this.companyLedgerName(l.bank) : l.party,
+          sourceType: 'payment',
+          sourceId: payId
+        };
+        const ref = this.paymentRefNote(l, f);
+        if (type === 'Received') {
+          this.postToLedger(fromParty, 'Payment Received' + ref, 0, l.amount, extra);
+          this.postToLedger(this.companyLedgerName(l.bank), 'Received from ' + fromParty + ref, l.amount, 0, { ...extra, isBank: true });
+        } else if (type === 'Made') {
+          this.postToLedger(l.party, 'Payment Made' + ref, l.amount, 0, extra);
+          this.postToLedger(this.companyLedgerName(l.bank), 'Paid to ' + l.party + ref, 0, l.amount, { ...extra, isBank: true });
+        } else {
+          this.postToLedger(fromParty, 'Direct / Slip payment to ' + l.party + ref, 0, l.amount, extra);
+          this.postToLedger(l.party, 'Direct / Slip received from ' + fromParty + ref, l.amount, 0, extra);
+        }
+      });
+
+      const sides = type === 'Transfer'
+        ? (fromParty + ' + ' + toNames.length + ' receiver ledger' + (toNames.length > 1 ? 's' : ''))
+        : (type === 'Received' ? fromParty + ' + MLG bank' : toNames.length + ' party ledger' + (toNames.length > 1 ? 's' : '') + ' + MLG bank');
+      this.showToast('Saved ' + fmtMoney(total) + ' — auto posted to ' + sides);
+      this.resetPaymentForm(type);
       this.saveToStorage();
     },
 
@@ -1365,11 +1530,11 @@ function createApp() {
         } else if (type === 'payment') {
           fields.push(['Date', entry.date || '—']);
           fields.push(['Type', entry.type || '—']);
-          fields.push(['Party', entry.party || '—']);
-          fields.push(['Slip / Voucher', entry.slip || '—']);
+          fields.push(['From', entry.fromParty || entry.party || '—']);
+          fields.push(['To', this.paymentTargetLabel(entry)]);
+          fields.push(['Lines', String((entry.lines && entry.lines.length) || 1)]);
           fields.push(['TID', entry.tid || '—']);
-          fields.push(['From Party', entry.fromParty || '—']);
-          fields.push(['To Party', entry.toParty || '—']);
+          fields.push(['Slip / Voucher', entry.slip || '—']);
           fields.push(['Bank / Account', entry.bank || '—']);
           fields.push(['Remarks', entry.remarks || '—']);
           fields.push(['Proof file', entry.proofName || (entry.proofData ? 'Attached' : '—')]);
@@ -1391,6 +1556,32 @@ function createApp() {
         doc.setDrawColor(226, 232, 240);
         doc.setLineWidth(0.3);
         doc.line(20, y, chrome.pageW - 20, y);
+
+        if (type === 'payment' && entry.lines && entry.lines.length) {
+          y += 8;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(15, 23, 42);
+          doc.text('Allocation lines (auto posted to both ledgers)', 20, y);
+          y += 4;
+          if (doc.autoTable) {
+            doc.autoTable({
+              startY: y,
+              head: [['Party / Account', 'Bank', 'TID', 'Slip', 'Amount']],
+              body: entry.lines.map(l => [
+                l.party || '—',
+                l.bank || '—',
+                l.tid || '—',
+                l.slip || '—',
+                this.fmtMoney(l.amount)
+              ]),
+              styles: { fontSize: 8 },
+              headStyles: { fillColor: [15, 23, 42] },
+              margin: { left: 20, right: 20 }
+            });
+            y = doc.lastAutoTable.finalY;
+          }
+        }
 
         if (type === 'payment' && entry.proofData) {
           y += 8;
