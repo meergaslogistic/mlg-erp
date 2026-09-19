@@ -638,9 +638,17 @@
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Who paid *</label>
               <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Payer name">
             </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bank</label>
-              <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            <div x-show="paymentForm.type === 'Received'">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">To bank (our account)</label>
+              <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Where money came in">
+            </div>
+            <div x-show="paymentForm.type === 'Made'">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">From bank (our account)</label>
+              <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Which account we paid from">
+            </div>
+            <div x-show="paymentForm.type === 'Transfer'">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">From bank (payer account)</label>
+              <input list="bankList" x-model="paymentForm.fromBank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Payer sent from this bank">
             </div>
             <div class="md:col-span-2 lg:col-span-3">
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Note</label>
@@ -653,9 +661,10 @@
               </div>
               <template x-for="(line, idx) in paymentForm.lines" :key="idx">
                 <div class="grid md:grid-cols-5 gap-2 mb-2">
-                  <input x-show="paymentForm.type === 'Received'" list="bankList" x-model="line.bank" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Our bank">
+                  <input x-show="paymentForm.type === 'Received'" list="bankList" x-model="line.bank" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="To bank — our account">
                   <input x-show="paymentForm.type !== 'Received'" list="partyList" x-model="line.party" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Party">
-                  <input x-show="paymentForm.type !== 'Received'" list="bankList" x-model="line.bank" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Bank">
+                  <input x-show="paymentForm.type === 'Made'" list="bankList" x-model="line.bank" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="From bank — our account">
+                  <input x-show="paymentForm.type === 'Transfer'" list="bankList" x-model="line.bank" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="To bank — receiver account">
                   <input type="text" x-model="line.tid" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="TID">
                   <input type="text" x-model="line.slip" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Slip">
                   <input type="number" step="any" x-model="line.amount" class="border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Amount">
