@@ -82,7 +82,7 @@ function createApp() {
     },
     paymentForm: {
       date: '', type: 'Received', party: '', fromParty: '', toParty: '',
-      slip: '', tid: '', bank: '', amount: '', remarks: '', proofName: '', proofData: '',
+      slip: '', tid: '', bank: '', fromBank: '', amount: '', remarks: '', proofName: '', proofData: '',
       lines: [{ party: '', bank: '', tid: '', slip: '', amount: '', note: '' }]
     },
     stockForm: {
@@ -530,6 +530,7 @@ function createApp() {
         slip: row.slip || '',
         tid: row.tid || '',
         bank: row.bank || '',
+        fromBank: row.fromBank || '',
         amount: row.amount || '',
         remarks: row.remarks || '',
         proofName: row.proofName || '',
@@ -886,14 +887,16 @@ function createApp() {
 
     resetPaymentForm(type) {
       const lastBank = (this.paymentForm && this.paymentForm.bank) || '';
+      const lastFromBank = (this.paymentForm && this.paymentForm.fromBank) || '';
       const keepType = type || (this.paymentForm && this.paymentForm.type) || 'Received';
+      const lineBank = keepType === 'Transfer' ? '' : lastBank;
       this.paymentForm = {
         date: today(),
         type: keepType,
         party: '', fromParty: '', toParty: '',
-        slip: '', tid: '', bank: lastBank, amount: '',
+        slip: '', tid: '', bank: lastBank, fromBank: lastFromBank, amount: '',
         remarks: '', proofName: '', proofData: '', editingId: null,
-        lines: [this.blankPaymentLine(lastBank)]
+        lines: [this.blankPaymentLine(lineBank)]
       };
     },
 
@@ -906,7 +909,8 @@ function createApp() {
     addPaymentLine(kind) {
       if (!this.paymentForm.lines) this.paymentForm.lines = [];
       const last = this.paymentForm.lines[this.paymentForm.lines.length - 1] || {};
-      const row = this.blankPaymentLine(this.paymentForm.bank || last.bank || '');
+      const defaultToBank = this.paymentForm.type === 'Transfer' ? '' : (this.paymentForm.bank || last.bank || '');
+      const row = this.blankPaymentLine(defaultToBank);
       if (this.paymentForm.type === 'Received') {
         row.party = this.paymentForm.party || '';
       } else if (kind === 'account') {
@@ -937,16 +941,23 @@ function createApp() {
     paymentRefNote(line, header) {
       const tid = (line.tid || header.tid || '').trim();
       const slip = (line.slip || header.slip || '').trim();
-      const bank = (line.bank || header.bank || '').trim();
+      const toBank = (line.bank || header.bank || '').trim();
+      const fromBank = String(header.fromBank || '').trim();
       const extra = (line.note || header.remarks || '').trim();
-      return (tid ? ` • TID ${tid}` : '') + (slip ? ` • Slip ${slip}` : '') + (bank ? ` • ${bank}` : '') + (extra ? ` • ${extra}` : '');
+      let n = '';
+      if (tid) n += ` • TID ${tid}`;
+      if (slip) n += ` • Slip ${slip}`;
+      if (fromBank) n += ` • From bank ${fromBank}`;
+      if (toBank) n += ` • To bank ${toBank}`;
+      if (extra) n += ` • ${extra}`;
+      return n;
     },
 
     normalizePaymentLines() {
       const f = this.paymentForm;
       let lines = (f.lines || []).map(l => ({
         party: String(l.party || '').trim(),
-        bank: String(l.bank || f.bank || '').trim(),
+        bank: String(l.bank || (f.type === 'Transfer' ? '' : f.bank) || '').trim(),
         tid: String(l.tid || '').trim(),
         slip: String(l.slip || '').trim(),
         amount: parseFloat(l.amount) || 0,
@@ -1077,6 +1088,7 @@ function createApp() {
         slip: first.slip,
         tid: first.tid,
         bank: first.bank || f.bank || '',
+        fromBank: f.fromBank || '',
         amount: total,
         remarks: note,
         proofName: f.proofName || '',
