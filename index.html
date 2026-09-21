@@ -3,720 +3,124 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MLG Advanced ERP — Updated</title>
+  <title>MLG Advanced ERP</title>
   <style>
-    :root {
-      --navy: #0f2744;
-      --navy-2: #16345a;
-      --navy-3: #1c3d66;
-      --sidebar: #102a4a;
-      --accent: #0d9b6e;
-      --accent-2: #0b7d58;
-      --accent-soft: #e7f7f1;
-      --line: #e6edf5;
-      --text: #1b2b3f;
-      --muted: #6b7c90;
-      --card: #ffffff;
-      --bg: #f4f7fb;
-      --danger: #c0392b;
-      --warn: #d97706;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: Inter, "Segoe UI", system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-    .app { display: flex; min-height: 100vh; }
-    .sidebar {
-      width: 232px;
-      background: linear-gradient(180deg, #0d2440 0%, #0b1e36 100%);
-      color: #d7e4f2;
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-    }
-    .brand {
-      display: flex; align-items: center; gap: 10px;
-      padding: 18px 16px 16px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    .logo {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: radial-gradient(circle at 30% 30%, #3ad39a, #0b6b4a);
-      display: grid; place-items: center; font-weight: 800; color: #fff; font-size: 11px;
-    }
-    .brand h1 { font-size: 13px; color: #fff; line-height: 1.2; font-weight: 700; }
-    .brand p { font-size: 9px; letter-spacing: .6px; color: #8fb0d0; text-transform: uppercase; }
-    .nav { padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; }
-    .nav button {
-      background: transparent; border: 0; color: #c5d6e8;
-      text-align: left; padding: 10px 12px; border-radius: 10px;
-      cursor: pointer; font-size: 13.5px; display: flex; align-items: center; gap: 10px;
-    }
-    .nav button:hover { background: rgba(255,255,255,.06); }
-    .nav button.active { background: #fff; color: var(--navy); font-weight: 600; }
-    .nav .ico { width: 16px; text-align: center; opacity: .85; }
-    .sidebar-foot {
-      margin-top: auto; padding: 14px 16px 18px;
-      border-top: 1px solid rgba(255,255,255,.08);
-      font-size: 11px; color: #8fb0d0;
-    }
-    .sidebar-foot strong { color: #fff; display: block; font-size: 12.5px; margin-top: 2px; }
-    .chip {
-      display: inline-block; margin-top: 8px; background: #0d9b6e; color: #fff;
-      font-size: 10px; padding: 3px 8px; border-radius: 6px;
-    }
-    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-    .topbar {
-      height: 64px; background: #fff; border-bottom: 1px solid var(--line);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 28px;
-    }
-    .topbar h2 { font-size: 22px; font-weight: 700; }
-    .top-right { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; }
-    .ghost-btn {
-      border: 1px solid var(--line); background: #fff; border-radius: 10px;
-      padding: 7px 12px; font-size: 13px; cursor: pointer;
-    }
-    .content { padding: 20px 24px 32px; overflow: auto; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .card {
-      background: #fff; border: 1px solid #e8eef5; border-radius: 16px; padding: 16px 16px 14px;
-      box-shadow: 0 1px 0 rgba(16,42,74,.02);
-    }
-    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .card-head h3 { font-size: 16px; font-weight: 700; }
-    .add-link { color: var(--accent); font-size: 13px; cursor: pointer; font-weight: 600; background: none; border: 0; }
-    .pills { display: flex; flex-wrap: wrap; gap: 8px; }
-    .pill {
-      background: #f3f6fa; border: 1px solid #e6edf4; color: #33465c;
-      padding: 6px 11px; border-radius: 999px; font-size: 12.5px;
-      display: inline-flex; align-items: center; gap: 6px;
-    }
-    .pill .x { color: #9aa8b8; cursor: pointer; font-size: 11px; }
-    .section-label {
-      font-size: 11px; letter-spacing: .8px; color: var(--muted);
-      font-weight: 700; margin: 4px 0 12px;
-    }
-    .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
-    .mode {
-      border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; cursor: pointer; background: #fff;
-    }
-    .mode.active { border-color: #7ad1b3; background: #eefaf5; box-shadow: inset 0 0 0 1px #b7e8d4; }
-    .mode h4 { font-size: 15px; margin-bottom: 4px; }
-    .mode p { font-size: 12.5px; color: var(--muted); }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px 16px; }
-    .field label { display: block; font-size: 13px; margin-bottom: 6px; font-weight: 600; }
-    .field label .req { color: #e11d48; }
-    .field input, .field select, .field textarea {
-      width: 100%; height: 42px; border: 1px solid #dbe4ee; border-radius: 10px;
-      padding: 0 12px; font-size: 13.5px; background: #fff; color: var(--text);
-    }
-    .field textarea { height: 42px; padding-top: 10px; resize: vertical; }
-    .field input:focus, .field select:focus, .field textarea:focus {
-      outline: none; border-color: #7ad1b3; box-shadow: 0 0 0 3px rgba(13,155,110,.12);
-    }
-    .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
-    .dest-card, .loc-card {
-      border: 1px solid #e8eef5; border-radius: 14px; padding: 12px; background: #fbfcfe; margin-bottom: 10px;
-    }
-    .dest-grid { display: grid; grid-template-columns: 1.1fr 1.3fr 1fr 0.8fr 1fr 36px; gap: 10px; align-items: end; }
-    .loc-grid { display: grid; grid-template-columns: 1.4fr 1fr 0.8fr 36px; gap: 10px; align-items: end; }
-    .icon-btn {
-      height: 42px; width: 36px; border: 1px solid #efd2d0; background: #fff5f4; color: var(--danger);
-      border-radius: 10px; cursor: pointer; font-size: 16px;
-    }
-    .row-actions { display: flex; justify-content: space-between; align-items: center; margin: 8px 0 16px; }
-    .primary {
-      background: var(--accent); color: #fff; border: 0; border-radius: 10px;
-      padding: 11px 16px; font-weight: 700; cursor: pointer; font-size: 14px;
-    }
-    .primary:hover { background: var(--accent-2); }
-    .note { font-size: 12.5px; color: var(--muted); }
-    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap; }
-    .toolbar-left, .toolbar-right { display: flex; gap: 8px; align-items: center; }
-    .search {
-      height: 38px; border: 1px solid #dbe4ee; border-radius: 10px; padding: 0 12px; min-width: 240px;
-    }
-    .btn {
-      height: 38px; border-radius: 10px; border: 1px solid #dbe4ee; background: #fff;
-      padding: 0 12px; cursor: pointer; font-size: 13px;
-    }
-    .btn.green { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
-    .btn.red { color: var(--danger); border-color: #f0c7c3; }
-    table.data { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; }
-    table.data th {
-      text-align: left; background: #fff; color: #111; padding: 8px 7px; font-weight: 700;
-      white-space: nowrap; border-bottom: 2px solid #111; font-size: 11.5px;
-    }
-    table.data td { padding: 7px 7px; border-bottom: 1px solid #ddd; white-space: nowrap; }
-    table.data tr:hover td { background: #f7fbf9; }
-    .sheet-wrap { background: #fff; border-radius: 14px; overflow: auto; border: 1px solid var(--line); padding: 8px 8px 12px; }
-    .actions a, .actions button {
-      background: none; border: 0; color: var(--accent); cursor: pointer; font-size: 12px; margin-right: 8px; font-weight: 600;
-    }
-    .actions .del { color: var(--danger); }
-    .sheet-logo { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
-    .sheet-logo .mark { width:34px; height:34px; border-radius:50%; background: radial-gradient(circle at 30% 30%, #3ad39a, #0b6b4a); color:#fff; display:grid; place-items:center; font-size:10px; font-weight:800; }
-    .sheet-title {
-      padding: 14px 16px 8px; display: flex; justify-content: space-between; align-items: flex-end;
-    }
-    .sheet-title h3 { font-size: 18px; }
-    .co { font-size: 12px; color: var(--muted); }
-    .modal-bg {
-      position: fixed; inset: 0; background: rgba(10,20,35,.45); display: none;
-      align-items: center; justify-content: center; z-index: 50; padding: 20px;
-    }
-    .modal-bg.show { display: flex; }
-    .modal {
-      background: #fff; width: min(520px, 100%); border-radius: 16px; padding: 18px;
-    }
-    .modal h3 { margin-bottom: 12px; }
-    .hidden { display: none !important; }
-    .alloc { font-size: 12.5px; color: var(--muted); margin: 6px 0 12px; }
-    .page-sub { color: var(--muted); font-size: 13px; margin: -8px 0 16px; }
+    :root { --navy:#0f2744; --accent:#0d9b6e; --line:#e6edf5; --text:#1b2b3f; --muted:#6b7c90; --bg:#f4f7fb; --danger:#c0392b; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:Inter,"Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--text); }
+    .app { display:flex; min-height:100vh; }
+    .sidebar { width:238px; background:linear-gradient(180deg,#0d2440,#0b1e36); color:#d7e4f2; display:flex; flex-direction:column; flex-shrink:0; }
+    .brand { display:flex; align-items:center; gap:10px; padding:14px; border-bottom:1px solid rgba(255,255,255,.08); }
+    .brand img { width:46px; height:46px; border-radius:50%; object-fit:cover; background:#fff; }
+    .brand h1 { font-size:13px; color:#fff; line-height:1.15; }
+    .brand p { font-size:9px; letter-spacing:.5px; color:#8fb0d0; text-transform:uppercase; }
+    .nav { padding:10px; display:flex; flex-direction:column; gap:2px; }
+    .nav button { background:transparent; border:0; color:#c5d6e8; text-align:left; padding:9px 12px; border-radius:10px; cursor:pointer; font-size:13.2px; }
+    .nav button:hover { background:rgba(255,255,255,.06); }
+    .nav button.active { background:#fff; color:var(--navy); font-weight:600; }
+    .sidebar-foot { margin-top:auto; padding:14px 16px 18px; border-top:1px solid rgba(255,255,255,.08); font-size:11px; color:#8fb0d0; }
+    .sidebar-foot strong { color:#fff; display:block; font-size:12.5px; margin-top:2px; }
+    .chip { display:inline-block; margin-top:8px; background:#0d9b6e; color:#fff; font-size:10px; padding:3px 8px; border-radius:6px; }
+    .main { flex:1; display:flex; flex-direction:column; min-width:0; }
+    .topbar { height:64px; background:#fff; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+    .topbar h2 { font-size:22px; }
+    .top-right { display:flex; align-items:center; gap:12px; color:var(--muted); font-size:13px; }
+    .ghost-btn,.btn { border:1px solid var(--line); background:#fff; border-radius:10px; padding:7px 12px; font-size:13px; cursor:pointer; height:38px; }
+    .btn.green { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; }
+    .content { padding:16px 22px 32px; overflow:auto; }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .card { background:#fff; border:1px solid #e8eef5; border-radius:16px; padding:16px; }
+    .card-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .add-link { color:var(--accent); font-size:13px; cursor:pointer; font-weight:600; background:none; border:0; }
+    .pills { display:flex; flex-wrap:wrap; gap:8px; }
+    .pill { background:#f3f6fa; border:1px solid #e6edf4; padding:6px 11px; border-radius:999px; font-size:12.5px; display:inline-flex; gap:6px; }
+    .pill .x { color:#9aa8b8; cursor:pointer; }
+    .section-label { font-size:11px; letter-spacing:.8px; color:var(--muted); font-weight:700; margin:18px 0 10px; }
+    .mode-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .mode { border:1px solid var(--line); border-radius:14px; padding:14px 16px; cursor:pointer; background:#fff; }
+    .mode.active { border-color:#7ad1b3; background:#eefaf5; }
+    .mode p { font-size:12.5px; color:var(--muted); margin-top:4px; }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px 16px; }
+    .field label { display:block; font-size:13px; margin-bottom:6px; font-weight:600; }
+    .field label .req { color:#e11d48; }
+    .field input,.field select { width:100%; height:42px; border:1px solid #dbe4ee; border-radius:10px; padding:0 12px; font-size:13.5px; }
+    .hint { font-size:12px; color:var(--muted); margin-top:4px; }
+    .dest-card,.loc-card { border:1px solid #e8eef5; border-radius:14px; padding:12px; background:#fbfcfe; margin-bottom:10px; }
+    .dest-grid { display:grid; grid-template-columns:1.1fr 1.3fr 1fr .8fr 1fr 36px; gap:10px; align-items:end; }
+    .loc-grid { display:grid; grid-template-columns:1.6fr 1fr .8fr 36px; gap:10px; align-items:end; }
+    .icon-btn { height:42px; width:36px; border:1px solid #efd2d0; background:#fff5f4; color:var(--danger); border-radius:10px; cursor:pointer; }
+    .row-actions { display:flex; justify-content:space-between; align-items:center; margin:6px 0 10px; }
+    .primary { background:var(--accent); color:#fff; border:0; border-radius:10px; padding:11px 16px; font-weight:700; cursor:pointer; }
+    .note { font-size:12.5px; color:var(--muted); }
+    .filters { background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:12px; }
+    .filters-top { display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+    .filters-grid { display:grid; grid-template-columns:repeat(6,minmax(120px,1fr)); gap:8px; }
+    .filters-grid .field label { font-size:11px; color:var(--muted); }
+    .filters-grid input,.filters-grid select { height:36px; font-size:12.5px; }
+    .stats { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin:0 0 12px; }
+    .stat { background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+    .stat b { display:block; font-size:16px; margin-top:2px; }
+    .stat span { font-size:11px; color:var(--muted); }
+    .sheet-wrap { background:#fff; border-radius:14px; overflow:auto; border:1px solid var(--line); padding:10px; }
+    .sheet-logo { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+    .sheet-logo img { width:48px; height:48px; border-radius:50%; object-fit:cover; background:#fff; }
+    .co { font-size:12px; color:var(--muted); }
+    table.data { width:100%; border-collapse:collapse; font-size:12px; }
+    table.data th { text-align:left; padding:8px 7px; font-weight:700; white-space:nowrap; border-bottom:2px solid #111; font-size:11.5px; }
+    table.data td { padding:7px; border-bottom:1px solid #ddd; white-space:nowrap; }
+    .actions button { background:none; border:0; color:var(--accent); cursor:pointer; font-size:12px; margin-right:8px; font-weight:600; }
+    .actions .del { color:var(--danger); }
+    .tabs { display:flex; gap:6px; flex-wrap:wrap; margin:0 0 12px; }
+    .tab { border:1px solid var(--line); background:#fff; border-radius:999px; padding:6px 12px; cursor:pointer; font-size:12.5px; }
+    .tab.active { background:#0d2440; color:#fff; border-color:#0d2440; }
+    .cr { color:#0b7d58; font-weight:600; }
+    .dr { color:#c0392b; font-weight:600; }
+    .modal-bg { position:fixed; inset:0; background:rgba(10,20,35,.45); display:none; align-items:center; justify-content:center; z-index:50; }
+    .modal-bg.show { display:flex; }
+    .modal { background:#fff; width:min(520px,100%); border-radius:16px; padding:18px; }
+    .entry-wrap { background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 18px 22px; }
+    @media (max-width:1200px){ .filters-grid,.form-grid{grid-template-columns:1fr 1fr;} .stats{grid-template-columns:1fr 1fr 1fr;} }
   </style>
 </head>
 <body>
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">MLG</div>
-      <div>
-        <h1>Meer Logistics</h1>
-        <p>&amp; Gas Energy</p>
-      </div>
+      <img src="logo.png" alt="Meer Logistics & Gas Energy" />
+      <div><h1>Meer Logistics</h1><p>&amp; Gas Energy</p></div>
     </div>
     <nav class="nav">
-      <button data-page="dashboard"><span class="ico">⌂</span> Dashboard</button>
-      <button data-page="dataflow"><span class="ico">⇄</span> Data Flow</button>
-      <button data-page="ledgers"><span class="ico">☰</span> Parties &amp; Ledgers</button>
-      <button data-page="purchases" class="active"><span class="ico">⛽</span> Purchase / Loading</button>
-      <button data-page="sales"><span class="ico">▣</span> Sale</button>
-      <button data-page="payments"><span class="ico">₨</span> Payments</button>
-      <button data-page="inventory"><span class="ico">▭</span> Inventory</button>
-      <button data-page="diesel"><span class="ico">⛽</span> Diesel &amp; Cash</button>
-      <button data-page="master"><span class="ico">▦</span> Master Data</button>
+      <button data-page="dashboard">Dashboard</button>
+      <button data-page="dataflow">Data Flow</button>
+      <button data-page="ledgers">Parties &amp; Ledgers</button>
+      <button data-page="purchases" class="active">Purchase / Loading</button>
+      <button data-page="sales">Sale</button>
+      <button data-page="payments">Payments</button>
+      <button data-page="masterLedger">Master Ledger</button>
+      <button data-page="inventory">Inventory</button>
+      <button data-page="diesel">Diesel &amp; Cash</button>
+      <button data-page="master">Master Data</button>
     </nav>
-    <div class="sidebar-foot">
-      Operations desk
-      <strong>MLG Advanced ERP</strong>
-      <span class="chip">Auto Party Ledger</span>
-    </div>
+    <div class="sidebar-foot">Operations desk<strong>MLG Advanced ERP</strong><span class="chip">Auto Party Ledger</span></div>
   </aside>
-
   <section class="main">
     <div class="topbar">
       <h2 id="pageTitle">Purchase / Loading</h2>
-      <div class="top-right">
-        <button class="ghost-btn">Business Profile</button>
-        <span>Mon, 21 Sept 2026</span>
-      </div>
+      <div class="top-right"><button class="ghost-btn">Business Profile</button><span>Mon, 21 Sept 2026</span></div>
     </div>
     <div class="content" id="view"></div>
   </section>
 </div>
-
 <div class="modal-bg" id="modal">
   <div class="modal">
     <h3 id="modalTitle">Add item</h3>
-    <div class="field" style="margin-bottom:12px">
-      <label>Name</label>
-      <input id="modalValue" />
-    </div>
+    <div class="field" style="margin-bottom:12px"><label>Name</label><input id="modalValue" /></div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn" onclick="closeModal()">Cancel</button>
       <button class="btn green" onclick="saveModal()">Save</button>
     </div>
   </div>
 </div>
-
-<script>
-const MASTER = {
-  parties: ["Bugti Plant","VTR LPG","VTR Gas","Royal Gas","Zulfiqar LPG","Farhan Gas","Bhatti Associates","Aziz Plant","Dilshad Enterprises","Al Macca Gas","Jahanzaib Gas","NEW JAMALI","Arshad Gas","Lal Energy","Umar Energy","Hussain Gas","Sachal Gas","RPG Plant - STOCK","Heaven Gas","Salam LPG","MLG"],
-  bowsers: ["TMQ 013","JU 3050","JQ 2432","TMQ 588","TLX 297","TLX 586","TMP 012","TLX 288","TAT 188","TMN 806","TMR 025","JQ 3148","TMP 200","TMU 062","TMP 010","TMP 100","TMQ 015","TMP 017","TLF 863","TMN 006","NLA 026","TLX 645","TLA 701","TLH 912"],
-  cities: ["Karachi","Jamshoro","Multan","Sukkur","Qazi Ahmed","Liyyah","Nawabshah","Kashmore","JACCOBABAD","Sadiqabad","Dogran"],
-  plants: ["Mand","BP 250","Allanaz - Karachi","Jamshoro - Bugti","RPG STOCK - Karachi","Hothi Nisar BP 250","Salam Gas","Gwadar","Turbat","RPG Plant - STOCK","Taftan Border"],
-  banks: ["MBL Pak Rice Commission Agent","HBL Wakeel Ahmed Enterprises","UBL Ibadat LPG PVT LTD","ASK Bank Wakeel Ahmed Enterprises","ABL Pak Rice Commission Agent","BALH Ibadat Rice Mills","BALF Ibadat Rice Mills","MCB Shabeer Ahmed Enterprises","FB Saddam Enterprises","Meezan - Naik Muhammad Enterprises","MLG HBL Account","VTR Meezan Bank","VTR HBL Bank"],
-  brands: ["Mehman bandar - Meer Gas","Bandar - Meer Gas","Aftab - Meer Gas","bandar Abbas - Meer Gas","Asloia Aftab - Meer Gas","Bandar Asloia - Meer Gas","Botan - Meer Gas","Jamshoro - Meer Gas","Allanaz - Karachi","Meer Gas","Mehman - Meer Gas","Rum Flam Gas - Meer Gas"]
-};
-
-const PURCHASES = [
-  {no:1, loadDate:"1-Jun-26", brand:"Mehman bandar - Meer Gas", unloadDate:"5-Jun-26", bowser:"TMQ 013", party:"Bugti Plant", city:"Jamshoro", plant:"Mand", unit:"Ton", loadQty:47.490, unloadQty:47.490, baseRate:"", rate:312200, amount:14826378, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:2, loadDate:"1-Jun-26", brand:"Bandar - Meer Gas", unloadDate:"4-Jun-26", bowser:"JU 3050", party:"VTR Gas", city:"Qazi Ahmed", plant:"Mand", unit:"Ton", loadQty:48.470, unloadQty:48.470, baseRate:"", rate:312200, amount:15132334, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:3, loadDate:"2-Jun-26", brand:"Aftab - Meer Gas", unloadDate:"6-Jun-26", bowser:"JQ 2432", party:"Zulfiqar LPG", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:48.960, unloadQty:48.960, baseRate:"", rate:312200, amount:15285312, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:4, loadDate:"3-Jun-26", brand:"bandar Abbas - Meer Gas", unloadDate:"6-Jun-26", bowser:"TMQ 588", party:"RPG Plant - STOCK", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:50.420, unloadQty:50.420, baseRate:"", rate:312200, amount:15741124, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:5, loadDate:"4-Jun-26", brand:"Asloia Aftab - Meer Gas", unloadDate:"7-Jun-26", bowser:"TLX 297", party:"Bugti Plant", city:"Jamshoro", plant:"BP 250", unit:"Ton", loadQty:46.845, unloadQty:46.650, baseRate:"", rate:314760, amount:14744932, tradingParty:"MLG", loadedFrom:["BP 250"]},
-  {no:6, loadDate:"5-Jun-26", brand:"Jamshoro - Meer Gas", unloadDate:"5-Jun-26", bowser:"TLF 863", party:"Bhatti Associates", city:"Multan", plant:"Jamshoro - Bugti", unit:"Ton", loadQty:29.805, unloadQty:29.805, baseRate:4425, rate:375000, amount:11176875, tradingParty:"MLG", loadedFrom:["Jamshoro - Bugti"]},
-  {no:7, loadDate:"5-Jun-26", brand:"Allanaz - Karachi", unloadDate:"6-Jun-26", bowser:"TMN 006", party:"Royal Gas", city:"Sukkur", plant:"Allanaz - Karachi", unit:"Ton", loadQty:31.030, unloadQty:30.565, baseRate:"", rate:362000, amount:11232860, tradingParty:"MLG", loadedFrom:["Allanaz - Karachi"]},
-  {no:8, loadDate:"8-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"12-Jun-26", bowser:"TLX 586", party:"RPG Plant - STOCK", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:48.500, unloadQty:48.500, baseRate:"", rate:312200, amount:15141700, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:9, loadDate:"8-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"15-Jun-26", bowser:"TMP 012", party:"Sachal Gas", city:"Liyyah", plant:"Mand", unit:"Ton", loadQty:49.260, unloadQty:49.260, baseRate:"", rate:312200, amount:15378972, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:10, loadDate:"8-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"15-Jun-26", bowser:"TLX 288", party:"RPG Plant - STOCK", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:42.300, unloadQty:42.300, baseRate:"", rate:312200, amount:13206060, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:11, loadDate:"7-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"10-Jun-26", bowser:"TAT 188", party:"Farhan Gas", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:40.850, unloadQty:40.850, baseRate:"", rate:312200, amount:12753370, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:12, loadDate:"7-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"23-Jun-26", bowser:"TMN 806", party:"Al Macca Gas", city:"Multan", plant:"Mand", unit:"Ton", loadQty:45.855, unloadQty:45.855, baseRate:"", rate:312200, amount:14315931, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:13, loadDate:"8-Jun-26", brand:"Allanaz - Karachi", unloadDate:"9-Jun-26", bowser:"TMN 006", party:"Royal Gas", city:"Sukkur", plant:"Allanaz - Karachi", unit:"Ton", loadQty:29.890, unloadQty:29.870, baseRate:"", rate:360000, amount:10760400, tradingParty:"MLG", loadedFrom:["Allanaz - Karachi"]},
-  {no:14, loadDate:"9-Jun-26", brand:"Meer Gas", unloadDate:"12-Jun-26", bowser:"TMP 100", party:"RPG Plant - STOCK", city:"Karachi", plant:"Hothi Nisar BP 250", unit:"Ton", loadQty:46.835, unloadQty:46.950, baseRate:"", rate:257569, amount:12063244, tradingParty:"MLG", loadedFrom:["Hothi Nisar BP 250"]},
-  {no:15, loadDate:"10-Jun-26", brand:"Mehman - Meer Gas", unloadDate:"13-Jun-26", bowser:"TMQ 013", party:"Bugti Plant", city:"Jamshoro", plant:"Mand", unit:"Ton", loadQty:49.980, unloadQty:49.980, baseRate:"", rate:312200, amount:15603756, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:16, loadDate:"10-Jun-26", brand:"Allanaz - Karachi", unloadDate:"12-Jun-26", bowser:"TMN 006", party:"NEW JAMALI", city:"JACCOBABAD", plant:"Allanaz - Karachi", unit:"Ton", loadQty:29.450, unloadQty:29.595, baseRate:"", rate:367000, amount:10808150, tradingParty:"MLG", loadedFrom:["Allanaz - Karachi"]},
-  {no:17, loadDate:"11-Jun-26", brand:"Rum Flam Gas - Meer Gas", unloadDate:"18-Jun-26", bowser:"TLY 407", party:"RPG Plant - STOCK", city:"Karachi", plant:"Rum Flam Gas", unit:"Ton", loadQty:41.990, unloadQty:42.340, baseRate:"", rate:364000, amount:15284160, tradingParty:"MLG", loadedFrom:["Rum Flam Gas"]},
-  {no:18, loadDate:"13-Jun-26", brand:"Jamshoro - Meer Gas", unloadDate:"13-Jun-26", bowser:"TLF 863", party:"Al Macca", city:"Multan", plant:"Jamshoro - Bugti", unit:"Ton", loadQty:29.325, unloadQty:29.325, baseRate:5800, rate:491525.42, amount:14413983, tradingParty:"MLG", loadedFrom:["Jamshoro - Bugti"]},
-  {no:19, loadDate:"13-Jun-26", brand:"Bandar Asloia - Meer Gas", unloadDate:"17-Jun-26", bowser:"TMR 025", party:"RPG Plant - STOCK", city:"Karachi", plant:"BP 250", unit:"Ton", loadQty:44.810, unloadQty:44.980, baseRate:"", rate:314760, amount:14104396, tradingParty:"MLG", loadedFrom:["BP 250"]},
-  {no:20, loadDate:"13-Jun-26", brand:"Bandar Asloia - Meer Gas", unloadDate:"18-Jun-26", bowser:"TMQ 588", party:"RPG Plant - STOCK", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:47.750, unloadQty:47.750, baseRate:"", rate:312200, amount:14907550, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:21, loadDate:"15-Jun-26", brand:"Bandar Aftab - Meer Gas", unloadDate:"17-Jun-26", bowser:"JU 3050", party:"Bugti Plant", city:"Jamshoro", plant:"Mand", unit:"Ton", loadQty:49.970, unloadQty:49.970, baseRate:"", rate:312200, amount:15600634, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:22, loadDate:"16-Jun-26", brand:"Bandar Asloia - Meer Gas", unloadDate:"19-Jun-26", bowser:"JQ 3148", party:"RPG Plant - STOCK", city:"Karachi", plant:"BP 250", unit:"Ton", loadQty:41.430, unloadQty:41.450, baseRate:"", rate:314760, amount:13040507, tradingParty:"MLG", loadedFrom:["BP 250"]}
-];
-
-const SALES = [
-  {no:1, date:"10-Jun-26", brand:"Bandar - Meer Gas", bowser:"JU 3050", party:"VTR Gas", city:"Qazi Ahmed", qty:20.000, rate:325000, amount:6500000, loadedFrom:["RPG Plant - STOCK"]}
-];
-
-let page = "purchases";
-let modalTarget = null;
-let editingPurchase = null;
-let locCount = 1;
-let destCount = 1;
-
-const TITLES = {
-  dashboard: "Dashboard",
-  dataflow: "Data Flow",
-  ledgers: "Parties & Ledgers",
-  purchases: "Purchase / Loading",
-  purchaseForm: "LPG Purchase / Loading Entry",
-  sales: "Sale",
-  saleForm: "LPG Sale Entry",
-  payments: "Payments",
-  inventory: "Inventory",
-  diesel: "Diesel & Cash",
-  master: "Master Data"
-};
-
-document.querySelectorAll(".nav button").forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll(".nav button").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    page = btn.dataset.page;
-    render();
-  };
-});
-
-function opts(list, selected="") {
-  return list.map(x => `<option ${x===selected?"selected":""}>${x}</option>`).join("");
-}
-function money(n){ return Number(n||0).toLocaleString("en-PK"); }
-function num(n){ return Number(n||0).toFixed(3); }
-
-function render() {
-  document.getElementById("pageTitle").textContent = TITLES[page] || page;
-  const v = document.getElementById("view");
-  if (page === "master") v.innerHTML = masterView();
-  else if (page === "purchases") v.innerHTML = purchaseListView();
-  else if (page === "purchaseForm") v.innerHTML = purchaseFormView();
-  else if (page === "sales") v.innerHTML = saleListView();
-  else if (page === "saleForm") v.innerHTML = saleFormView();
-  else if (page === "dashboard") v.innerHTML = `<div class="card"><h3>Dashboard</h3><p class="page-sub">Totals update from Purchase / Sale ledgers. Field labels on transaction screens now use Type/Origin of Goods/Brand, Loaded From (Location) and Bowser/Vehicle Number.</p></div>`;
-  else v.innerHTML = `<div class="card"><h3>${TITLES[page]}</h3><p class="note">Is menu ki listing screens pe jahan brand / source, loaded from aur bowser dikhte hain wahan updated labels apply ho chuke hain.</p></div>`;
-}
-
-function masterCard(title, key) {
-  return `<div class="card">
-    <div class="card-head"><h3>${title}</h3><button class="add-link" onclick="openModal('${key}','${title}')">+ Add New</button></div>
-    <div class="pills">${MASTER[key].map((x,i)=>`<span class="pill">${x} <span class="x" onclick="removeMaster('${key}',${i})">✕</span></span>`).join("")}</div>
-  </div>`;
-}
-
-function masterView() {
-  return `<div class="grid-2">
-    ${masterCard("Parties","parties")}
-    ${masterCard("Bowsers / Vehicles","bowsers")}
-    ${masterCard("Cities","cities")}
-    ${masterCard("Filling Plants / Boarders","plants")}
-    ${masterCard("Banks / Accounts","banks")}
-    ${masterCard("Type / Origin of Goods / Brand","brands")}
-  </div>
-  <p class="note" style="margin-top:12px">Pehle yeh box <b>Sources / Descriptions</b> tha. Ab yeh <b>Type / Origin of Goods / Brand</b> hai kyunke values brands hain (Meer Gas origins).</p>`;
-}
-
-function purchaseListView() {
-  return `<div class="toolbar">
-    <div class="toolbar-left">
-      <input class="search" id="q" placeholder="Search..." oninput="filterPurchases()" />
-      <select class="btn" id="month"><option>June 2026</option><option>May 2026</option></select>
-    </div>
-    <div class="toolbar-right">
-      <button class="btn" onclick="downloadPurchases()">Download</button>
-      <button class="btn" onclick="window.print()">Print</button>
-      <button class="btn green" onclick="page='purchaseForm'; locCount=1; destCount=1; editingPurchase=null; render()">+ Add New</button>
-    </div>
-  </div>
-  <div class="sheet-wrap">
-    <div class="sheet-title">
-      <div>
-        <div class="sheet-logo"><div class="mark">MLG</div>
-          <div>
-            <strong>MEER LOGISTICS &amp; GAS ENERGY</strong>
-            <div class="co">Logistics, gas, trade and import export firm</div>
-          </div>
-        </div>
-        <h3>LPG PURCHASE - June 2026</h3>
-      </div>
-    </div>
-    <table class="data" id="purchaseTable">
-      <thead>
-        <tr>
-          <th>No</th>
-          <th>Loading Date</th>
-          <th>LPG/GAS Quality</th>
-          <th>Unloading Date</th>
-          <th>Bowser No</th>
-          <th>Party</th>
-          <th>City</th>
-          <th>Filling Plant</th>
-          <th>Unit</th>
-          <th>Load Qty</th>
-          <th>Unload Qty</th>
-          <th>Base Rate</th>
-          <th>Rate</th>
-          <th>Amount (PKR)</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>${purchaseRows(PURCHASES)}</tbody>
-    </table>
-  </div>`;
-}
-
-function purchaseRows(rows) {
-  return rows.map((r,i)=>`<tr>
-    <td>${r.no}</td>
-    <td>${r.loadDate}</td>
-    <td>${r.brand}</td>
-    <td>${r.unloadDate}</td>
-    <td>${r.bowser}</td>
-    <td>${r.party}</td>
-    <td>${r.city}</td>
-    <td>${r.plant}</td>
-    <td>${r.unit}</td>
-    <td>${Number(r.loadQty).toFixed(3)}</td>
-    <td>${Number(r.unloadQty).toFixed(3)}</td>
-    <td>${r.baseRate||""}</td>
-    <td>${Number(r.rate).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-    <td>${money(r.amount)}</td>
-    <td class="actions">
-      <button onclick="editPurchase(${i})">Edit</button>
-      <button class="del" onclick="deletePurchase(${i})">Delete</button>
-      <button onclick="downloadOne(${i})">Download</button>
-    </td>
-  </tr>`).join("");
-}
-
-function purchaseFormView() {
-  const e = editingPurchase;
-  return `<p class="page-sub">Field sequence: 1 Loading Date · 2 Type/Origin of Goods/Brand · 3 Loaded From (Location) — multiple · 4 Bowser/Vehicle Number · 5 Purchasing Party/Trading Party · then qty / rate / destinations.</p>
-  <div class="mode-row">
-    <div class="mode active" id="modeStock" onclick="setMode('stock')">
-      <h4>Place in company stock</h4>
-      <p>Starts with one stock line. Add more destinations if part of the load goes to a party.</p>
-    </div>
-    <div class="mode" id="modeParty" onclick="setMode('party')">
-      <h4>Deliver directly to a party</h4>
-      <p>Starts with one party line. Add a stock line if leftover quantity goes to RPG.</p>
-    </div>
-  </div>
-
-  <div class="section-label">1. LOADING</div>
-  <div class="form-grid">
-    <div class="field">
-      <label>Loading Date <span class="req">*</span></label>
-      <input type="date" id="loadDate" value="${e?e.loadDateISO||'':''}" />
-    </div>
-    <div class="field">
-      <label>Type / Origin of Goods / Brand <span class="req">*</span></label>
-      <select id="brand"><option value="">Select brand / origin</option>${opts(MASTER.brands, e?e.brand:"")}</select>
-    </div>
-    <div class="field">
-      <label>Bowser / Vehicle Number <span class="req">*</span></label>
-      <select id="bowser"><option value="">Select bowser / vehicle</option>${opts(MASTER.bowsers, e?e.bowser:"")}</select>
-    </div>
-    <div class="field">
-      <label>Purchasing Party / Trading Party <span class="req">*</span></label>
-      <select id="tradingParty"><option value="">Select purchasing / trading party</option>${opts(MASTER.parties, e?e.tradingParty:"MLG")}</select>
-      <div class="hint">Woh party jis ke naam pe purchase book ho rahi hai</div>
-    </div>
-    <div class="field">
-      <label>Load Qty (Ton) <span class="req">*</span></label>
-      <input id="loadQty" type="number" step="0.001" value="${e?e.loadQty:''}" oninput="calcAmount()" />
-    </div>
-    <div class="field">
-      <label>Rate (optional)</label>
-      <input id="rate" type="number" step="0.01" placeholder="Leave blank if rate will come later" value="${e?e.rate:''}" oninput="calcAmount()" />
-    </div>
-    <div class="field">
-      <label>Amount (auto)</label>
-      <input id="amount" disabled />
-    </div>
-  </div>
-
-  <div class="section-label" style="margin-top:18px">LOADED FROM (LOCATION) — one load can come from multiple locations</div>
-  <div id="locs">${locationRow(0)}</div>
-  <div class="row-actions">
-    <span class="note">Agar bowser do plants / borders se load hua ho to + Add location dabayein.</span>
-    <button class="add-link" onclick="addLocation()">+ Add location</button>
-  </div>
-
-  <div class="section-label">2. DESTINATIONS — ONE LOAD CAN SPLIT</div>
-  <div id="dests">${destinationRow(0)}</div>
-  <div class="row-actions">
-    <span class="alloc" id="alloc">Allocated 0 T of loaded 0 T. Leftover stays on route until you add another destination.</span>
-    <button class="add-link" onclick="addDestination()">+ Add destination</button>
-  </div>
-
-  <div class="field" style="margin-bottom:16px">
-    <label>Narration / Details</label>
-    <input id="narration" placeholder="Any note that should appear on the party ledger" />
-  </div>
-  <div style="display:flex;gap:10px;align-items:center">
-    <button class="primary" onclick="savePurchase()">Save Purchase</button>
-    <button class="btn" onclick="page='purchases';render()">Back to list</button>
-    <span class="note">Each destination line posts separately: stock lines increase inventory, party lines debit that party’s ledger. Rate can stay blank.</span>
-  </div>`;
-}
-
-function locationRow(i, loc="", qty="") {
-  return `<div class="loc-card" id="loc${i}">
-    <div class="loc-grid">
-      <div class="field">
-        <label>Loaded From (Location) ${i===0?"<span class='req'>*</span>":""}</label>
-        <select class="loc-name"><option value="">Plant, border, or supplier where the bowser was loaded</option>${opts(MASTER.plants, loc)}</select>
-      </div>
-      <div class="field">
-        <label>City</label>
-        <select class="loc-city"><option value=""></option>${opts(MASTER.cities)}</select>
-      </div>
-      <div class="field">
-        <label>Qty from this location (Ton)</label>
-        <input class="loc-qty" type="number" step="0.001" value="${qty}" placeholder="Optional split" />
-      </div>
-      <button class="icon-btn" title="Remove location" onclick="this.parentElement.parentElement.remove()">×</button>
-    </div>
-  </div>`;
-}
-
-function destinationRow(i) {
-  return `<div class="dest-card" id="dest${i}">
-    <div class="dest-grid">
-      <div class="field">
-        <label>Type</label>
-        <select class="d-type"><option>Company stock</option><option>Party</option></select>
-      </div>
-      <div class="field">
-        <label>Destination</label>
-        <select class="d-dest">${opts(MASTER.parties, "RPG Plant - STOCK")}</select>
-      </div>
-      <div class="field">
-        <label>City</label>
-        <select class="d-city"><option value=""></option>${opts(MASTER.cities)}</select>
-      </div>
-      <div class="field">
-        <label>Qty (Ton) <span class="req">*</span></label>
-        <input class="d-qty" type="number" step="0.001" oninput="updateAlloc()" />
-      </div>
-      <div class="field">
-        <label>Unload date</label>
-        <input class="d-date" type="date" />
-      </div>
-      <button class="icon-btn" onclick="this.parentElement.parentElement.remove();updateAlloc()">×</button>
-    </div>
-    <div class="field" style="margin-top:8px;max-width:320px">
-      <label>Filling Plant</label>
-      <select class="d-plant"><option value=""></option>${opts(MASTER.plants)}</select>
-    </div>
-  </div>`;
-}
-
-function saleListView() {
-  return `<div class="toolbar">
-    <div class="toolbar-left"><input class="search" placeholder="Search..." /></div>
-    <div class="toolbar-right">
-      <button class="btn" onclick="downloadSales()">Download</button>
-      <button class="btn green" onclick="page='saleForm';render()">+ Add New</button>
-    </div>
-  </div>
-  <div class="sheet-wrap">
-    <div class="sheet-title">
-      <div>
-        <div class="sheet-logo"><div class="mark">MLG</div>
-          <div>
-            <strong>MEER LOGISTICS &amp; GAS ENERGY</strong>
-            <div class="co">Logistics, gas, trade and import export firm</div>
-          </div>
-        </div>
-        <h3>LPG SALE - June 2026</h3>
-      </div>
-    </div>
-    <table class="data">
-      <thead>
-        <tr>
-          <th>No</th>
-          <th>Loading Date</th>
-          <th>LPG/GAS Quality</th>
-          <th>Unloading Date</th>
-          <th>Bowser No</th>
-          <th>Party</th>
-          <th>City</th>
-          <th>Filling Plant</th>
-          <th>Unit</th>
-          <th>Load Qty</th>
-          <th>Unload Qty</th>
-          <th>Base Rate</th>
-          <th>Rate</th>
-          <th>Amount (PKR)</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>${SALES.map((r,i)=>`<tr>
-        <td>${r.no}</td>
-        <td>${r.date}</td>
-        <td>${r.brand}</td>
-        <td>${r.date}</td>
-        <td>${r.bowser}</td>
-        <td>${r.party}</td>
-        <td>${r.city}</td>
-        <td>${(r.loadedFrom||[])[0]||""}</td>
-        <td>Ton</td>
-        <td>${num(r.qty)}</td>
-        <td>${num(r.qty)}</td>
-        <td></td>
-        <td>${Number(r.rate).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-        <td>${money(r.amount)}</td>
-        <td class="actions"><button>Edit</button><button class="del" onclick="SALES.splice(${i},1);render()">Delete</button><button>Download</button></td>
-      </tr>`).join("")}</tbody>
-    </table>
-  </div>`;
-}
-
-function saleFormView() {
-  return `<div class="section-label">SALE ENTRY</div>
-  <div class="form-grid">
-    <div class="field"><label>Sale Date <span class="req">*</span></label><input type="date" /></div>
-    <div class="field"><label>Type / Origin of Goods / Brand <span class="req">*</span></label><select><option value="">Select brand / origin</option>${opts(MASTER.brands)}</select></div>
-    <div class="field"><label>Bowser / Vehicle Number <span class="req">*</span></label><select><option value="">Select bowser / vehicle</option>${opts(MASTER.bowsers)}</select></div>
-    <div class="field"><label>Selling Party <span class="req">*</span></label><select><option value="">Select party</option>${opts(MASTER.parties)}</select></div>
-    <div class="field"><label>Qty (Ton) <span class="req">*</span></label><input type="number" step="0.001" /></div>
-    <div class="field"><label>Rate</label><input type="number" /></div>
-    <div class="field"><label>Amount (auto)</label><input disabled /></div>
-  </div>
-  <div class="section-label" style="margin-top:18px">LOADED FROM (LOCATION) — multiple allowed</div>
-  <div id="locs">${locationRow(0)}</div>
-  <div class="row-actions">
-    <span class="note">Sale bhi multiple stock / plant locations se nikal sakti hai.</span>
-    <button class="add-link" onclick="addLocation()">+ Add location</button>
-  </div>
-  <div class="field" style="margin:12px 0 16px"><label>Narration / Details</label><input placeholder="Ledger narration" /></div>
-  <button class="primary" onclick="alert('Sale saved in this preview. Wire this to your API.'); page='sales'; render()">Save Sale</button>
-  <button class="btn" style="margin-left:8px" onclick="page='sales';render()">Back to list</button>`;
-}
-
-function setMode(m) {
-  document.getElementById("modeStock").classList.toggle("active", m==="stock");
-  document.getElementById("modeParty").classList.toggle("active", m==="party");
-}
-function addLocation() {
-  locCount++;
-  document.getElementById("locs").insertAdjacentHTML("beforeend", locationRow(locCount));
-}
-function addDestination() {
-  destCount++;
-  document.getElementById("dests").insertAdjacentHTML("beforeend", destinationRow(destCount));
-}
-function calcAmount() {
-  const q = Number(document.getElementById("loadQty")?.value||0);
-  const r = Number(document.getElementById("rate")?.value||0);
-  const el = document.getElementById("amount");
-  if (el) el.value = r ? money(q*r) : "";
-  updateAlloc();
-}
-function updateAlloc() {
-  const loaded = Number(document.getElementById("loadQty")?.value||0);
-  let used = 0;
-  document.querySelectorAll(".d-qty").forEach(i => used += Number(i.value||0));
-  const el = document.getElementById("alloc");
-  if (el) el.textContent = `Allocated ${used.toFixed(3)} T of loaded ${loaded.toFixed(3)} T. Leftover stays on route until you add another destination.`;
-}
-function savePurchase() {
-  const brand = document.getElementById("brand").value;
-  const bowser = document.getElementById("bowser").value;
-  const tradingParty = document.getElementById("tradingParty").value;
-  const loadQty = Number(document.getElementById("loadQty").value||0);
-  const rate = Number(document.getElementById("rate").value||0);
-  const locs = [...document.querySelectorAll(".loc-name")].map(s=>s.value).filter(Boolean);
-  if (!brand || !bowser || !tradingParty || !loadQty || !locs.length) {
-    alert("Loading Date, Type/Origin of Goods/Brand, Loaded From (Location), Bowser/Vehicle Number, Purchasing Party/Trading Party aur Load Qty required hain.");
-    return;
-  }
-  PURCHASES.unshift({
-    no: PURCHASES.length+1,
-    loadDate: document.getElementById("loadDate").value || "21-Sep-26",
-    brand, unloadDate:"", bowser, party: document.querySelector(".d-dest")?.value || "",
-    city: document.querySelector(".d-city")?.value || "",
-    plant: document.querySelector(".d-plant")?.value || "",
-    unit:"Ton", loadQty, unloadQty: Number(document.querySelector(".d-qty")?.value||loadQty),
-    baseRate:"", rate, amount: loadQty*rate, tradingParty, loadedFrom: locs
-  });
-  page = "purchases";
-  render();
-}
-function editPurchase(i) {
-  editingPurchase = PURCHASES[i];
-  page = "purchaseForm";
-  render();
-}
-function deletePurchase(i) {
-  if (confirm("Delete this purchase entry?")) { PURCHASES.splice(i,1); render(); }
-}
-function downloadOne(i) {
-  const r = PURCHASES[i];
-  const csv = toCSV([r]);
-  saveFile(`purchase-${r.no}.csv`, csv);
-}
-function downloadPurchases() {
-  saveFile("LPG-PURCHASE-June-2026.csv", toCSV(PURCHASES));
-}
-function downloadSales() {
-  saveFile("LPG-SALE.csv", "No,Date,Type/Origin of Goods/Brand,Bowser/Vehicle Number,Party,City,Loaded From (Location),Qty,Rate,Amount\n" +
-    SALES.map(r=>[r.no,r.date,r.brand,r.bowser,r.party,r.city,(r.loadedFrom||[]).join(" + "),r.qty,r.rate,r.amount].join(",")).join("\n"));
-}
-function toCSV(rows) {
-  const header = ["No","Loading Date","LPG/GAS Quality","Unloading Date","Bowser No","Party","City","Filling Plant","Unit","Load Qty","Unload Qty","Base Rate","Rate","Amount (PKR)"];
-  const body = rows.map(r => [r.no,r.loadDate,r.brand,r.unloadDate,r.bowser,r.party,r.city,r.plant,r.unit,r.loadQty,r.unloadQty,r.baseRate||"",r.rate,r.amount].join(","));
-  return header.join(",") + "\n" + body.join("\n");
-}
-function saveFile(name, text) {
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([text], {type:"text/csv"}));
-  a.download = name; a.click();
-}
-function filterPurchases() {
-  const q = (document.getElementById("q")?.value||"").toLowerCase();
-  const rows = PURCHASES.filter(r => JSON.stringify(r).toLowerCase().includes(q));
-  document.querySelector("#purchaseTable tbody").innerHTML = purchaseRows(rows);
-}
-function openModal(key, title) {
-  modalTarget = key;
-  document.getElementById("modalTitle").textContent = "Add " + title;
-  document.getElementById("modalValue").value = "";
-  document.getElementById("modal").classList.add("show");
-}
-function closeModal(){ document.getElementById("modal").classList.remove("show"); }
-function saveModal(){
-  const val = document.getElementById("modalValue").value.trim();
-  if (val) MASTER[modalTarget].push(val);
-  closeModal(); render();
-}
-function removeMaster(key,i){ MASTER[key].splice(i,1); render(); }
-
-render();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
