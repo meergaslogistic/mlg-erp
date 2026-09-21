@@ -422,3 +422,30 @@ tr:hover td { background: #f8fafd; }
   white-space: nowrap;
 }
 .sheet-table td { vertical-align: middle; }
+
+
+.sheet-table {
+  border-collapse: collapse;
+  min-width: 1280px;
+}
+.sheet-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: .03em;
+  color: #fff;
+  background: #0c2a52;
+  border: 1px solid #16345c;
+  padding: 10px 8px !important;
+  white-space: nowrap;
+}
+.sheet-table tbody td {
+  border: 1px solid #d7deea;
+  padding: 8px !important;
+  background: #fff;
+  white-space: nowrap;
+}
+.sheet-table tbody tr:nth-child(even) td { background: #f6f8fc; }
+.sheet-table tbody tr:hover td { background: #eef6f4; }
