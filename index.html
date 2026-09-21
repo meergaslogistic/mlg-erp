@@ -783,7 +783,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <template x-for="r in filteredPurchases.slice(0, 50)" :key="r.id">
+                <template x-for="r in filteredPurchaseRows()" :key="r.id">
                   <tr class="hover:bg-slate-50">
                     <td class="px-4 py-2.5" x-text="r.id"></td>
                     <td class="px-4 py-2.5" x-text="r.date"></td>

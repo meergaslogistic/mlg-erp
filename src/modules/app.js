@@ -245,8 +245,8 @@ function createApp() {
         return true;
       });
     },
-    get filteredPurchases() { return this.applyRowFilter(this.purchases, this.purchaseFilter); },
-    get filteredSales() { return this.applyRowFilter(this.sales, this.saleFilter); },
+    filteredPurchaseRows() { return this.applyRowFilter(this.purchases || [], this.purchaseFilter || {}); },
+    filteredSaleRows() { return this.applyRowFilter(this.sales || [], this.saleFilter || {}); },
     uniqueField(rows, key) {
       return [...new Set((rows || []).map(r => r[key]).filter(Boolean))];
     },
