@@ -117,6 +117,8 @@ function createApp() {
       ]
     },
     paymentForm: {
+      showForm: false,
+      showBowser: false, showTid: true, showSlip: true, showBank: false, showNote: false,
       date: '', type: 'Received', party: '', fromParty: '', toParty: '',
       slip: '', tid: '', bank: '', fromBank: '', amount: '', remarks: '', proofName: '', proofData: '',
       lines: [{ party: '', bank: '', tid: '', slip: '', amount: '', note: '' }]
@@ -286,6 +288,27 @@ function createApp() {
       this.purchaseForm.loadingDate = first.date || this.purchaseForm.loadingDate;
     },
 
+    togglePaymentForm() { this.paymentForm.showForm = !this.paymentForm.showForm; },
+    paymentSummary() {
+      const rows = this.payments || [];
+      const inn = rows.filter(p => p.type==='Received').reduce((s,p)=>s+(parseFloat(p.amount)||0),0);
+      const out = rows.filter(p => p.type==='Made' || p.type==='Paid').reduce((s,p)=>s+(parseFloat(p.amount)||0),0);
+      return { in: inn, out };
+    },
+    saleProfit(s) {
+      const q=parseFloat(s.qty)||0, r=parseFloat(s.rate)||0, b=parseFloat(s.baseRate)||0;
+      if (!q || !r || !b) return 0;
+      return (r-b)*q;
+    },
+    saleProfitLabel(s) {
+      if (!s.baseRate || !s.rate) return '';
+      return Number(this.saleProfit(s)).toLocaleString('en-PK', {maximumFractionDigits:0});
+    },
+    customerLedgerNarration(e) {
+      if (!e) return '';
+      if (e.customerNarration) return e.customerNarration;
+      return this.formatLedgerDesc ? this.formatLedgerDesc(e) : (e.narration||'');
+    },
     toggleSaleForm() { this.saleForm.showForm = !this.saleForm.showForm; },
     resetSaleFilters() { this.saleFilter = { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'', dealType:'' }; },
     saleSummary() {
@@ -739,7 +762,9 @@ function createApp() {
       p.last = formatDateDisplay(new Date());
       p.ledger.unshift({
         date: extra.date ? formatDateDisplay(extra.date) : formatDateDisplay(new Date()),
+        voucher: extra.voucher || extra.tid || extra.slip || '',
         narration: narration || '',
+        customerNarration: extra.customerNarration || narration || '',
         bowser: extra.bowser || '',
         tid: extra.tid || '',
         fromParty: extra.fromParty || '',
@@ -1280,10 +1305,12 @@ function createApp() {
         remarks: f.remarks,
         qty: f.qty,
         rate: f.rate || '',
+        baseRate: f.baseRate || '',
         amount: f.rate ? calcAmount(f.qty, f.rate) : '',
         ratePending: !f.rate,
         dealType: f.dealType || 'direct',
-        linkedPurchaseId: f.linkedPurchaseId || ''
+        linkedPurchaseId: f.linkedPurchaseId || '',
+        splits: f.splits || []
       };
       this.sales.unshift(rec);
 
@@ -1367,7 +1394,19 @@ function createApp() {
       return b ? ('MLG • ' + b) : 'MLG • Cash / Bank';
     },
 
-    paymentRefNote(line, header) {
+    buildCustomerPaymentNarration(line, header, type) {
+      const f = header || this.paymentForm || {};
+      const bits = [type || f.type || 'Payment'];
+      const party = line.party || f.party || f.fromParty || '';
+      if (party) bits.push(party);
+      if (f.showTid && (line.tid || f.tid)) bits.push('TID ' + (line.tid || f.tid));
+      if (f.showSlip && (line.slip || f.slip)) bits.push('Slip ' + (line.slip || f.slip));
+      if (f.showBank && (line.bank || f.bank)) bits.push(line.bank || f.bank);
+      if (f.showBowser && f.bowser) bits.push(f.bowser);
+      if (f.showNote && (line.note || f.remarks)) bits.push(line.note || f.remarks);
+      return bits.join(' • ');
+    },
+        paymentRefNote(line, header) {
       const tid = (line.tid || header.tid || '').trim();
       const slip = (line.slip || header.slip || '').trim();
       const toBank = (line.bank || header.bank || '').trim();
@@ -1529,10 +1568,12 @@ function createApp() {
         const extra = {
           date: f.date,
           tid: l.tid,
+          voucher: l.tid || l.slip || '',
           fromParty,
           toParty: type === 'Received' ? this.companyLedgerName(l.bank) : l.party,
           sourceType: 'payment',
-          sourceId: payId
+          sourceId: payId,
+          customerNarration: this.buildCustomerPaymentNarration(l, f, type)
         };
         const ref = this.paymentRefNote(l, f);
         if (type === 'Received') {
