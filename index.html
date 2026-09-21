@@ -68,6 +68,19 @@
         <h1 x-text="titles[section] || section"></h1>
       </div>
       <div class="topbar-right">
+        <div class="relative">
+          <input type="search" x-model="globalQuery" placeholder="Search all modules..."
+                 class="w-52 lg:w-72 border border-slate-200 rounded-lg px-3 py-1.5 text-sm">
+          <div x-show="globalQuery && globalHits().length" class="absolute right-0 mt-1 w-80 max-h-80 overflow-auto bg-white border rounded-xl shadow-xl z-40 text-sm">
+            <template x-for="h in globalHits()" :key="h.id">
+              <button type="button" class="w-full text-left px-3 py-2 hover:bg-slate-50 border-b" @click="go(h.section); globalQuery=''">
+                <span class="text-[10px] uppercase text-slate-400" x-text="h.section"></span>
+                <span class="block font-medium" x-text="h.title"></span>
+                <span class="block text-xs text-slate-500" x-text="h.sub"></span>
+              </button>
+            </template>
+          </div>
+        </div>
         <button type="button" class="btn-ghost-sm" @click="openBusinessProfile()">
           <i class="fas fa-building"></i> Business Profile
         </button>
@@ -498,25 +511,15 @@
 
       <!-- ==================== INVENTORY ==================== -->
       <section x-show="section === 'inventory'" x-transition.opacity>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="card p-5 rounded-2xl">
-            <p class="text-[11px] font-semibold text-slate-400 uppercase">Total Purchased</p>
-            <p class="text-xl font-extrabold mt-1" x-text="fmt(totals.purchased) + ' Ton'"></p>
-          </div>
-          <div class="card p-5 rounded-2xl">
-            <p class="text-[11px] font-semibold text-slate-400 uppercase">Total Sold</p>
-            <p class="text-xl font-extrabold mt-1" x-text="fmt(totals.sold) + ' Ton'"></p>
-          </div>
-          <div class="card p-5 rounded-2xl">
-            <p class="text-[11px] font-semibold text-slate-400 uppercase">Available Stock</p>
-            <p class="text-xl font-extrabold text-teal-700 mt-1" x-text="'~ ' + fmt(totals.stock) + ' Ton'"></p>
-            <p class="text-xs text-slate-400 mt-1">RPG Plant – STOCK</p>
-          </div>
-          <div class="card p-5 rounded-2xl">
-            <p class="text-[11px] font-semibold text-slate-400 uppercase">Sold Out</p>
-            <p class="text-xl font-extrabold text-rose-600 mt-1">0 Ton</p>
-            <p class="text-xs text-slate-400 mt-1">No sold-out locations</p>
-          </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+          <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Total Purchased</p><p class="vip-value mt-1" x-text="fmt(totals.purchased)+' Ton'"></p></div>
+          <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">Total Sold</p><p class="vip-value mt-1" x-text="fmt(totals.sold)+' Ton'"></p></div>
+          <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">Available Stock</p><p class="vip-value mt-1" x-text="fmt(totals.stock)+' Ton'"></p><p class="vip-sub">RPG Plant – STOCK</p></div>
+          <div class="card-vip accent-rose p-5 pl-6"><p class="vip-label">Movements</p><p class="vip-value mt-1" x-text="(currentInv?.movements||[]).length"></p></div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div><h2 class="text-base font-bold">Inventory</h2><p class="text-xs text-slate-500">IN from purchase-to-stock. OUT from sale-from-stock.</p></div>
+          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="stockForm.showForm = !stockForm.showForm">Adjustment Entry</button>
         </div>
 
         <!-- Multi-inventory selector (shows only when >1) -->
@@ -566,7 +569,7 @@
             </table>
           </div>
 
-          <div class="card p-5 rounded-2xl">
+          <div class="card p-5 rounded-2xl" x-show="stockForm.showForm" x-transition>
             <h3 class="font-bold text-sm mb-1">Exception adjustment only</h3>
             <p class="text-[11px] text-slate-500 mb-4">Daily stock should move from Purchase (IN) and Sale from stock (OUT). Use this panel only for a physical-count variance.</p>
             <form @submit.prevent="adjustStock" class="space-y-3">
@@ -597,14 +600,14 @@
           </div>
         </div>
 
-        <div class="card overflow-hidden rounded-2xl">
-          <div class="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50">
-            <h3 class="font-semibold text-sm">Recent Stock Movements – <span x-text="currentInv?.name"></span></h3>
+        <div class="card overflow-hidden rounded-2xl ring-1 ring-slate-200">
+          <div class="px-5 py-3.5 border-b bg-slate-50/80">
+            <h3 class="font-semibold text-sm">STOCK MOVEMENTS – <span x-text="currentInv?.name"></span></h3>
           </div>
           <div class="table-scroll">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm sheet-table">
               <thead>
-                <tr class="text-left text-[11px] text-slate-500 uppercase">
+                <tr>
                   <th class="px-4 py-3">Date</th>
                   <th class="px-4 py-3">Type</th>
                   <th class="px-4 py-3">Qty</th>
@@ -1335,51 +1338,55 @@
 
       <!-- ==================== MASTER LEDGER ==================== -->
       <section x-show="section === 'masterLedger'" x-transition.opacity>
-        <div class="card p-5 mb-5 rounded-2xl">
-          <div class="flex flex-wrap items-start justify-between gap-3 mb-4">
-            <div>
-              <h2 class="font-bold">Master Ledger — Meer Gas</h2>
-              <p class="text-xs text-slate-500">Yeh data Payments se aata hai. Bank tab se MLG koi bhi account dekh sakta hai.</p>
-            </div>
-            <button type="button" @click="go('payment')" class="btn-primary px-4 py-2 text-sm">+ Add Payment</button>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+          <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Lines</p><p class="vip-value mt-1" x-text="filteredMasterLedgerRows().length"></p></div>
+          <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">In</p><p class="vip-value mt-1" x-text="fmtMoney(masterLedgerTotals().inn)"></p></div>
+          <div class="card-vip accent-rose p-5 pl-6"><p class="vip-label">Out</p><p class="vip-value mt-1 text-rose-600" x-text="fmtMoney(masterLedgerTotals().out)"></p></div>
+          <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">Running</p><p class="vip-value mt-1" x-text="fmtMoney(masterLedgerTotals().bal)"></p></div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-base font-bold">Master Ledger — Meer Gas</h2>
+            <p class="text-xs text-slate-500">Payments se auto. Month-wise ya bank-wise dekho. Extra entry yahan nahi.</p>
           </div>
-          <div class="flex flex-wrap gap-2 mb-4">
+          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="go('payment')">Payment Entry</button>
+        </div>
+        <div class="card p-4 mb-4 rounded-2xl">
+          <div class="flex flex-wrap gap-2 mb-3">
             <button type="button" class="px-3 py-1.5 rounded-full text-xs border" :class="ledgerBank==='ALL' ? 'bg-slate-900 text-white' : 'bg-white'" @click="ledgerBank='ALL'">All banks</button>
-            <template x-for="b in master.bank" :key="b">
+            <template x-for="b in master.bank" :key="'lb'+b">
               <button type="button" class="px-3 py-1.5 rounded-full text-xs border" :class="ledgerBank===b ? 'bg-slate-900 text-white' : 'bg-white'" @click="ledgerBank=b" x-text="b"></button>
             </template>
           </div>
+          <div class="grid md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <input class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search TID / sender / bank..." x-model="ledgerFilter.q">
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="ledgerFilter.month"><option value="">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option></select>
+            <button type="button" class="border rounded-lg px-3 py-2 text-sm" @click="ledgerFilter={q:'',month:''}">Clear</button>
+          </div>
+        </div>
+        <div class="card overflow-hidden rounded-2xl ring-1 ring-slate-200">
+          <div class="px-5 py-3 border-b bg-slate-50/80 font-bold text-sm">MEER GAS BANK BOOK</div>
           <div class="table-scroll">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm sheet-table">
               <thead>
-                <tr class="text-left text-[11px] text-slate-500 uppercase border-b">
-                  <th class="px-3 py-2">Serial</th>
-                  <th class="px-3 py-2">Date</th>
-                  <th class="px-3 py-2">Description</th>
-                  <th class="px-3 py-2">Bank title</th>
-                  <th class="px-3 py-2">TID</th>
-                  <th class="px-3 py-2">Sender</th>
-                  <th class="px-3 py-2">Receiver</th>
-                  <th class="px-3 py-2 text-right">Amount</th>
-                  <th class="px-3 py-2 text-right">Balance</th>
+                <tr>
+                  <th>Serial</th><th>Date</th><th>Bank Title / TID</th><th>Sender</th><th>Receiver</th><th>Amount</th><th>Balance</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
-                <template x-for="row in masterLedgerRows()" :key="row.serial">
+              <tbody>
+                <template x-for="row in filteredMasterLedgerRows()" :key="row.serial">
                   <tr>
-                    <td class="px-3 py-2" x-text="row.serial"></td>
-                    <td class="px-3 py-2" x-text="row.date"></td>
-                    <td class="px-3 py-2" x-text="row.description"></td>
-                    <td class="px-3 py-2" x-text="row.bank"></td>
-                    <td class="px-3 py-2" x-text="row.tid || '—'"></td>
-                    <td class="px-3 py-2" x-text="row.sender || '—'"></td>
-                    <td class="px-3 py-2" x-text="row.receiver || '—'"></td>
-                    <td class="px-3 py-2 text-right font-semibold" :class="row.amount>=0 ? 'text-emerald-600' : 'text-rose-600'" x-text="fmtMoney(row.amount)"></td>
-                    <td class="px-3 py-2 text-right font-medium" x-text="fmtMoney(row.balance)"></td>
+                    <td x-text="row.serial"></td>
+                    <td x-text="sheetDate(row.date)"></td>
+                    <td x-text="(row.bank||'') + (row.tid ? ' / '+row.tid : '')"></td>
+                    <td x-text="row.sender || '—'"></td>
+                    <td x-text="row.receiver || '—'"></td>
+                    <td class="font-semibold" :class="row.amount>=0 ? 'text-emerald-700' : 'text-rose-600'" x-text="fmtMoney(row.amount)"></td>
+                    <td class="font-medium" x-text="fmtMoney(row.balance)"></td>
                   </tr>
                 </template>
-                <tr x-show="!masterLedgerRows().length">
-                  <td colspan="9" class="px-3 py-8 text-center text-slate-400 text-sm">Abhi koi payment nahi. Payments menu se entry add karein.</td>
+                <tr x-show="!filteredMasterLedgerRows().length">
+                  <td colspan="7" class="px-3 py-8 text-center text-slate-400">Payments se data aayega.</td>
                 </tr>
               </tbody>
             </table>
@@ -1429,9 +1436,29 @@
 
       <!-- ==================== REPORTS ==================== -->
       <section x-show="section === 'reports'" x-transition.opacity>
-        <div class="card p-5 mb-5 rounded-2xl">
-          <h2 class="font-bold mb-4">Management Reports</h2>
-          <div class="grid md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+          <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Purchased</p><p class="vip-value mt-1" x-text="fmt(totals.purchased)+' T'"></p></div>
+          <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">Sold</p><p class="vip-value mt-1" x-text="fmt(totals.sold)+' T'"></p></div>
+          <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">Stock</p><p class="vip-value mt-1" x-text="fmt(totals.stock)+' T'"></p></div>
+          <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">Outstanding</p><p class="vip-value mt-1" x-text="fmtMoney(parties.reduce((s,p)=>s+(Number(p.balance)||0),0))"></p></div>
+        </div>
+        <div class="mb-4">
+          <h2 class="text-base font-bold">Management Reports</h2>
+          <p class="text-xs text-slate-500">Ek click preset. Phir deep filter laga sakte ho.</p>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-4">
+          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('summary')">Summary</button>
+          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('monthly','Jun')">June monthly</button>
+          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('purchases')">Purchase register</button>
+          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('sales')">Sale register</button>
+          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('payments')">Payments</button>
+          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('ledger')">Master ledger</button>
+          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('outstanding')">Outstanding</button>
+          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('pnl')">Sale P&amp;L</button>
+          <button type="button" class="btn-primary px-4 py-2 text-xs" @click="downloadReportPDF()">Download PDF</button>
+        </div>
+        <div class="card p-4 mb-4 rounded-2xl">
+          <div class="grid md:grid-cols-3 lg:grid-cols-6 gap-3">
             <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.type">
               <option value="summary">Summary</option>
               <option value="monthly">Monthly</option>
@@ -1441,46 +1468,29 @@
               <option value="ledger">Master ledger</option>
               <option value="outstanding">Outstanding parties</option>
               <option value="diesel">Diesel & cash</option>
+              <option value="pnl">Sale profit & loss</option>
             </select>
-            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.month">
-              <option value="">All months</option>
-              <option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option>
-              <option>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option>
-            </select>
-            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.party">
-              <option value="">All parties</option>
-              <template x-for="v in master.party" :key="'rp'+v"><option x-text="v"></option></template>
-            </select>
-            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.bank">
-              <option value="">All banks</option>
-              <template x-for="v in master.bank" :key="'rb'+v"><option x-text="v"></option></template>
-            </select>
-            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.bowser">
-              <option value="">All bowsers</option>
-              <template x-for="v in master.bowser" :key="'rw'+v"><option x-text="v"></option></template>
-            </select>
-            <button type="button" class="btn-primary px-4 py-2 text-sm" @click="downloadReportPDF()">
-              <i class="fas fa-file-pdf mr-1"></i> Download PDF
-            </button>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.month"><option value="">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.party"><option value="">All parties</option><template x-for="v in master.party" :key="'rp'+v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.bank"><option value="">All banks</option><template x-for="v in master.bank" :key="'rb'+v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.bowser"><option value="">All bowsers</option><template x-for="v in master.bowser" :key="'rw'+v"><option x-text="v"></option></template></select>
+            <input class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search report..." x-model="report.q">
           </div>
+        </div>
+        <div class="card overflow-hidden rounded-2xl ring-1 ring-slate-200">
+          <div class="px-5 py-3 border-b bg-slate-50/80 font-bold text-sm uppercase" x-text="(report.type||'summary') + ' report'"></div>
           <div class="table-scroll">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm sheet-table">
               <thead>
-                <tr class="text-left text-[11px] text-slate-500 uppercase border-b">
-                  <template x-for="(h,hi) in reportHeaders()" :key="'h'+hi">
-                    <th class="px-3 py-2" x-text="h"></th>
-                  </template>
+                <tr>
+                  <template x-for="(h,hi) in reportHeaders()" :key="'h'+hi"><th class="px-3 py-2" x-text="h"></th></template>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
+              <tbody>
                 <template x-for="(row,ri) in reportRows()" :key="'rr'+ri">
                   <tr>
-                    <td class="px-3 py-2" x-text="row.c1"></td>
-                    <td class="px-3 py-2" x-text="row.c2"></td>
-                    <td class="px-3 py-2" x-text="row.c3"></td>
-                    <td class="px-3 py-2" x-text="row.c4"></td>
-                    <td class="px-3 py-2 font-medium" x-text="row.c5"></td>
-                    <td class="px-3 py-2" x-text="row.c6"></td>
+                    <td x-text="row.c1"></td><td x-text="row.c2"></td><td x-text="row.c3"></td>
+                    <td x-text="row.c4"></td><td class="font-medium" x-text="row.c5"></td><td x-text="row.c6"></td>
                   </tr>
                 </template>
               </tbody>
@@ -1515,17 +1525,34 @@
 
       <!-- ==================== MASTER ==================== -->
       <section x-show="section === 'master'" x-transition.opacity>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+          <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Parties</p><p class="vip-value mt-1" x-text="(master.party||[]).length"></p></div>
+          <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">Bowsers</p><p class="vip-value mt-1" x-text="(master.bowser||[]).length"></p></div>
+          <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">Banks</p><p class="vip-value mt-1" x-text="(master.bank||[]).length"></p></div>
+          <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">Origins</p><p class="vip-value mt-1" x-text="(master.source||[]).length"></p></div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div><h2 class="text-base font-bold">Master Data</h2><p class="text-xs text-slate-500">Dropdowns yahi se bharti hain.</p></div>
+        </div>
+        <div class="card p-4 mb-4 rounded-2xl">
+          <input class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search master lists..." x-model="masterQuery">
+        </div>
         <div class="grid md:grid-cols-2 gap-5">
           <template x-for="m in masterSections" :key="m.key">
-            <div class="card p-5 rounded-2xl">
-              <div class="flex items-center justify-between mb-3">
+            <div class="card overflow-hidden rounded-2xl ring-1 ring-slate-200">
+              <div class="px-5 py-3 border-b bg-slate-50/80 flex items-center justify-between">
                 <h3 class="font-bold text-sm" x-text="m.title"></h3>
-                <button type="button" @click="addMasterItem(m.key)" class="text-xs text-teal-600 font-medium hover:underline">+ Add New</button>
+                <button type="button" @click="addMasterItem(m.key)" class="text-xs font-semibold text-teal-700">+ Add</button>
               </div>
-              <div class="flex flex-wrap gap-2 max-h-44 overflow-auto">
-                <template x-for="(v, i) in master[m.key]" :key="i">
-                  <span class="badge bg-slate-100 text-slate-600 border border-slate-200" x-text="v"></span>
-                </template>
+              <div class="table-scroll max-h-64">
+                <table class="w-full text-sm sheet-table">
+                  <thead><tr><th>S#</th><th>Name</th></tr></thead>
+                  <tbody>
+                    <template x-for="(v,i) in filteredMasterList(m.key)" :key="m.key+i">
+                      <tr><td x-text="i+1"></td><td x-text="v"></td></tr>
+                    </template>
+                  </tbody>
+                </table>
               </div>
             </div>
           </template>
