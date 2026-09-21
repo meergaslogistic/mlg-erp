@@ -36,6 +36,8 @@ function createApp() {
       payment: 'Payments',
       masterLedger: 'Master Ledger',
       diesel: 'Diesel & Cash',
+      reports: 'Reports',
+      settings: 'Settings',
       master: 'Master Data'
     },
 
@@ -49,6 +51,8 @@ function createApp() {
       { id: 'masterLedger', label: 'Master Ledger', icon: 'fas fa-book' },
       { id: 'inventory', label: 'Inventory', icon: 'fas fa-warehouse' },
       { id: 'diesel', label: 'Diesel & Cash', icon: 'fas fa-gas-pump' },
+      { id: 'reports', label: 'Reports', icon: 'fas fa-chart-pie' },
+      { id: 'settings', label: 'Settings', icon: 'fas fa-cog' },
       { id: 'master', label: 'Master Data', icon: 'fas fa-database' }
     ],
 
@@ -61,8 +65,23 @@ function createApp() {
     payments: [],
     dieselEntries: [],
     ledgerBank: 'ALL',
-    purchaseFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'' },
-    saleFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'' },
+    purchaseFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'' },
+    saleFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'' },
+    paymentFilter: { q:'', type:'', party:'', bank:'' },
+    dieselFilter: { q:'', type:'', bowser:'', location:'' },
+    partyFilter: { q:'', city:'', outstanding:'' },
+    invFilter: { q:'' },
+    masterFilter: { q:'' },
+    ledgerFilter: { q:'', tid:'' },
+    report: {
+      type: 'summary', from: '', to: '', party: '', bank: '', bowser: '', month: ''
+    },
+    settings: {
+      company: 'Meer Logistics & Gas Energy',
+      slogan: 'Your Trust, Our Priority',
+      defaultWatermark: true,
+      defaultLetterhead: true
+    },
 
     totals: {
       purchased: 1743.83,
@@ -77,7 +96,7 @@ function createApp() {
       loadingDate: '', bowser: '', party: 'RPG Plant - STOCK', city: '', plant: '',
       qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '',
       tradingParty: 'MLG', remarks: '',
-      loadFroms: [{ location: '', city: '', qty: '' }],
+      loadFroms: [],
       splits: [
         { destType: 'stock', party: 'RPG Plant - STOCK', city: '', qty: '', unloadDate: '' }
       ]
@@ -86,7 +105,7 @@ function createApp() {
       dealType: 'from_stock',
       date: '', bowser: '', party: '', city: '', plant: 'RPG STOCK - Karachi',
       qty: '', rate: '', amount: '', remarks: '', brand: '', source: '',
-      loadFroms: [{ location: '', city: '', qty: '' }],
+      loadFroms: [],
       splits: [
         { destType: 'party', party: '', city: '', qty: '', unloadDate: '' }
       ]
@@ -218,7 +237,7 @@ function createApp() {
     },
     removeLoadFrom(formKey, i) {
       const f = this[formKey] || this.purchaseForm;
-      if (!f.loadFroms || f.loadFroms.length <= 1) return;
+      if (!f.loadFroms) return;
       f.loadFroms.splice(i, 1);
     },
     addSaleSplit() {
@@ -235,15 +254,154 @@ function createApp() {
     applyRowFilter(rows, f) {
       const q = (f.q || '').toLowerCase();
       return (rows || []).filter(r => {
-        const blob = [r.date, r.bowser, r.party, r.city, r.plant, r.source, r.brand, r.qty, r.amount].join(' ').toLowerCase();
+        const blob = [r.date, r.bowser, r.party, r.city, r.plant, r.source, r.brand, r.qty, r.amount, r.status].join(' ').toLowerCase();
         if (q && !blob.includes(q)) return false;
         if (f.brand && r.brand !== f.brand && r.source !== f.brand) return false;
         if (f.bowser && r.bowser !== f.bowser) return false;
         if (f.party && r.party !== f.party) return false;
         if (f.city && r.city !== f.city) return false;
         if (f.plant && r.plant !== f.plant) return false;
+        if (f.month) {
+          const d = String(r.date || r.loadDate || '');
+          if (!d.toLowerCase().includes(f.month.toLowerCase().slice(0,3))) return false;
+        }
         return true;
       });
+    },
+    filteredPaymentRows() {
+      const f = this.paymentFilter || {};
+      const q = (f.q || '').toLowerCase();
+      return (this.payments || []).filter(p => {
+        const blob = [p.date, p.type, p.party, p.fromParty, p.toParty, p.bank, p.tid, p.slip, p.amount, p.remarks].join(' ').toLowerCase();
+        if (q && !blob.includes(q)) return false;
+        if (f.type && p.type !== f.type) return false;
+        if (f.party && !blob.includes(f.party.toLowerCase())) return false;
+        if (f.bank && String(p.bank||'') !== f.bank && !(p.lines||[]).some(l => l.bank === f.bank)) return false;
+        return true;
+      });
+    },
+    filteredDieselRows() {
+      const f = this.dieselFilter || {};
+      const q = (f.q || '').toLowerCase();
+      return (this.dieselEntries || []).filter(d => {
+        const blob = [d.date, d.bowser, d.type, d.location, d.amount, d.qty].join(' ').toLowerCase();
+        if (q && !blob.includes(q)) return false;
+        if (f.type && d.type !== f.type) return false;
+        if (f.bowser && d.bowser !== f.bowser) return false;
+        if (f.location && String(d.location||'') !== f.location) return false;
+        return true;
+      });
+    },
+    filteredPartyRows() {
+      const f = this.partyFilter || {};
+      const q = (f.q || this.partySearch || '').toLowerCase();
+      return (this.parties || []).filter(p => {
+        if (q && !((p.name||'').toLowerCase().includes(q) || (p.city||'').toLowerCase().includes(q))) return false;
+        if (f.city && p.city !== f.city) return false;
+        if (f.outstanding === 'yes' && !(Number(p.balance) > 0)) return false;
+        if (f.outstanding === 'no' && Number(p.balance) > 0) return false;
+        return true;
+      });
+    },
+    reportRows() {
+      const r = this.report || {};
+      const inRange = (d) => {
+        if (!d) return true;
+        const s = String(d);
+        if (r.month && !s.toLowerCase().includes(r.month.toLowerCase().slice(0,3))) return false;
+        return true;
+      };
+      const matchParty = (name) => !r.party || String(name||'') === r.party;
+      const matchBowser = (b) => !r.bowser || String(b||'') === r.bowser;
+      const matchBank = (b) => !r.bank || String(b||'') === r.bank;
+      const type = r.type || 'summary';
+      if (type === 'purchases') {
+        return this.purchases.filter(x => inRange(x.date) && matchParty(x.party) && matchBowser(x.bowser))
+          .map(x => ({ c1:x.date, c2:x.bowser, c3:x.party, c4:x.qty, c5:x.amount, c6:x.source||x.brand||'' }));
+      }
+      if (type === 'sales') {
+        return this.sales.filter(x => inRange(x.date) && matchParty(x.party) && matchBowser(x.bowser))
+          .map(x => ({ c1:x.date, c2:x.bowser, c3:x.party, c4:x.qty, c5:x.amount, c6:x.plant||'' }));
+      }
+      if (type === 'payments') {
+        return this.payments.filter(x => inRange(x.date) && matchParty(x.party||x.fromParty||x.toParty) && matchBank(x.bank))
+          .map(x => ({ c1:x.date, c2:x.type, c3:x.party||x.fromParty||x.toParty||'', c4:x.bank||'', c5:x.tid||x.slip||'', c6:x.amount }));
+      }
+      if (type === 'diesel') {
+        return (this.dieselEntries||[]).filter(x => inRange(x.date) && matchBowser(x.bowser))
+          .map(x => ({ c1:x.date, c2:x.type, c3:x.bowser, c4:x.location||'', c5:x.qty||'', c6:x.amount }));
+      }
+      if (type === 'outstanding') {
+        return this.parties.filter(p => Number(p.balance) > 0 && matchParty(p.name))
+          .map(p => ({ c1:p.name, c2:p.city||'', c3:p.last||'', c4:'', c5:p.balance, c6:'' }));
+      }
+      if (type === 'ledger') {
+        return this.masterLedgerRows().filter(x => inRange(x.date) && matchBank(x.bank))
+          .map(x => ({ c1:x.date, c2:x.description, c3:x.bank, c4:x.tid, c5:x.amount, c6:x.balance }));
+      }
+      if (type === 'monthly') {
+        const map = {};
+        const bump = (key, field, qty, amt) => {
+          if (!map[key]) map[key] = { c1:key, c2:0, c3:0, c4:0, c5:0, c6:0 };
+          map[key][field] += Number(qty||0);
+          if (field === 'c2') map[key].c5 += parseAmount(amt);
+          if (field === 'c3') map[key].c6 += parseAmount(amt);
+        };
+        this.purchases.filter(x => inRange(x.date) && matchParty(x.party)).forEach(x => bump(String(x.date).replace(/^[0-9]+-/,'').replace(/-[0-9]+$/,'' ) || x.date, 'c2', x.qty, x.amount));
+        this.sales.filter(x => inRange(x.date) && matchParty(x.party)).forEach(x => bump(String(x.date).replace(/^[0-9]+-/,'').replace(/-[0-9]+$/,'') || x.date, 'c3', x.qty, x.amount));
+        return Object.values(map);
+      }
+      // summary
+      return [
+        { c1:'Total Purchased (Ton)', c2:this.totals.purchased, c3:'', c4:'', c5:'', c6:'' },
+        { c1:'Total Sold (Ton)', c2:this.totals.sold, c3:'', c4:'', c5:'', c6:'' },
+        { c1:'Available Stock (Ton)', c2:this.totals.stock, c3:'', c4:'', c5:'', c6:'' },
+        { c1:'Purchase records', c2:this.purchases.length, c3:'', c4:'', c5:'', c6:'' },
+        { c1:'Sale records', c2:this.sales.length, c3:'', c4:'', c5:'', c6:'' },
+        { c1:'Payment records', c2:this.payments.length, c3:'', c4:'', c5:'', c6:'' },
+        { c1:'Parties', c2:this.parties.length, c3:'', c4:'', c5:'', c6:'' },
+        { c1:'Outstanding parties', c2:this.parties.filter(p => Number(p.balance)>0).length, c3:'', c4:'', c5:this.parties.reduce((s,p)=>s+(Number(p.balance)||0),0), c6:'' }
+      ];
+    },
+    reportHeaders() {
+      const t = (this.report && this.report.type) || 'summary';
+      const map = {
+        summary: ['Metric','Value','','','Amount',''],
+        monthly: ['Month','Purchase Ton','Sale Ton','','Purchase Amount','Sale Amount'],
+        purchases: ['Date','Bowser','Party','Qty','Amount','Brand / Source'],
+        sales: ['Date','Bowser','Party','Qty','Amount','Plant'],
+        payments: ['Date','Type','Party','Bank','TID / Slip','Amount'],
+        diesel: ['Date','Type','Bowser','Location','Qty','Amount'],
+        outstanding: ['Party','City','Last','','Outstanding',''],
+        ledger: ['Date','Description','Bank','TID','Amount','Balance'],
+        stock: ['Location','Type','Qty','Status','','']
+      };
+      return map[t] || map.summary;
+    },
+    downloadReportPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit:'pt', format:'a4' });
+      const title = 'MLG Report — ' + ((this.report && this.report.type) || 'summary');
+      doc.setFontSize(14);
+      doc.text(this.settings.company || 'Meer Logistics & Gas Energy', 40, 40);
+      doc.setFontSize(11);
+      doc.text(title, 40, 60);
+      const headers = [this.reportHeaders()];
+      const body = this.reportRows().map(r => [r.c1,r.c2,r.c3,r.c4,r.c5,r.c6].map(v => v==null?'':String(v)));
+      doc.autoTable({ startY: 80, head: headers, body, styles:{ fontSize:8 }, headStyles:{ fillColor:[15,39,68] } });
+      this.deliverPdf(doc, 'MLG-Report.pdf', 'download');
+    },
+    exportBackup() {
+      const payload = { parties:this.parties, purchases:this.purchases, sales:this.sales, payments:this.payments, inventories:this.inventories, master:this.master, dieselEntries:this.dieselEntries, settings:this.settings };
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)], {type:'application/json'}));
+      a.download = 'mlg-erp-backup.json';
+      a.click();
+    },
+    resetAllData() {
+      if (!confirm('Delete all saved ERP data on this browser?')) return;
+      localStorage.removeItem('mlg_erp_v4');
+      location.reload();
     },
     filteredPurchaseRows() { return this.applyRowFilter(this.purchases || [], this.purchaseFilter || {}); },
     filteredSaleRows() { return this.applyRowFilter(this.sales || [], this.saleFilter || {}); },
