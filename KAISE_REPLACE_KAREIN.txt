@@ -1,0 +1,24 @@
+MLG ERP — poora folder replace karein
+
+GitHub par index.html aur src/modules/app.js galat overwrite ho gaye the.
+Yeh ZIP last working project + aapki requested updates hai.
+
+Kaise replace karein
+1. Purana project folder band karein (START.bat band).
+2. Purane folder ki COPY backup bana lein.
+3. Purane folder ke ANDAR ki saari files delete karein (folder khud rakh sakte ho).
+4. Is ZIP ko extract karke ANDAR ki saari files usi folder mein paste karein.
+5. START.bat double-click karein.
+
+Zaroori files
+- index.html          (asli Alpine ERP — isay mat hatao)
+- app.html            (backup UI)
+- src/modules/app.js
+- src/data/store.js
+- src/utils/helpers.js
+- styles/main.css
+- assets/logo.png     (aapka official Meer logo)
+- START.bat / START.sh
+
+Agar browser purana data dikhaye to LocalStorage clear karein
+(Chrome → F12 → Application → Local Storage → Clear).

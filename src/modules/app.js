@@ -1,526 +1,1705 @@
-const MASTER = {
-  parties: ["Bugti Plant","VTR LPG","VTR Gas","Royal Gas","Zulfiqar LPG","Farhan Gas","Bhatti Associates","Aziz Plant","Dilshad Enterprises","Al Macca Gas","Jahanzaib Gas","NEW JAMALI","Arshad Gas","Lal Energy","Umar Energy","Hussain Gas","Sachal Gas","RPG Plant - STOCK","Heaven Gas","Salam LPG","MLG","Al Macca"],
-  bowsers: ["TMQ 013","JU 3050","JQ 2432","TMQ 588","TLX 297","TLX 586","TMP 012","TLX 288","TAT 188","TMN 806","TMR 025","JQ 3148","TMP 200","TMU 062","TMP 010","TMP 100","TMQ 015","TMP 017","TLF 863","TMN 006","NLA 026","TLX 645","TLA 701","TLH 912","TLY 407"],
-  cities: ["Karachi","Jamshoro","Multan","Sukkur","Qazi Ahmed","Liyyah","Nawabshah","Kashmore","JACCOBABAD","Sadiqabad","Dogran"],
-  plants: ["Mand","BP 250","Allanaz - Karachi","Jamshoro - Bugti","RPG STOCK - Karachi","Hothi Nisar BP 250","Salam Gas","Gwadar","Turbat","RPG Plant - STOCK","Taftan Border","Rum Flam Gas"],
-  banks: ["MLG HBL Account","VTR Meezan Bank","VTR HBL Bank","MBL Pak Rice Commission Agent","HBL Wakeel Ahmed Enterprises","UBL Ibadat LPG PVT LTD","ASK Bank Wakeel Ahmed Enterprises","ABL Pak Rice Commission Agent","BALH Ibadat Rice Mills","BALF Ibadat Rice Mills","MCB Shabeer Ahmed Enterprises","FB Saddam Enterprises","Meezan - Naik Muhammad Enterprises"],
-  brands: ["Mehman bandar - Meer Gas","Bandar - Meer Gas","Aftab - Meer Gas","bandar Abbas - Meer Gas","Bandar Abbas - Meer Gas","Asloia Aftab - Meer Gas","Bandar Asloia - Meer Gas","Botan - Meer Gas","Jamshoro - Meer Gas","Allanaz - Karachi","Meer Gas","Mehman - Meer Gas","Rum Flam Gas - Meer Gas","Bandar Aftab - Meer Gas"]
-};
+// app.js – Main application
+/**
+ * MLG Advanced ERP – Main Application Module
+ * Alpine.js reactive core + Auto Ledger engine
+ */
 
-const PURCHASES = [
-  {no:1, loadDate:"1-Jun-26", brand:"Mehman bandar - Meer Gas", unloadDate:"5-Jun-26", bowser:"TMQ 013", party:"Bugti Plant", city:"Jamshoro", plant:"Mand", unit:"Ton", loadQty:47.490, unloadQty:47.490, baseRate:"", rate:312200, amount:14826378, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:2, loadDate:"1-Jun-26", brand:"Bandar - Meer Gas", unloadDate:"4-Jun-26", bowser:"JU 3050", party:"VTR Gas", city:"Qazi Ahmed", plant:"Mand", unit:"Ton", loadQty:48.470, unloadQty:48.470, baseRate:"", rate:312200, amount:15132334, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:3, loadDate:"2-Jun-26", brand:"Aftab - Meer Gas", unloadDate:"6-Jun-26", bowser:"JQ 2432", party:"Zulfiqar LPG", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:48.960, unloadQty:48.960, baseRate:"", rate:312200, amount:15285312, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:4, loadDate:"3-Jun-26", brand:"bandar Abbas - Meer Gas", unloadDate:"6-Jun-26", bowser:"TMQ 588", party:"RPG Plant - STOCK", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:50.420, unloadQty:50.420, baseRate:"", rate:312200, amount:15741124, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:5, loadDate:"4-Jun-26", brand:"Asloia Aftab - Meer Gas", unloadDate:"7-Jun-26", bowser:"TLX 297", party:"Bugti Plant", city:"Jamshoro", plant:"BP 250", unit:"Ton", loadQty:46.845, unloadQty:46.650, baseRate:"", rate:314760, amount:14744932, tradingParty:"MLG", loadedFrom:["BP 250"]},
-  {no:6, loadDate:"5-Jun-26", brand:"Jamshoro - Meer Gas", unloadDate:"5-Jun-26", bowser:"TLF 863", party:"Bhatti Associates", city:"Multan", plant:"Jamshoro - Bugti", unit:"Ton", loadQty:29.805, unloadQty:29.805, baseRate:4425, rate:375000, amount:11176875, tradingParty:"MLG", loadedFrom:["Jamshoro - Bugti"]},
-  {no:7, loadDate:"8-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"12-Jun-26", bowser:"TLX 586", party:"RPG Plant - STOCK", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:48.500, unloadQty:48.500, baseRate:"", rate:312200, amount:15141700, tradingParty:"MLG", loadedFrom:["Mand","Taftan Border"]},
-  {no:8, loadDate:"10-Jun-26", brand:"Mehman - Meer Gas", unloadDate:"13-Jun-26", bowser:"TMQ 013", party:"Bugti Plant", city:"Jamshoro", plant:"Mand", unit:"Ton", loadQty:49.980, unloadQty:49.980, baseRate:"", rate:312200, amount:15603756, tradingParty:"MLG", loadedFrom:["Mand"]},
-  {no:9, loadDate:"13-Jun-26", brand:"Bandar Asloia - Meer Gas", unloadDate:"17-Jun-26", bowser:"TMR 025", party:"RPG Plant - STOCK", city:"Karachi", plant:"BP 250", unit:"Ton", loadQty:44.810, unloadQty:44.980, baseRate:"", rate:314760, amount:14104396, tradingParty:"MLG", loadedFrom:["BP 250","Mand"]},
-  {no:10, loadDate:"16-Jun-26", brand:"Bandar Asloia - Meer Gas", unloadDate:"19-Jun-26", bowser:"JQ 3148", party:"RPG Plant - STOCK", city:"Karachi", plant:"BP 250", unit:"Ton", loadQty:41.430, unloadQty:41.450, baseRate:"", rate:314760, amount:13040507, tradingParty:"MLG", loadedFrom:["BP 250"]}
-];
 
-const SALES = [
-  {no:1, loadDate:"10-Jun-26", brand:"Bandar - Meer Gas", unloadDate:"11-Jun-26", bowser:"JU 3050", party:"VTR Gas", city:"Qazi Ahmed", plant:"Mand", unit:"Ton", loadQty:20.000, unloadQty:20.000, baseRate:"", rate:325000, amount:6500000, loadedFrom:["RPG Plant - STOCK"]},
-  {no:2, loadDate:"12-Jun-26", brand:"Aftab - Meer Gas", unloadDate:"14-Jun-26", bowser:"JQ 2432", party:"Zulfiqar LPG", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:48.000, unloadQty:48.000, baseRate:"", rate:330000, amount:15840000, loadedFrom:["Mand","BP 250"]},
-  {no:3, loadDate:"15-Jun-26", brand:"Jamshoro - Meer Gas", unloadDate:"16-Jun-26", bowser:"TLF 863", party:"Bhatti Associates", city:"Multan", plant:"Jamshoro - Bugti", unit:"Ton", loadQty:29.800, unloadQty:29.800, baseRate:"", rate:380000, amount:11324000, loadedFrom:["Jamshoro - Bugti"]},
-  {no:4, loadDate:"18-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"20-Jun-26", bowser:"TLX 288", party:"Royal Gas", city:"Sukkur", plant:"Allanaz - Karachi", unit:"Ton", loadQty:31.000, unloadQty:31.000, baseRate:"", rate:340000, amount:10540000, loadedFrom:["Allanaz - Karachi","Mand"]}
-];
+function createApp() {
+    const { fmt, fmtMoney, calcAmount, parseAmount, formatDateDisplay, today } = window.MLGHelpers;
+    const { initialMaster, initialInventories, samplePurchases, sampleSales, createInitialParties } = window.MLGStore;
 
-const PAYMENTS = [
-  {serial:1, date:"1-Jun-26", bank:"MLG HBL Account", description:"Opening balance — MLG HBL Account", tid:"OB-001", sender:"—", receiver:"MLG HBL Account", amountIn:25000000, amountOut:0},
-  {serial:2, date:"2-Jun-26", bank:"VTR Meezan Bank", description:"Opening balance — VTR Meezan Bank", tid:"OB-002", sender:"—", receiver:"VTR Meezan Bank", amountIn:8000000, amountOut:0},
-  {serial:3, date:"3-Jun-26", bank:"VTR HBL Bank", description:"Opening balance — VTR HBL Bank", tid:"OB-003", sender:"—", receiver:"VTR HBL Bank", amountIn:5500000, amountOut:0},
-  {serial:4, date:"5-Jun-26", bank:"MLG HBL Account", description:"Party receipt — VTR Gas / MLG HBL Account", tid:"TID-88421", sender:"VTR Gas", receiver:"MLG HBL Account", amountIn:6500000, amountOut:0},
-  {serial:5, date:"6-Jun-26", bank:"MLG HBL Account", description:"Supplier payment — Bugti Plant / MLG HBL Account", tid:"TID-88490", sender:"MLG HBL Account", receiver:"Bugti Plant", amountIn:0, amountOut:14826378},
-  {serial:6, date:"8-Jun-26", bank:"HBL Wakeel Ahmed Enterprises", description:"Transfer in — HBL Wakeel Ahmed Enterprises", tid:"TID-89011", sender:"Wakeel Ahmed Enterprises", receiver:"HBL Wakeel Ahmed Enterprises", amountIn:3200000, amountOut:0},
-  {serial:7, date:"10-Jun-26", bank:"VTR Meezan Bank", description:"Sale receipt — Zulfiqar LPG / VTR Meezan Bank", tid:"TID-90102", sender:"Zulfiqar LPG", receiver:"VTR Meezan Bank", amountIn:4200000, amountOut:0},
-  {serial:8, date:"12-Jun-26", bank:"MLG HBL Account", description:"Freight / diesel / MLG HBL Account", tid:"TID-90550", sender:"MLG HBL Account", receiver:"Diesel pump", amountIn:0, amountOut:185000},
-  {serial:9, date:"14-Jun-26", bank:"UBL Ibadat LPG PVT LTD", description:"Party receipt — Royal Gas / UBL Ibadat LPG PVT LTD", tid:"TID-91120", sender:"Royal Gas", receiver:"UBL Ibadat LPG PVT LTD", amountIn:2100000, amountOut:0},
-  {serial:10, date:"16-Jun-26", bank:"VTR HBL Bank", description:"Bank transfer — VTR HBL Bank to MLG HBL Account", tid:"TID-92001", sender:"VTR HBL Bank", receiver:"MLG HBL Account", amountIn:0, amountOut:1500000},
-  {serial:11, date:"16-Jun-26", bank:"MLG HBL Account", description:"Bank transfer received — VTR HBL Bank / MLG HBL Account", tid:"TID-92001", sender:"VTR HBL Bank", receiver:"MLG HBL Account", amountIn:1500000, amountOut:0},
-  {serial:12, date:"18-Jun-26", bank:"Meezan - Naik Muhammad Enterprises", description:"Receipt — Sachal Gas / Meezan - Naik Muhammad Enterprises", tid:"TID-93310", sender:"Sachal Gas", receiver:"Meezan - Naik Muhammad Enterprises", amountIn:1750000, amountOut:0}
-];
+  return {
+    // ========== UI State ==========
+    section: 'dashboard',
+    sidebarOpen: false,
+    partySearch: '',
+    activeParty: null,
+    showAddParty: false,
+    newPartyName: '',
+    newPartyCity: '',
+    selectedInv: 'rpg',
+    toast: { show: false, msg: '' },
+    clockNow: '',
+    clockDate: '',
+    greeting: 'Welcome',
+    greetIcon: '☀️',
+    pdfOptions: { show: false, header: false, footer: false, logo: false, watermark: true, type: null, data: null },
 
-let page = "purchases";
-let modalTarget = null;
-let editingPurchase = null;
-let editingSale = null;
-let ledgerBank = "ALL";
-const PF = { q:"", month:"June 2026", brand:"", bowser:"", party:"", city:"", plant:"", loadedFrom:"" };
-const SF = { q:"", month:"June 2026", brand:"", bowser:"", party:"", city:"", plant:"", loadedFrom:"" };
+    titles: {
+      dashboard: 'Dashboard',
+      guide: 'Data Flow & Documents',
+      parties: 'Parties & Ledgers',
+      inventory: 'Inventory',
+      purchase: 'LPG Purchase / Loading',
+      sale: 'LPG Sale',
+      payment: 'Payments',
+      masterLedger: 'Master Ledger',
+      diesel: 'Diesel & Cash',
+      master: 'Master Data'
+    },
 
-const TITLES = {
-  dashboard:"Dashboard", dataflow:"Data Flow", ledgers:"Parties & Ledgers",
-  purchases:"Purchase / Loading", purchaseForm:"LPG Purchase / Loading Entry",
-  sales:"Sale", saleForm:"LPG Sale Entry",
-  payments:"Payments", paymentForm:"Payment Entry",
-  masterLedger:"Master Ledger — Meer Gas",
-  inventory:"Inventory", diesel:"Diesel & Cash", master:"Master Data"
-};
+    nav: [
+      { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-home' },
+      { id: 'guide', label: 'Data Flow', icon: 'fas fa-route' },
+      { id: 'parties', label: 'Parties & Ledgers', icon: 'fas fa-users' },
+      { id: 'purchase', label: 'Purchase / Loading', icon: 'fas fa-truck-loading' },
+      { id: 'sale', label: 'Sale', icon: 'fas fa-file-invoice-dollar' },
+      { id: 'payment', label: 'Payments', icon: 'fas fa-money-bill-wave' },
+      { id: 'masterLedger', label: 'Master Ledger', icon: 'fas fa-book' },
+      { id: 'inventory', label: 'Inventory', icon: 'fas fa-warehouse' },
+      { id: 'diesel', label: 'Diesel & Cash', icon: 'fas fa-gas-pump' },
+      { id: 'master', label: 'Master Data', icon: 'fas fa-database' }
+    ],
 
-document.querySelectorAll(".nav button").forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll(".nav button").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    page = btn.dataset.page;
-    render();
-  };
-});
+    // ========== Business Data ==========
+    master: JSON.parse(JSON.stringify(initialMaster)),
+    inventories: JSON.parse(JSON.stringify(initialInventories)),
+    parties: [],
+    purchases: [...samplePurchases],
+    sales: [...sampleSales],
+    payments: [],
+    dieselEntries: [],
+    ledgerBank: 'ALL',
+    purchaseFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'' },
+    saleFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'' },
 
-function opts(list, selected="") { return list.map(x => `<option ${x===selected?"selected":""}>${esc(x)}</option>`).join(""); }
-function esc(s){ return String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;"); }
-function money(n){ return Number(n||0).toLocaleString("en-PK"); }
-function num(n){ return Number(n||0).toFixed(3); }
-function uniqueFrom(arr, key){
-  return [...new Set(arr.map(r => Array.isArray(r[key]) ? r[key].join(" + ") : r[key]).filter(Boolean))].sort();
-}
+    totals: {
+      purchased: 1743.83,
+      sold: 1744.73,
+      stock: 312,
+      soldOut: 0
+    },
 
-function render() {
-  document.getElementById("pageTitle").textContent = TITLES[page] || page;
-  const v = document.getElementById("view");
-  const map = {
-    master: masterView, purchases: purchaseListView, purchaseForm: purchaseFormView,
-    sales: saleListView, saleForm: saleFormView, payments: paymentListView,
-    paymentForm: paymentFormView, masterLedger: masterLedgerView
-  };
-  v.innerHTML = map[page] ? map[page]() : `<div class="card"><h3>${TITLES[page]}</h3><p class="note">Listing columns purchase sheet jaisi simple rehti hain.</p></div>`;
-}
+    // ========== Forms ==========
+    purchaseForm: {
+      dealType: 'stock',
+      loadingDate: '', bowser: '', party: 'RPG Plant - STOCK', city: '', plant: '',
+      qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '',
+      tradingParty: 'MLG', remarks: '',
+      loadFroms: [{ location: '', city: '', qty: '' }],
+      splits: [
+        { destType: 'stock', party: 'RPG Plant - STOCK', city: '', qty: '', unloadDate: '' }
+      ]
+    },
+    saleForm: {
+      dealType: 'from_stock',
+      date: '', bowser: '', party: '', city: '', plant: 'RPG STOCK - Karachi',
+      qty: '', rate: '', amount: '', remarks: '', brand: '', source: '',
+      loadFroms: [{ location: '', city: '', qty: '' }],
+      splits: [
+        { destType: 'party', party: '', city: '', qty: '', unloadDate: '' }
+      ]
+    },
+    paymentForm: {
+      date: '', type: 'Received', party: '', fromParty: '', toParty: '',
+      slip: '', tid: '', bank: '', fromBank: '', amount: '', remarks: '', proofName: '', proofData: '',
+      lines: [{ party: '', bank: '', tid: '', slip: '', amount: '', note: '' }]
+    },
+    stockForm: {
+      location: 'RPG Plant – STOCK', type: 'In', qty: '', notes: ''
+    },
+    dieselForm: {
+      date: '', bowser: '', type: 'Diesel', location: 'Mand', qty: '', rate: '', amount: ''
+    },
 
-function masterCard(title, key) {
-  return `<div class="card"><div class="card-head"><h3>${title}</h3><button class="add-link" onclick="openModal('${key}','${title}')">+ Add New</button></div>
-    <div class="pills">${MASTER[key].map((x,i)=>`<span class="pill">${esc(x)} <span class="x" onclick="removeMaster('${key}',${i})">✕</span></span>`).join("")}</div></div>`;
-}
-function masterView() {
-  return `<div class="grid-2">
-    ${masterCard("Parties","parties")}
-    ${masterCard("Bowsers","bowsers")}
-    ${masterCard("Cities","cities")}
-    ${masterCard("Filling Plants / Boarders","plants")}
-    ${masterCard("Banks / Accounts","banks")}
-    ${masterCard("Type / Origin of Goods / Brand","brands")}
-  </div>`;
-}
-function sheetHead(title) {
-  return `<div class="sheet-logo">
-    <img src="logo.png" alt="MLG" />
-    <div><strong>MEER LOGISTICS &amp; GAS ENERGY</strong>
-    <div class="co">Your trust, our priority · Logistics, gas, trade and import export</div></div>
-  </div>
-  <h3 style="margin:4px 0 8px">${title}</h3>`;
-}
+    masterSections: [
+      { key: 'party', title: 'Parties' },
+      { key: 'bowser', title: 'Bowsers' },
+      { key: 'city', title: 'Cities' },
+      { key: 'plant', title: 'Filling Plants / Boarders' },
+      { key: 'bank', title: 'Banks / Accounts' },
+      { key: 'source', title: 'Type / Origin of Goods / Brand' }
+    ],
 
-function applyListFilter(rows, f) {
-  return rows.filter(r => {
-    const blob = [r.no,r.loadDate,r.brand,r.unloadDate,r.bowser,r.party,r.city,r.plant,(r.loadedFrom||[]).join(" ")].join(" ").toLowerCase();
-    if (f.q && !blob.includes(f.q.toLowerCase())) return false;
-    if (f.month && f.month !== "All months") {
-      const mon = f.month.split(" ")[0].slice(0,3);
-      if (!String(r.loadDate).includes(mon) && !String(r.unloadDate).includes(mon)) return false;
+    recentActivity: [
+      { title: 'Sale – Aziz Plant', sub: 'NLA 026 • 30.305 T', value: '11.38M', color: 'text-emerald-600' },
+      { title: 'Purchase – RPG Stock', sub: 'TMQ 013 • 52.32 T', value: '+52.32', color: 'text-teal-600' },
+      { title: 'Payment Received', sub: 'NEW JAMALI', value: '2.7M', color: 'text-blue-600' }
+    ],
+
+    // ========== Computed ==========
+    get currentInv() {
+      return this.inventories.find(i => i.id === this.selectedInv) || this.inventories[0];
+    },
+    get filteredParties() {
+      const q = (this.partySearch || '').toLowerCase();
+      return this.parties.filter(p =>
+        !q || p.name.toLowerCase().includes(q) || (p.city || '').toLowerCase().includes(q)
+      );
+    },
+
+    // ========== Lifecycle ==========
+    init() {
+      this.parties = createInitialParties(this.master.party);
+      this.refreshDatalists();
+      this.loadFromStorage();
+      this.recalcTotals();
+      this.tickClock();
+      this._clockTimer = setInterval(() => this.tickClock(), 1000);
+      if (!this.paymentForm.date) this.paymentForm.date = today();
+      if (!this.paymentForm.lines || !this.paymentForm.lines.length) {
+        this.paymentForm.lines = [this.blankPaymentLine()];
+      }
+    },
+
+    tickClock() {
+      const now = new Date();
+      this.clockNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      this.clockDate = now.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+      const h = now.getHours();
+      if (h < 12) { this.greeting = 'Good Morning'; this.greetIcon = '☀️'; }
+      else if (h < 17) { this.greeting = 'Good Afternoon'; this.greetIcon = '🌤️'; }
+      else { this.greeting = 'Good Evening'; this.greetIcon = '🌙'; }
+    },
+
+    openBusinessProfile() {
+      this.showToast('Business profile — coming soon');
+    },
+
+    startWork(kind) {
+      if (kind === 'buy_stock') {
+        this.purchaseForm.dealType = 'stock';
+        this.purchaseForm.party = 'RPG Plant - STOCK';
+        this.go('purchase');
+      } else if (kind === 'buy_direct') {
+        this.purchaseForm.dealType = 'direct';
+        this.purchaseForm.party = '';
+        this.go('purchase');
+      } else if (kind === 'sell_stock') {
+        this.saleForm.dealType = 'from_stock';
+        this.saleForm.plant = 'RPG STOCK - Karachi';
+        this.go('sale');
+      } else if (kind === 'sell_direct') {
+        this.saleForm.dealType = 'direct';
+        this.saleForm.plant = '';
+        this.go('sale');
+      } else if (kind === 'pay') {
+        this.go('payment');
+      } else if (kind === 'ledger') {
+        this.go('parties');
+      }
+    },
+
+    setPurchaseDeal(type) {
+      this.purchaseForm.dealType = type;
+      if (type === 'stock') {
+        this.purchaseForm.party = 'RPG Plant - STOCK';
+        this.purchaseForm.splits = [
+          { destType: 'stock', party: 'RPG Plant - STOCK', city: '', qty: this.purchaseForm.qty || '', unloadDate: '' }
+        ];
+      } else {
+        this.purchaseForm.party = '';
+        this.purchaseForm.splits = [
+          { destType: 'party', party: '', city: '', qty: this.purchaseForm.qty || '', unloadDate: '' }
+        ];
+      }
+    },
+
+    addPurchaseSplit() {
+      if (!this.purchaseForm.splits) this.purchaseForm.splits = [];
+      this.purchaseForm.splits.push({ destType: 'party', party: '', city: '', qty: '', unloadDate: '' });
+      this.purchaseForm.dealType = this.purchaseForm.splits.length > 1 ? 'split' : this.purchaseForm.dealType;
+    },
+
+    removePurchaseSplit(i) {
+      if (!this.purchaseForm.splits || this.purchaseForm.splits.length <= 1) return;
+      this.purchaseForm.splits.splice(i, 1);
+    },
+
+    purchaseSplitQtyTotal() {
+      return (this.purchaseForm.splits || []).reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+    },
+
+    addLoadFrom(formKey) {
+      const f = this[formKey] || this.purchaseForm;
+      if (!f.loadFroms) f.loadFroms = [];
+      f.loadFroms.push({ location: '', city: '', qty: '' });
+    },
+    removeLoadFrom(formKey, i) {
+      const f = this[formKey] || this.purchaseForm;
+      if (!f.loadFroms || f.loadFroms.length <= 1) return;
+      f.loadFroms.splice(i, 1);
+    },
+    addSaleSplit() {
+      if (!this.saleForm.splits) this.saleForm.splits = [];
+      this.saleForm.splits.push({ destType: 'party', party: '', city: '', qty: '', unloadDate: '' });
+    },
+    removeSaleSplit(i) {
+      if (!this.saleForm.splits || this.saleForm.splits.length <= 1) return;
+      this.saleForm.splits.splice(i, 1);
+    },
+    saleSplitQtyTotal() {
+      return (this.saleForm.splits || []).reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+    },
+    applyRowFilter(rows, f) {
+      const q = (f.q || '').toLowerCase();
+      return (rows || []).filter(r => {
+        const blob = [r.date, r.bowser, r.party, r.city, r.plant, r.source, r.brand, r.qty, r.amount].join(' ').toLowerCase();
+        if (q && !blob.includes(q)) return false;
+        if (f.brand && r.brand !== f.brand && r.source !== f.brand) return false;
+        if (f.bowser && r.bowser !== f.bowser) return false;
+        if (f.party && r.party !== f.party) return false;
+        if (f.city && r.city !== f.city) return false;
+        if (f.plant && r.plant !== f.plant) return false;
+        return true;
+      });
+    },
+    get filteredPurchases() { return this.applyRowFilter(this.purchases, this.purchaseFilter); },
+    get filteredSales() { return this.applyRowFilter(this.sales, this.saleFilter); },
+    uniqueField(rows, key) {
+      return [...new Set((rows || []).map(r => r[key]).filter(Boolean))];
+    },
+    masterLedgerRows() {
+      const bank = this.ledgerBank;
+      const rows = [];
+      (this.payments || []).forEach(p => {
+        const lines = (p.lines && p.lines.length) ? p.lines : [{
+          party: p.party || p.toParty || '', bank: p.bank || '', tid: p.tid || '', amount: p.amount, note: p.remarks || ''
+        }];
+        lines.forEach(l => {
+          const title = l.bank || p.bank || 'Cash / Bank';
+          if (bank !== 'ALL' && title !== bank) return;
+          const amt = parseFloat(l.amount || p.amount) || 0;
+          const inbound = (p.type === 'Received' || p.type === 'Transfer' && (l.bank || p.bank) === title);
+          rows.push({
+            date: p.date,
+            description: (p.remarks || p.type || 'Payment') + ' / ' + title,
+            bank: title,
+            tid: l.tid || p.tid || '',
+            sender: p.type === 'Received' ? (l.party || p.party || p.fromParty || '') : (p.fromBank || title),
+            receiver: p.type === 'Paid' ? (l.party || p.party || p.toParty || '') : title,
+            amountIn: p.type === 'Received' ? amt : (p.type === 'Transfer' && title === (l.bank || p.bank) ? amt : 0),
+            amountOut: p.type === 'Paid' ? amt : (p.type === 'Transfer' && title === p.fromBank ? amt : 0)
+          });
+        });
+      });
+      let bal = 0;
+      return rows.map((r, i) => {
+        bal += (r.amountIn || 0) - (r.amountOut || 0);
+        return { serial: i + 1, ...r, amount: (r.amountIn || 0) - (r.amountOut || 0), balance: bal };
+      });
+    },
+
+    onSplitTypeChange(row) {
+      if (row.destType === 'stock') row.party = 'RPG Plant - STOCK';
+      else if (row.party === 'RPG Plant - STOCK') row.party = '';
+    },
+
+    setSaleDeal(type) {
+      this.saleForm.dealType = type;
+      if (type === 'from_stock') this.saleForm.plant = 'RPG STOCK - Karachi';
+    },
+
+    recalcTotals() {
+      const sumQty = (arr) => (arr || []).reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+      this.totals.purchased = Math.round(sumQty(this.purchases) * 1000) / 1000;
+      this.totals.sold = Math.round(sumQty(this.sales) * 1000) / 1000;
+      const inv = this.inventories[0];
+      this.totals.stock = inv ? (parseFloat(inv.qty) || 0) : 0;
+    },
+
+    // ========== Navigation ==========
+    go(id) {
+      this.section = id;
+      this.sidebarOpen = false;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    showToast(msg) {
+      this.toast = { show: true, msg };
+      setTimeout(() => { this.toast.show = false; }, 2800);
+    },
+
+    // ========== Helpers exposed to template ==========
+    fmt, fmtMoney, formatDateDisplay,
+
+    // ========== Datalists ==========
+    refreshDatalists() {
+      const map = {
+        bowser: 'bowserList', party: 'partyList', city: 'cityList',
+        plant: 'plantList', bank: 'bankList', source: 'sourceList'
+      };
+      Object.keys(map).forEach(k => {
+        const el = document.getElementById(map[k]);
+        if (el) {
+          el.innerHTML = (this.master[k] || []).map(v => `<option value="${v}">`).join('');
+        }
+      });
+      const loadFrom = document.getElementById('loadFromList');
+      if (loadFrom) {
+        const merged = [...new Set([...(this.master.source || []), ...(this.master.plant || [])])];
+        loadFrom.innerHTML = merged.map(v => `<option value="${v}">`).join('');
+      }
+    },
+
+    // ========== Persistence (LocalStorage) ==========
+    saveToStorage() {
+      try {
+        const payload = {
+          parties: this.parties,
+          purchases: this.purchases,
+          sales: this.sales,
+          payments: this.payments,
+          inventories: this.inventories,
+          master: this.master,
+          totals: this.totals
+        };
+        localStorage.setItem('mlg_erp_v4', JSON.stringify(payload));
+      } catch (e) { console.warn('Storage save failed', e); }
+    },
+
+    loadFromStorage() {
+      try {
+        const raw = localStorage.getItem('mlg_erp_v4');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data.parties) this.parties = data.parties;
+        if (data.purchases) this.purchases = data.purchases;
+        if (data.sales) this.sales = data.sales;
+        if (data.payments) this.payments = data.payments;
+        if (data.inventories) this.inventories = data.inventories;
+        if (data.master) this.master = data.master;
+        if (data.totals) this.totals = data.totals;
+        this.refreshDatalists();
+      } catch (e) { console.warn('Storage load failed', e); }
+    },
+
+    // ========== Party & Auto Ledger Engine ==========
+    openPartyLedger(p) {
+      this.activeParty = p;
+    },
+
+    confirmAddParty() {
+      const name = (this.newPartyName || '').trim();
+      if (!name) return;
+      if (!this.master.party.includes(name)) {
+        this.master.party.push(name);
+        this.parties.push({
+          id: 'p' + Date.now(),
+          name,
+          city: this.newPartyCity || '',
+          balance: 0,
+          last: 'New',
+          ledger: []
+        });
+        this.refreshDatalists();
+        this.saveToStorage();
+        this.showToast(`"${name}" added successfully`);
+      }
+      this.showAddParty = false;
+      this.newPartyName = '';
+      this.newPartyCity = '';
+    },
+
+    addMasterItem(key) {
+      const val = prompt(`Add new ${key}:`);
+      if (val && val.trim() && !this.master[key].includes(val.trim())) {
+        this.master[key].push(val.trim());
+        this.refreshDatalists();
+        this.saveToStorage();
+        this.showToast(`Added to ${key}`);
+      }
+    },
+
+    /**
+     * CORE: Auto post to Party Ledger
+     * This is the heart of the system – every Sale / Payment / relevant Purchase
+     * automatically creates a ledger entry and updates running balance.
+     */
+    postToLedger(partyName, narration, debit = 0, credit = 0, extra = {}) {
+      if (!partyName) return;
+      let p = this.parties.find(x => (x.name || '').toLowerCase() === partyName.toLowerCase());
+      if (!p) {
+        p = {
+          id: 'p' + Date.now(),
+          name: partyName,
+          city: '',
+          balance: 0,
+          last: '—',
+          ledger: [],
+          isBank: !!(extra.isBank || String(partyName).indexOf('MLG • ') === 0)
+        };
+        this.parties.push(p);
+      }
+      const debitN = Number(debit) || 0;
+      const creditN = Number(credit) || 0;
+      const newBalance = (Number(p.balance) || 0) + debitN - creditN;
+      p.balance = newBalance;
+      p.last = formatDateDisplay(new Date());
+      p.ledger.unshift({
+        date: extra.date ? formatDateDisplay(extra.date) : formatDateDisplay(new Date()),
+        narration: narration || '',
+        bowser: extra.bowser || '',
+        tid: extra.tid || '',
+        fromParty: extra.fromParty || '',
+        toParty: extra.toParty || '',
+        qty: extra.qty != null && extra.qty !== '' ? String(extra.qty) : '',
+        rate: extra.rate != null && extra.rate !== '' ? String(extra.rate) : '',
+        debit: debitN,
+        credit: creditN,
+        balance: newBalance,
+        sourceType: extra.sourceType || '',
+        sourceId: extra.sourceId || ''
+      });
+    },
+
+    rebuildPartyBalance(p) {
+      if (!p || !p.ledger) return;
+      const chrono = [...p.ledger].reverse();
+      let bal = 0;
+      chrono.forEach(e => {
+        bal = bal + (Number(e.debit) || 0) - (Number(e.credit) || 0);
+        e.balance = bal;
+      });
+      p.balance = bal;
+      p.ledger = chrono.reverse();
+    },
+
+    removeLedgerBySource(sourceType, sourceId) {
+      (this.parties || []).forEach(p => {
+        const before = (p.ledger || []).length;
+        p.ledger = (p.ledger || []).filter(e => !(e.sourceType === sourceType && String(e.sourceId) === String(sourceId)));
+        if (p.ledger.length !== before) this.rebuildPartyBalance(p);
+      });
+    },
+
+    removeStockBySource(sourceId) {
+      const inv = this.inventories[0];
+      if (!inv) return;
+      const hit = (inv.movements || []).filter(m => String(m.sourceId) === String(sourceId));
+      hit.forEach(m => {
+        const q = parseFloat(m.qty) || 0;
+        const cur = parseFloat(inv.qty) || 0;
+        inv.qty = Math.round((m.type === 'Out' ? cur + q : cur - q) * 1000) / 1000;
+      });
+      inv.movements = (inv.movements || []).filter(m => String(m.sourceId) !== String(sourceId));
+      inv.qtyLabel = '~ ' + inv.qty;
+      inv.status = inv.qty > 0 ? 'Available' : 'Empty';
+      this.totals.stock = inv.qty;
+    },
+
+    confirmDelete(label) {
+      return window.confirm('Delete this ' + label + '? Linked stock and ledger lines will be reversed.');
+    },
+
+    deletePurchase(row) {
+      if (!row || !this.confirmDelete('purchase')) return;
+      this.removeLedgerBySource('purchase', row.id);
+      this.removeStockBySource(row.id);
+      this.purchases = this.purchases.filter(x => x.id !== row.id);
+      this.recalcTotals();
+      this.saveToStorage();
+      this.showToast('Purchase deleted and linked records reversed');
+    },
+
+    deleteSale(row) {
+      if (!row || !this.confirmDelete('sale')) return;
+      this.removeLedgerBySource('sale', row.id);
+      this.removeStockBySource(row.id);
+      this.sales = this.sales.filter(x => x.id !== row.id);
+      this.recalcTotals();
+      this.saveToStorage();
+      this.showToast('Sale deleted and linked records reversed');
+    },
+
+    deletePayment(row) {
+      if (!row || !this.confirmDelete('payment')) return;
+      this.removeLedgerBySource('payment', row.id);
+      this.payments = this.payments.filter(x => x.id !== row.id);
+      this.saveToStorage();
+      this.showToast('Payment deleted and ledger reversed');
+    },
+
+    deleteMovement(m, idx) {
+      if (!this.confirmDelete('stock movement')) return;
+      if (m && m.sourceId) this.removeStockBySource(m.sourceId);
+      else {
+        const inv = this.inventories[0];
+        if (!inv) return;
+        const q = parseFloat(m.qty) || 0;
+        const cur = parseFloat(inv.qty) || 0;
+        inv.qty = Math.round((m.type === 'Out' ? cur + q : cur - q) * 1000) / 1000;
+        inv.movements.splice(idx, 1);
+        inv.qtyLabel = '~ ' + inv.qty;
+        this.totals.stock = inv.qty;
+      }
+      this.recalcTotals();
+      this.saveToStorage();
+      this.showToast('Stock movement removed');
+    },
+
+    editPurchase(row) {
+      const dealType = row.dealType || ((row.party || '').toUpperCase().includes('STOCK') ? 'stock' : 'direct');
+      const splits = (row.splits && row.splits.length)
+        ? row.splits.map(s => ({
+            destType: s.destType || 'party',
+            party: s.party || '',
+            city: s.city || '',
+            qty: s.qty || '',
+            unloadDate: s.unloadDate || ''
+          }))
+        : [{
+            destType: dealType === 'stock' ? 'stock' : 'party',
+            party: dealType === 'stock' ? 'RPG Plant - STOCK' : (row.party || ''),
+            city: row.city || '',
+            qty: row.qty || '',
+            unloadDate: row.unloadDate || ''
+          }];
+      this.purchaseForm = {
+        dealType,
+        loadingDate: row.date || '',
+        bowser: row.bowser || '',
+        party: row.party || '',
+        city: row.city || '',
+        plant: row.plant || row.source || '',
+        source: row.source || row.plant || '',
+        qty: row.qty || '',
+        rate: row.rate || '',
+        amount: row.amount || '',
+        unloadDate: row.unloadDate || '',
+        remarks: row.remarks || '',
+        splits,
+        editingId: row.id
+      };
+      this.go('purchase');
+      this.showToast('Edit mode — save to replace this purchase');
+    },
+
+    editSale(row) {
+      this.saleForm = {
+        dealType: row.dealType || ((row.plant || '').toUpperCase().includes('STOCK') || (row.plant || '').toUpperCase().includes('RPG') ? 'from_stock' : 'direct'),
+        date: row.date || '',
+        bowser: row.bowser || '',
+        party: row.party || '',
+        city: row.city || '',
+        plant: row.plant || '',
+        qty: row.qty || '',
+        rate: row.rate || '',
+        amount: row.amount || '',
+        remarks: row.remarks || '',
+        editingId: row.id
+      };
+      this.go('sale');
+      this.showToast('Edit mode — save to replace this sale');
+    },
+
+    editPayment(row) {
+      const lines = (row.lines && row.lines.length)
+        ? row.lines.map(l => ({
+            party: l.party || '',
+            bank: l.bank || '',
+            tid: l.tid || '',
+            slip: l.slip || '',
+            amount: l.amount || '',
+            note: l.note || ''
+          }))
+        : [{
+            party: row.type === 'Transfer' ? (row.toParty || '') : (row.party || row.toParty || ''),
+            bank: row.bank || '',
+            tid: row.tid || '',
+            slip: row.slip || '',
+            amount: row.amount || '',
+            note: ''
+          }];
+      this.paymentForm = {
+        date: row.date || today(),
+        type: row.type || 'Received',
+        party: row.party || '',
+        fromParty: row.fromParty || '',
+        toParty: row.toParty || '',
+        slip: row.slip || '',
+        tid: row.tid || '',
+        bank: row.bank || '',
+        fromBank: row.fromBank || '',
+        amount: row.amount || '',
+        remarks: row.remarks || '',
+        proofName: row.proofName || '',
+        proofData: row.proofData || '',
+        editingId: row.id,
+        lines
+      };
+      this.go('payment');
+      this.showToast('Edit mode — save to replace this payment');
+    },
+
+    calcPurchase() {
+      this.purchaseForm.amount = calcAmount(this.purchaseForm.qty, this.purchaseForm.rate);
+    },
+
+    calcSale() {
+      this.saleForm.amount = calcAmount(this.saleForm.qty, this.saleForm.rate);
+    },
+
+    getBowser(e) {
+      if (!e) return '';
+      if (e.bowser) return e.bowser;
+      const m = String(e.narration || '').match(/\b([A-Z]{2,4}\s?-?\s?\d{2,5})\b/i);
+      return m ? m[1].toUpperCase() : '';
+    },
+
+    getQty(e) {
+      if (!e) return '';
+      if (e.qty) return e.qty;
+      const m = String(e.narration || '').match(/(\d+(?:\.\d+)?)\s*(?:T|Ton|MT)\b/i);
+      return m ? m[1] : '';
+    },
+
+    getTid(e) {
+      if (!e) return '';
+      if (e.tid) return e.tid;
+      const m = String(e.narration || '').match(/\b(\d{8,20})\b/);
+      return m ? m[1] : '';
+    },
+
+    getFrom(e) {
+      if (!e) return '';
+      return e.fromParty || '';
+    },
+
+    getTo(e) {
+      if (!e) return '';
+      return e.toParty || '';
+    },
+
+    getRate(e) {
+      if (!e) return '';
+      if (e.rate) return e.rate;
+      const bowser = this.getBowser(e);
+      const qty = String(this.getQty(e) || '');
+      const fromPurchase = (this.purchases || []).find(p =>
+        (!bowser || String(p.bowser || '').toUpperCase() === bowser.toUpperCase()) &&
+        (!qty || String(p.qty || '') === qty) &&
+        p.rate
+      );
+      if (fromPurchase && fromPurchase.rate) return fromPurchase.rate;
+      const fromSale = (this.sales || []).find(s =>
+        (!bowser || String(s.bowser || '').toUpperCase() === bowser.toUpperCase()) &&
+        (!qty || String(s.qty || '') === qty) &&
+        s.rate
+      );
+      if (fromSale && fromSale.rate) return fromSale.rate;
+      const q = parseFloat(qty);
+      const debit = Number(e.debit) || 0;
+      if (q && debit) return Math.round(debit / q);
+      return '';
+    },
+
+    formatLedgerDesc(e) {
+      if (!e) return '';
+      const parts = [];
+      const base = String(e.narration || '').replace(/\s+/g, ' ').trim();
+      if (base) parts.push(base);
+
+      const bowser = this.getBowser(e);
+      const qty = this.getQty(e);
+      const rate = this.getRate(e);
+      const tid = this.getTid(e);
+      const fromP = this.getFrom(e);
+      const toP = this.getTo(e);
+
+      const extra = [];
+      if (bowser && !base.toUpperCase().includes(String(bowser).toUpperCase())) extra.push('Bowser ' + bowser);
+      if (qty && !base.includes(String(qty))) extra.push('Qty ' + qty + ' MT');
+      if (rate) extra.push('Rate ' + this.fmtMoney(rate));
+      if (tid && !base.includes(String(tid))) extra.push('TID ' + tid);
+      if (fromP && toP) extra.push('From ' + fromP + ' To ' + toP);
+      else if (fromP && !base.toLowerCase().includes(fromP.toLowerCase())) extra.push('From ' + fromP);
+      else if (toP && !base.toLowerCase().includes(toP.toLowerCase())) extra.push('To ' + toP);
+
+      if (extra.length) parts.push(extra.join(' | '));
+      return parts.filter(Boolean).join('  •  ');
+    },
+
+    applyStockMove(type, qty, remarks, dateStr, sourceId) {
+      const inv = this.inventories[0];
+      if (!inv) return;
+      const q = parseFloat(qty) || 0;
+      const current = parseFloat(inv.qty) || 0;
+      const signedType = type === 'Out' ? 'Out' : 'In';
+      const next = signedType === 'Out' ? current - q : current + q;
+      inv.qty = Math.round(next * 1000) / 1000;
+      inv.qtyLabel = '~ ' + inv.qty;
+      inv.status = inv.qty > 0 ? 'Available' : 'Empty';
+      inv.statusClass = inv.qty > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500';
+      inv.movements.unshift({
+        date: dateStr || formatDateDisplay(new Date()),
+        type: signedType,
+        qty: String(qty),
+        remarks: remarks || '',
+        sourceId: sourceId || ''
+      });
+      this.totals.stock = inv.qty;
+    },
+
+    rebuildLedgerNarration(kind, f) {
+      const bits = [];
+      bits.push(kind);
+      if (f.bowser) bits.push('Bowser ' + f.bowser);
+      if (f.qty) bits.push(f.qty + ' MT');
+      if (f.plant) bits.push('Plant ' + f.plant);
+      if (f.source) bits.push('Source ' + f.source);
+      if (f.city) bits.push(f.city);
+      if (f.remarks) bits.push(f.remarks);
+      if (!f.rate) bits.push('Rate pending');
+      return bits.join(' • ');
+    },
+
+    savePurchase() {
+      const f = this.purchaseForm;
+      if (!f.loadingDate || !f.bowser || !f.qty) {
+        this.showToast('Loading date, bowser and quantity are required. Rate can be added later.');
+        return;
+      }
+      let splits = (f.splits || []).map(s => ({
+        destType: s.destType === 'stock' || String(s.party || '').toUpperCase().includes('STOCK') ? 'stock' : 'party',
+        party: s.destType === 'stock' ? 'RPG Plant - STOCK' : (s.party || '').trim(),
+        city: s.city || '',
+        qty: s.qty,
+        unloadDate: s.unloadDate || ''
+      })).filter(s => parseFloat(s.qty) > 0);
+
+      if (!splits.length) {
+        if (!f.party) {
+          this.showToast('Add at least one destination with quantity.');
+          return;
+        }
+        splits = [{
+          destType: f.dealType === 'stock' ? 'stock' : 'party',
+          party: f.party,
+          city: f.city || '',
+          qty: f.qty,
+          unloadDate: f.unloadDate || ''
+        }];
+      }
+
+      const missingParty = splits.find(s => s.destType === 'party' && !s.party);
+      if (missingParty) {
+        this.showToast('Each party destination needs a party name.');
+        return;
+      }
+
+      const splitTotal = splits.reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
+      const loadQty = parseFloat(f.qty) || 0;
+      if (splitTotal - loadQty > 0.001) {
+        this.showToast('Destination quantities cannot exceed loaded quantity.');
+        return;
+      }
+
+      if (f.editingId) {
+        const old = this.purchases.find(x => x.id === f.editingId);
+        if (old) {
+          this.removeLedgerBySource('purchase', old.id);
+          this.removeStockBySource(old.id);
+          this.purchases = this.purchases.filter(x => x.id !== old.id);
+        }
+      }
+
+      splits = splits.map(s => {
+        if (s.destType === 'stock' && !s.unloadDate) s.unloadDate = f.loadingDate;
+        return s;
+      });
+
+      const hasStock = splits.some(s => s.destType === 'stock');
+      const hasParty = splits.some(s => s.destType === 'party');
+      const dealType = hasStock && hasParty ? 'split' : (hasStock ? 'stock' : 'direct');
+      const allDelivered = splits.every(s => s.unloadDate || s.destType === 'stock');
+      const status = allDelivered ? 'Delivered' : (splitTotal < loadQty ? 'Partial / On Route' : 'On Route');
+      const partyLabel = dealType === 'split'
+        ? splits.map(s => (s.destType === 'stock' ? 'STOCK' : s.party) + ' ' + s.qty + 'T').join(' + ')
+        : splits[0].party;
+
+      const rec = {
+        id: Date.now(),
+        date: f.loadingDate,
+        bowser: f.bowser,
+        party: partyLabel,
+        city: splits[0].city || f.city || '',
+        plant: f.source || f.plant,
+        source: f.source || f.plant,
+        remarks: f.remarks,
+        qty: f.qty,
+        rate: f.rate || '',
+        amount: f.rate ? calcAmount(f.qty, f.rate) : '',
+        status,
+        unloadDate: splits.map(s => s.unloadDate).filter(Boolean).join(', '),
+        ratePending: !f.rate,
+        dealType,
+        splits
+      };
+      this.purchases.unshift(rec);
+
+      splits.forEach(s => {
+        const q = parseFloat(s.qty) || 0;
+        const lineAmt = f.rate ? calcAmount(q, f.rate) : '';
+        if (s.destType === 'stock') {
+          this.applyStockMove(
+            'In',
+            q,
+            `${f.bowser} – ${s.qty}T to stock` + (f.source ? ` from ${f.source}` : ''),
+            formatDateDisplay(s.unloadDate || f.loadingDate),
+            rec.id
+          );
+        } else {
+          this.postToLedger(
+            s.party,
+            this.rebuildLedgerNarration('Purchase / Loading', {
+              ...f,
+              party: s.party,
+              qty: s.qty,
+              amount: lineAmt,
+              remarks: (f.remarks || '') + (splits.length > 1 ? ` • Split ${s.qty}T` : '')
+            }),
+            parseAmount(lineAmt),
+            0,
+            {
+              qty: s.qty, rate: f.rate, bowser: f.bowser, date: f.loadingDate,
+              sourceType: 'purchase', sourceId: rec.id
+            }
+          );
+        }
+      });
+
+      this.showToast(dealType === 'split'
+        ? 'Split purchase saved — stock and party ledgers updated'
+        : (dealType === 'stock' ? 'Purchase posted to company stock' : 'Purchase posted to party ledger'));
+      this.purchaseForm = {
+        dealType: dealType === 'direct' ? 'direct' : 'stock',
+        loadingDate: '', bowser: '', party: dealType === 'direct' ? '' : 'RPG Plant - STOCK', city: '', plant: '',
+        qty: '', rate: '', amount: '', unloadDate: '', source: '', remarks: '', editingId: null,
+        splits: dealType === 'direct'
+          ? [{ destType: 'party', party: '', city: '', qty: '', unloadDate: '' }]
+          : [{ destType: 'stock', party: 'RPG Plant - STOCK', city: '', qty: '', unloadDate: '' }]
+      };
+      this.recalcTotals();
+      this.saveToStorage();
+    },
+
+    /** Excel-style: pehle Ton, baad mein rate — amount + ledger auto update */
+    applyPendingRate(kind, id, newRate) {
+      const rate = parseFloat(newRate);
+      if (!rate) {
+        this.showToast('Valid rate daalein');
+        return;
+      }
+      const list = kind === 'sale' ? this.sales : this.purchases;
+      const rec = list.find(x => x.id === id);
+      if (!rec) return;
+      rec.rate = String(rate);
+      rec.amount = calcAmount(rec.qty, rate);
+      rec.ratePending = false;
+      const amt = parseAmount(rec.amount);
+      const partyName = rec.party;
+      const p = this.parties.find(x => (x.name || '').toLowerCase() === String(partyName || '').toLowerCase());
+      if (p && p.ledger) {
+        const row = p.ledger.find(e =>
+          String(e.bowser || '') === String(rec.bowser || '') &&
+          String(e.qty || '') === String(rec.qty || '') &&
+          (!e.rate || e.narration && e.narration.includes('Rate pending'))
+        );
+        if (row) {
+          const oldDebit = Number(row.debit) || 0;
+          row.rate = String(rate);
+          row.debit = amt;
+          row.narration = String(row.narration || '').replace(/\s*•\s*Rate pending/g, '') + ' • Rate updated';
+          const diff = amt - oldDebit;
+          p.balance = (Number(p.balance) || 0) + diff;
+          row.balance = (Number(row.balance) || 0) + diff;
+        }
+      }
+      this.showToast('Rate save • Amount ' + rec.amount);
+      this.saveToStorage();
+    },
+
+    saveSale() {
+      const f = this.saleForm;
+      if (!f.date || !f.bowser || !f.party || !f.qty) {
+        this.showToast('Date, bowser, party and quantity are required. Rate is optional.');
+        return;
+      }
+      if (f.editingId) {
+        const old = this.sales.find(x => x.id === f.editingId);
+        if (old) {
+          this.removeLedgerBySource('sale', old.id);
+          this.removeStockBySource(old.id);
+          this.sales = this.sales.filter(x => x.id !== old.id);
+        }
+      }
+      const rec = {
+        id: Date.now(),
+        date: f.date,
+        bowser: f.bowser,
+        party: f.party,
+        city: f.city,
+        plant: f.plant,
+        remarks: f.remarks,
+        qty: f.qty,
+        rate: f.rate || '',
+        amount: f.rate ? calcAmount(f.qty, f.rate) : '',
+        ratePending: !f.rate,
+        dealType: f.dealType || 'direct'
+      };
+      this.sales.unshift(rec);
+
+      this.postToLedger(f.party, this.rebuildLedgerNarration('Sale', f), parseAmount(rec.amount), 0, {
+        qty: f.qty, rate: f.rate, bowser: f.bowser, date: f.date,
+        sourceType: 'sale', sourceId: rec.id
+      });
+
+      const fromStock = f.dealType === 'from_stock' || (f.plant || '').toUpperCase().includes('RPG') || (f.plant || '').toUpperCase().includes('STOCK');
+      if (fromStock) {
+        this.applyStockMove('Out', f.qty, `Sale to ${f.party}` + (f.remarks ? ' • ' + f.remarks : ''), formatDateDisplay(f.date), rec.id);
+      }
+
+      this.showToast(rec.ratePending ? 'Sale ledger me • Rate pending' : 'Sale saved • Party Ledger auto-updated');
+      this.saleForm = {
+        dealType: f.dealType || 'from_stock',
+        date: '', bowser: '', party: '', city: '',
+        plant: fromStock ? 'RPG STOCK - Karachi' : '',
+        qty: '', rate: '', amount: '', remarks: '', editingId: null
+      };
+      this.recalcTotals();
+      this.saveToStorage();
+    },
+
+    blankPaymentLine(bank) {
+      return { party: '', bank: bank || '', tid: '', slip: '', amount: '', note: '' };
+    },
+
+    resetPaymentForm(type) {
+      const lastBank = (this.paymentForm && this.paymentForm.bank) || '';
+      const lastFromBank = (this.paymentForm && this.paymentForm.fromBank) || '';
+      const keepType = type || (this.paymentForm && this.paymentForm.type) || 'Received';
+      const lineBank = keepType === 'Transfer' ? '' : lastBank;
+      this.paymentForm = {
+        date: today(),
+        type: keepType,
+        party: '', fromParty: '', toParty: '',
+        slip: '', tid: '', bank: lastBank, fromBank: lastFromBank, amount: '',
+        remarks: '', proofName: '', proofData: '', editingId: null,
+        lines: [this.blankPaymentLine(lineBank)]
+      };
+    },
+
+    onPaymentTypeChange() {
+      if (!this.paymentForm.lines || !this.paymentForm.lines.length) {
+        this.paymentForm.lines = [this.blankPaymentLine(this.paymentForm.bank)];
+      }
+    },
+
+    addPaymentLine(kind) {
+      if (!this.paymentForm.lines) this.paymentForm.lines = [];
+      const last = this.paymentForm.lines[this.paymentForm.lines.length - 1] || {};
+      const defaultToBank = this.paymentForm.type === 'Transfer' ? '' : (this.paymentForm.bank || last.bank || '');
+      const row = this.blankPaymentLine(defaultToBank);
+      if (this.paymentForm.type === 'Received') {
+        row.party = this.paymentForm.party || '';
+      } else if (kind === 'account') {
+        row.party = last.party || this.paymentForm.toParty || this.paymentForm.party || '';
+        row.bank = '';
+      }
+      this.paymentForm.lines.push(row);
+    },
+
+    removePaymentLine(idx) {
+      if (!this.paymentForm.lines) return;
+      if (this.paymentForm.lines.length <= 1) {
+        this.paymentForm.lines.splice(0, 1, this.blankPaymentLine(this.paymentForm.bank));
+        return;
+      }
+      this.paymentForm.lines.splice(idx, 1);
+    },
+
+    paymentLinesTotal() {
+      return (this.paymentForm.lines || []).reduce((s, l) => s + (parseFloat(l.amount) || 0), 0);
+    },
+
+    companyLedgerName(bank) {
+      const b = String(bank || '').trim();
+      return b ? ('MLG • ' + b) : 'MLG • Cash / Bank';
+    },
+
+    paymentRefNote(line, header) {
+      const tid = (line.tid || header.tid || '').trim();
+      const slip = (line.slip || header.slip || '').trim();
+      const toBank = (line.bank || header.bank || '').trim();
+      const fromBank = String(header.fromBank || '').trim();
+      const extra = (line.note || header.remarks || '').trim();
+      let n = '';
+      if (tid) n += ` • TID ${tid}`;
+      if (slip) n += ` • Slip ${slip}`;
+      if (fromBank) n += ` • From bank ${fromBank}`;
+      if (toBank) n += ` • To bank ${toBank}`;
+      if (extra) n += ` • ${extra}`;
+      return n;
+    },
+
+    normalizePaymentLines() {
+      const f = this.paymentForm;
+      let lines = (f.lines || []).map(l => ({
+        party: String(l.party || '').trim(),
+        bank: String(l.bank || (f.type === 'Transfer' ? '' : f.bank) || '').trim(),
+        tid: String(l.tid || '').trim(),
+        slip: String(l.slip || '').trim(),
+        amount: parseFloat(l.amount) || 0,
+        note: String(l.note || '').trim()
+      })).filter(l => l.amount > 0);
+
+      if (!lines.length && (parseFloat(f.amount) || 0) > 0) {
+        lines = [{
+          party: String(f.type === 'Transfer' ? f.toParty : f.party || '').trim(),
+          bank: String(f.bank || '').trim(),
+          tid: String(f.tid || '').trim(),
+          slip: String(f.slip || '').trim(),
+          amount: parseFloat(f.amount) || 0,
+          note: ''
+        }];
+      }
+      return lines;
+    },
+
+    findDuplicatePaymentTid(tid, excludeId) {
+      const t = String(tid || '').trim().toLowerCase();
+      if (!t) return null;
+      return (this.payments || []).find(p => {
+        if (excludeId && String(p.id) === String(excludeId)) return false;
+        if (String(p.tid || '').trim().toLowerCase() === t) return p;
+        return (p.lines || []).some(l => String(l.tid || '').trim().toLowerCase() === t);
+      }) || null;
+    },
+
+    paymentTargetLabel(p) {
+      if (!p) return '—';
+      if (p.lines && p.lines.length) {
+        const names = [];
+        p.lines.forEach(l => {
+          const n = l.party || p.toParty || p.party;
+          if (n && names.indexOf(n) === -1) names.push(n);
+        });
+        if (names.length) return names.join(', ');
+      }
+      return p.toParty || (p.type === 'Made' || p.type === 'Received' ? p.party : '') || '—';
+    },
+
+    paymentFromLabel(p) {
+      if (!p) return '—';
+      if (p.fromParty) return p.fromParty;
+      if (p.type === 'Received') return p.party || '—';
+      if (p.type === 'Made') return p.fromParty || 'MLG';
+      return p.party || '—';
+    },
+
+    savePayment() {
+      const f = this.paymentForm;
+      if (!f.date) {
+        this.showToast('Date is required');
+        return;
+      }
+      const lines = this.normalizePaymentLines();
+      if (!lines.length) {
+        this.showToast('Add at least one amount line');
+        return;
+      }
+
+      const type = f.type || 'Received';
+      let fromParty = '';
+      if (type === 'Received') fromParty = String(f.party || f.fromParty || '').trim();
+      else if (type === 'Made') fromParty = 'MLG';
+      else fromParty = String(f.fromParty || f.party || '').trim();
+
+      if (type === 'Received' && !fromParty) {
+        this.showToast('Received: party name is required');
+        return;
+      }
+      if (type === 'Transfer' && !fromParty) {
+        this.showToast('Transfer: payer (From party) is required');
+        return;
+      }
+
+      const filled = lines.map(l => {
+        const party = type === 'Received'
+          ? fromParty
+          : (l.party || String(f.toParty || f.party || '').trim());
+        const tid = l.tid || String(f.tid || '').trim();
+        const slip = l.slip || String(f.slip || '').trim();
+        return { ...l, party, tid, slip };
+      });
+
+      const missingParty = filled.find(l => !l.party);
+      if (missingParty) {
+        this.showToast(type === 'Made' ? 'Each line needs the party you paid' : 'Each line needs the receiving party');
+        return;
+      }
+      const missingRef = filled.find(l => !l.tid && !l.slip);
+      if (missingRef) {
+        this.showToast('Each line needs TID or Slip / Voucher No');
+        return;
+      }
+
+      for (const l of filled) {
+        const dup = this.findDuplicatePaymentTid(l.tid, f.editingId);
+        if (dup) {
+          this.showToast('TID ' + l.tid + ' already used on ' + (dup.date || 'another payment') + ' — change TID or edit that entry');
+          return;
+        }
+      }
+
+      if (f.editingId) {
+        this.removeLedgerBySource('payment', f.editingId);
+        this.payments = this.payments.filter(x => x.id !== f.editingId);
+      }
+
+      const total = filled.reduce((s, l) => s + l.amount, 0);
+      const toNames = [...new Set(filled.map(l => l.party))];
+      const first = filled[0];
+      const note = String(f.remarks || '').trim();
+      const payId = f.editingId || Date.now();
+      const toLabel = toNames.join(', ');
+      const displayParty = type === 'Transfer'
+        ? (fromParty + ' → ' + toLabel)
+        : (type === 'Received' ? fromParty : toLabel);
+
+      this.payments.unshift({
+        id: payId,
+        date: f.date,
+        type,
+        party: displayParty,
+        fromParty,
+        toParty: type === 'Received' ? this.companyLedgerName(first.bank) : toLabel,
+        slip: first.slip,
+        tid: first.tid,
+        bank: first.bank || f.bank || '',
+        fromBank: f.fromBank || '',
+        amount: total,
+        remarks: note,
+        proofName: f.proofName || '',
+        proofData: f.proofData || '',
+        lines: filled
+      });
+
+      filled.forEach(l => {
+        const extra = {
+          date: f.date,
+          tid: l.tid,
+          fromParty,
+          toParty: type === 'Received' ? this.companyLedgerName(l.bank) : l.party,
+          sourceType: 'payment',
+          sourceId: payId
+        };
+        const ref = this.paymentRefNote(l, f);
+        if (type === 'Received') {
+          this.postToLedger(fromParty, 'Payment Received' + ref, 0, l.amount, extra);
+          this.postToLedger(this.companyLedgerName(l.bank), 'Received from ' + fromParty + ref, l.amount, 0, { ...extra, isBank: true });
+        } else if (type === 'Made') {
+          this.postToLedger(l.party, 'Payment Made' + ref, l.amount, 0, extra);
+          this.postToLedger(this.companyLedgerName(l.bank), 'Paid to ' + l.party + ref, 0, l.amount, { ...extra, isBank: true });
+        } else {
+          this.postToLedger(fromParty, 'Direct / Slip payment to ' + l.party + ref, 0, l.amount, extra);
+          this.postToLedger(l.party, 'Direct / Slip received from ' + fromParty + ref, l.amount, 0, extra);
+        }
+      });
+
+      const sides = type === 'Transfer'
+        ? (fromParty + ' + ' + toNames.length + ' receiver ledger' + (toNames.length > 1 ? 's' : ''))
+        : (type === 'Received' ? fromParty + ' + MLG bank' : toNames.length + ' party ledger' + (toNames.length > 1 ? 's' : '') + ' + MLG bank');
+      this.showToast('Saved ' + fmtMoney(total) + ' — auto posted to ' + sides);
+      this.resetPaymentForm(type);
+      this.saveToStorage();
+    },
+
+    adjustStock() {
+      if (!this.stockForm.qty) return;
+      const t = this.stockForm.type;
+      if (t === 'Adjustment') {
+        const inv = this.inventories[0];
+        const target = parseFloat(this.stockForm.qty) || 0;
+        const cur = parseFloat(inv.qty) || 0;
+        const diff = Math.round((target - cur) * 1000) / 1000;
+        if (diff === 0) return;
+        this.applyStockMove(diff > 0 ? 'In' : 'Out', Math.abs(diff), this.stockForm.notes || 'Physical count adjustment', formatDateDisplay(new Date()), 'adj-' + Date.now());
+      } else {
+        this.applyStockMove(
+          t === 'Out' ? 'Out' : 'In',
+          this.stockForm.qty,
+          this.stockForm.notes || 'Manual exception (use only for count variance)',
+          formatDateDisplay(new Date()),
+          'adj-' + Date.now()
+        );
+      }
+      this.showToast('Exception stock movement posted');
+      this.stockForm.qty = '';
+      this.stockForm.notes = '';
+      this.recalcTotals();
+      this.saveToStorage();
+    },
+
+    saveDiesel() {
+      const f = this.dieselForm;
+      if (!f.date || !f.bowser) return;
+      this.dieselEntries.unshift({
+        id: Date.now(),
+        ...f
+      });
+      this.showToast('Diesel / Cash entry saved');
+      this.dieselForm = { date: '', bowser: '', type: 'Diesel', location: 'Mand', qty: '', rate: '', amount: '' };
+      this.saveToStorage();
+    },
+
+    // ========== PDF EXPORT (Header/Footer/Logo toggles + 6cm margins + page border) ==========
+    _imgCache: {},
+
+    async loadAssetImage(name) {
+      if (this._imgCache[name]) return this._imgCache[name];
+      try {
+        const res = await fetch('./assets/' + name);
+        const blob = await res.blob();
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        this._imgCache[name] = dataUrl;
+        return dataUrl;
+      } catch (e) {
+        console.warn('Asset load failed:', name, e);
+        return null;
+      }
+    },
+
+    onProofFile(ev) {
+      const file = ev && ev.target && ev.target.files && ev.target.files[0];
+      if (!file) {
+        this.paymentForm.proofName = '';
+        this.paymentForm.proofData = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const raw = String(reader.result || '');
+        const img = new Image();
+        img.onload = () => {
+          const maxW = 1280;
+          const scale = img.width > maxW ? maxW / img.width : 1;
+          const c = document.createElement('canvas');
+          c.width = Math.round(img.width * scale);
+          c.height = Math.round(img.height * scale);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          this.paymentForm.proofName = file.name;
+          this.paymentForm.proofData = c.toDataURL('image/jpeg', 0.72);
+        };
+        img.onerror = () => {
+          this.paymentForm.proofName = file.name;
+          this.paymentForm.proofData = raw;
+        };
+        img.src = raw;
+      };
+      reader.readAsDataURL(file);
+    },
+
+    clearProof() {
+      this.paymentForm.proofName = '';
+      this.paymentForm.proofData = '';
+    },
+
+    openPdfOptions(type, data) {
+      this.pdfOptions = {
+        show: true,
+        header: false,
+        footer: false,
+        logo: false,
+        watermark: true,
+        type: type,
+        data: data
+      };
+    },
+
+    confirmPdfDownload(action) {
+      // action: 'download' | 'print'
+      const opts = { ...this.pdfOptions };
+      this.pdfOptions.show = false;
+      const mode = action || 'download';
+      if (opts.type === 'ledger') {
+        this.downloadPartyLedgerPDF(opts.data, opts, mode);
+      } else if (opts.type === 'sale' || opts.type === 'purchase' || opts.type === 'payment') {
+        this.downloadSingleEntryPDF(opts.type, opts.data, opts, mode);
+      }
+    },
+
+    /** Deliver PDF: same bytes for download and print (identical output) */
+    deliverPdf(doc, filename, mode) {
+      if (mode === 'print') {
+        // Same PDF bytes as download – open and print (set Margins = None in dialog)
+        const blob = doc.output('blob');
+        const url = URL.createObjectURL(blob);
+        // Hidden iframe print avoids some browser chrome margins vs new-tab print
+        let frame = document.getElementById('mlg-print-frame');
+        if (!frame) {
+          frame = document.createElement('iframe');
+          frame.id = 'mlg-print-frame';
+          frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+          document.body.appendChild(frame);
+        }
+        frame.onload = () => {
+          try {
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+          } catch (e) {
+            // Fallback: new tab
+            window.open(url, '_blank');
+          }
+        };
+        frame.src = url;
+        setTimeout(() => { try { frame.contentWindow.print(); } catch (e) {} }, 800);
+      } else {
+        doc.save(filename);
+      }
+    },
+
+    drawWatermark(doc) {
+      const pageW = 210;
+      const pageH = 297;
+      const wm = this._imgCache && this._imgCache['watermark.png'];
+      if (!wm) return;
+      const wmW = 198;
+      const wmH = wmW * (916 / 1716);
+      doc.addImage(wm, 'PNG', (pageW - wmW) / 2, (pageH - wmH) / 2, wmW, wmH, undefined, 'FAST');
+    },
+
+    async applyPageChrome(doc, opts, pageNumber, layer) {
+      const pageW = 210;
+      const pageH = 297;
+      const STD_MARGIN = 14;
+      const layerMode = layer || 'all';
+
+      const HEADER_H = pageW * (547 / 2172);
+      const FOOTER_H = pageW * (725 / 2170);
+      const FOOTER_SHIFT = 14;
+      const HEADER_LOGO = { x: 6.67, y: 7.44, size: 43.9 };
+
+      const useHeader = !!(opts && opts.header);
+      const useFooter = !!(opts && opts.footer);
+      const useLogo = !!(opts && opts.logo);
+      const useWatermark = opts && opts.watermark !== false;
+      const anyChrome = useHeader || useFooter || useLogo || useWatermark;
+
+      // Border rules:
+      // - No checkbox → full complete page border
+      // - Any checkbox on → only left + right side borders (between 6cm top/bottom)
+      if (!anyChrome) {
+        // Full border
+        doc.setDrawColor(15, 23, 42);
+        doc.setLineWidth(0.7);
+        doc.rect(3.5, 3.5, pageW - 7, pageH - 7);
+        doc.setDrawColor(20, 184, 166);
+        doc.setLineWidth(0.3);
+        doc.rect(4.6, 4.6, pageW - 9.2, pageH - 9.2);
+      } else {
+        const sideTop = useHeader ? HEADER_H : 14;
+        const sideBottom = useFooter ? (pageH - (FOOTER_H - FOOTER_SHIFT)) : (pageH - 14);
+        doc.setDrawColor(15, 23, 42);
+        doc.setLineWidth(0.7);
+        doc.line(3.5, sideTop, 3.5, sideBottom);           // left
+        doc.line(pageW - 3.5, sideTop, pageW - 3.5, sideBottom); // right
+        doc.setDrawColor(20, 184, 166);
+        doc.setLineWidth(0.3);
+        doc.line(4.6, sideTop, 4.6, sideBottom);
+        doc.line(pageW - 4.6, sideTop, pageW - 4.6, sideBottom);
+      }
+
+      if ((layerMode === 'all' || layerMode === 'under') && useWatermark) {
+        await this.loadAssetImage('watermark.png');
+        this.drawWatermark(doc);
+      }
+
+      if (layerMode === 'under') {
+        let contentTopU = STD_MARGIN + 4;
+        let contentBottomU = pageH - STD_MARGIN;
+        if (useHeader) contentTopU = HEADER_H + 6;
+        if (useFooter) contentBottomU = pageH - (FOOTER_H - FOOTER_SHIFT) - 4;
+        return { contentTop: contentTopU, contentBottom: contentBottomU, pageW, pageH, HEADER_H, FOOTER_H, useHeader, useFooter, useLogo, useWatermark, anyChrome };
+      }
+
+      if (useFooter) {
+        const footerImg = await this.loadAssetImage('footer.png');
+        if (footerImg) {
+          doc.addImage(footerImg, 'PNG', 0, pageH - FOOTER_H + FOOTER_SHIFT, pageW, FOOTER_H, undefined, 'FAST');
+        }
+      }
+
+      if (useHeader) {
+        const headerImg = await this.loadAssetImage('header.png');
+        if (headerImg) {
+          doc.addImage(headerImg, 'PNG', 0, 0, pageW, HEADER_H, undefined, 'FAST');
+        }
+      }
+
+      if (useLogo) {
+        const logoImg = await this.loadAssetImage('logo.png');
+        if (logoImg) {
+          doc.addImage(
+            logoImg,
+            'PNG',
+            HEADER_LOGO.x,
+            HEADER_LOGO.y,
+            HEADER_LOGO.size,
+            HEADER_LOGO.size,
+            undefined,
+            'FAST'
+          );
+        }
+      }
+
+      let contentTop = STD_MARGIN + 4;
+      let contentBottom = pageH - STD_MARGIN;
+      if (useHeader) contentTop = HEADER_H + 6;
+      else if (useLogo) contentTop = HEADER_LOGO.y + HEADER_LOGO.size + 6;
+      if (useFooter) contentBottom = pageH - (FOOTER_H - FOOTER_SHIFT) - 4;
+
+      return { contentTop, contentBottom, pageW, pageH, HEADER_H, FOOTER_H, useHeader, useFooter, useLogo, useWatermark, anyChrome };
+    },
+
+    async downloadPartyLedgerPDF(party, opts, mode) {
+      if (!party) return;
+      this.showToast('Generating PDF...');
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const optsSafe = opts || { header: false, footer: false, logo: false, watermark: true };
+        await this.loadAssetImage('watermark.png');
+        await this.loadAssetImage('header.png');
+        await this.loadAssetImage('footer.png');
+        await this.loadAssetImage('logo.png');
+
+        let chrome = await this.applyPageChrome(doc, optsSafe, 1, 'all');
+        let y = chrome.contentTop;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.setTextColor(15, 23, 42);
+        doc.text('PARTY LEDGER', 8, y);
+
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(71, 85, 105);
+        doc.text((party.name || '') + (party.city ? '  •  ' + party.city : ''), 8, y);
+
+        y += 8;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(10);
+        doc.setTextColor(15, 23, 42);
+        doc.text('Outstanding Balance:', 8, y);
+
+        const bal = Number(party.balance || 0);
+        doc.setTextColor(bal > 0 ? 220 : 5, bal > 0 ? 38 : 150, bal > 0 ? 38 : 105);
+        doc.text(this.fmtMoney(bal) + ' PKR', 56, y);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text('Generated: ' + new Date().toLocaleString('en-GB'), chrome.pageW - 8, y, { align: 'right' });
+
+        const ledgerChrono = [...(party.ledger || [])].reverse();
+        const rows = ledgerChrono.map((e, i) => [
+          String(i + 1),
+          e.date || '',
+          this.formatLedgerDesc(e),
+          e.debit ? this.fmtMoney(e.debit) : '',
+          e.credit ? this.fmtMoney(e.credit) : '',
+          this.fmtMoney(e.balance)
+        ]);
+
+        const bottomMargin = chrome.pageH - chrome.contentBottom;
+        const self = this;
+
+        doc.autoTable({
+          startY: y + 6,
+          head: [['S#', 'Date', 'Description', 'Debit', 'Credit', 'Balance']],
+          body: rows.length ? rows : [['—', '—', 'No entries yet', '', '', '']],
+          theme: 'plain',
+          styles: {
+            fontSize: 8,
+            cellPadding: 2.0,
+            overflow: 'linebreak',
+            textColor: [30, 41, 59],
+            lineColor: [200, 210, 220],
+            lineWidth: 0.15,
+            fillColor: false
+          },
+          didParseCell: function (data) {
+            if (data.section === 'body') {
+              if (data.column.index === 3 && data.cell.raw) {
+                data.cell.styles.textColor = [220, 38, 38];
+              }
+              if (data.column.index === 4 && data.cell.raw) {
+                data.cell.styles.textColor = [5, 150, 105];
+              }
+            }
+          },
+          headStyles: {
+            fillColor: [15, 23, 42],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 8,
+            lineWidth: 0
+          },
+          alternateRowStyles: {
+            fillColor: false
+          },
+          columnStyles: {
+            0: { cellWidth: 10, halign: 'center' },
+            1: { cellWidth: 20 },
+            2: { cellWidth: 84 },
+            3: { cellWidth: 24, halign: 'right' },
+            4: { cellWidth: 24, halign: 'right' },
+            5: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }
+          },
+          margin: { left: 8, right: 8, top: chrome.contentTop, bottom: Math.max(bottomMargin, 14) },
+          willDrawPage: function (data) {
+            if (data.pageNumber > 1 && optsSafe.watermark !== false) {
+              self.drawWatermark(doc);
+            }
+          }
+        });
+
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let p = 2; p <= totalPages; p++) {
+          doc.setPage(p);
+          await self.applyPageChrome(doc, optsSafe, p, 'over');
+        }
+
+        const safeName = (party.name || 'Party').replace(/[^a-z0-9]/gi, '_');
+        const fname = 'Ledger_' + safeName + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
+        this.deliverPdf(doc, fname, mode || 'download');
+        this.showToast(mode === 'print' ? 'Print dialog opened – set Margins to None' : 'Party Ledger PDF downloaded');
+      } catch (err) {
+        console.error(err);
+        this.showToast('PDF generation failed');
+      }
+    },
+
+    async downloadSingleEntryPDF(type, entry, opts, mode) {
+      if (!entry) return;
+      this.showToast('Generating PDF...');
+
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const chrome = await this.applyPageChrome(doc, opts || { header: false, footer: false, logo: false, watermark: true });
+        let y = chrome.contentTop;
+
+        const titles = {
+          sale: 'LPG SALE ENTRY',
+          purchase: 'LPG PURCHASE / LOADING ENTRY',
+          payment: 'PAYMENT VOUCHER'
+        };
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.setTextColor(15, 23, 42);
+        doc.text(titles[type] || 'ENTRY', 14, y);
+
+        y += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(71, 85, 105);
+        doc.text('Single Transaction Document', 14, y);
+
+        y += 12;
+
+        const fields = [];
+        if (type === 'sale' || type === 'purchase') {
+          fields.push(['Date', entry.date || '—']);
+          fields.push(['Bowser', entry.bowser || '—']);
+          fields.push(['Party', entry.party || '—']);
+          if (entry.city) fields.push(['City', entry.city]);
+          if (entry.plant) fields.push(['Filling Plant', entry.plant]);
+          fields.push(['Quantity (Ton)', String(entry.qty || '—')]);
+          if (entry.rate) fields.push(['Rate', this.fmtMoney(entry.rate)]);
+          fields.push(['Amount (PKR)', String(entry.amount || '—')]);
+          if (entry.status) fields.push(['Status', entry.status]);
+        } else if (type === 'payment') {
+          fields.push(['Date', entry.date || '—']);
+          fields.push(['Type', entry.type || '—']);
+          fields.push(['From', entry.fromParty || entry.party || '—']);
+          fields.push(['To', this.paymentTargetLabel(entry)]);
+          fields.push(['Lines', String((entry.lines && entry.lines.length) || 1)]);
+          fields.push(['TID', entry.tid || '—']);
+          fields.push(['Slip / Voucher', entry.slip || '—']);
+          fields.push(['Bank / Account', entry.bank || '—']);
+          fields.push(['Remarks', entry.remarks || '—']);
+          fields.push(['Proof file', entry.proofName || (entry.proofData ? 'Attached' : '—')]);
+          fields.push(['Amount (PKR)', this.fmtMoney(entry.amount)]);
+        }
+
+        fields.forEach(([label, value]) => {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(100, 116, 139);
+          doc.text(label, 20, y);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(15, 23, 42);
+          doc.text(String(value), 65, y);
+          y += 8;
+        });
+
+        y += 6;
+        doc.setDrawColor(226, 232, 240);
+        doc.setLineWidth(0.3);
+        doc.line(20, y, chrome.pageW - 20, y);
+
+        if (type === 'payment' && entry.lines && entry.lines.length) {
+          y += 8;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(15, 23, 42);
+          doc.text('Allocation lines (auto posted to both ledgers)', 20, y);
+          y += 4;
+          if (doc.autoTable) {
+            doc.autoTable({
+              startY: y,
+              head: [['Party / Account', 'Bank', 'TID', 'Slip', 'Amount']],
+              body: entry.lines.map(l => [
+                l.party || '—',
+                l.bank || '—',
+                l.tid || '—',
+                l.slip || '—',
+                this.fmtMoney(l.amount)
+              ]),
+              styles: { fontSize: 8 },
+              headStyles: { fillColor: [15, 23, 42] },
+              margin: { left: 20, right: 20 }
+            });
+            y = doc.lastAutoTable.finalY;
+          }
+        }
+
+        if (type === 'payment' && entry.proofData) {
+          y += 8;
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(10);
+          doc.setTextColor(15, 23, 42);
+          doc.text('Transaction proof', 20, y);
+          y += 4;
+          try {
+            const fmt = String(entry.proofData).indexOf('image/png') >= 0 ? 'PNG' : 'JPEG';
+            doc.addImage(entry.proofData, fmt, 20, y, 80, 50);
+          } catch (e) {}
+        }
+
+        const safe = (entry.party || entry.bowser || 'Entry').replace(/[^a-z0-9]/gi, '_');
+        const fname = type + '_' + safe + '_' + (entry.date || 'doc') + '.pdf';
+        this.deliverPdf(doc, fname, mode || 'download');
+        this.showToast(mode === 'print' ? 'Print dialog opened' : 'Entry PDF downloaded');
+      } catch (err) {
+        console.error(err);
+        this.showToast('PDF failed');
+      }
     }
-    if (f.brand && r.brand !== f.brand) return false;
-    if (f.bowser && r.bowser !== f.bowser) return false;
-    if (f.party && r.party !== f.party) return false;
-    if (f.city && r.city !== f.city) return false;
-    if (f.plant && r.plant !== f.plant) return false;
-    if (f.loadedFrom && !(r.loadedFrom||[]).includes(f.loadedFrom) && r.plant !== f.loadedFrom) return false;
-    return true;
-  });
+
+  };
 }
 
-function listShell(kind, f, all, rows, title, body, addFn) {
-  const loadT = rows.reduce((s,r)=>s+Number(r.loadQty||0),0);
-  const unloadT = rows.reduce((s,r)=>s+Number(r.unloadQty||0),0);
-  const amtT = rows.reduce((s,r)=>s+Number(r.amount||0),0);
-  const setF = kind === "purchase" ? "setPF" : "setSF";
-  const reset = kind === "purchase" ? "resetPF" : "resetSF";
-  const dl = kind === "purchase" ? "downloadPurchases" : "downloadSales";
-  return `<div class="filters">
-    <div class="filters-top">
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <input class="btn" style="min-width:220px" placeholder="Search any text..." value="${esc(f.q)}" oninput="${setF}(this,'q')" />
-        <select class="btn" onchange="${setF}(this,'month')">${opts(["All months","May 2026","June 2026"], f.month)}</select>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn" onclick="${reset}()">Clear filters</button>
-        <button class="btn" onclick="${dl}()">Download</button>
-        <button class="btn" onclick="window.print()">Print</button>
-        <button class="btn green" onclick="${addFn}">+ Add New</button>
-      </div>
-    </div>
-    <div class="filters-grid">
-      <div class="field"><label>LPG/GAS Quality</label><select onchange="${setF}(this,'brand')"><option value="">All</option>${opts(uniqueFrom(all,"brand"),f.brand)}</select></div>
-      <div class="field"><label>Bowser No</label><select onchange="${setF}(this,'bowser')"><option value="">All</option>${opts(uniqueFrom(all,"bowser"),f.bowser)}</select></div>
-      <div class="field"><label>Party</label><select onchange="${setF}(this,'party')"><option value="">All</option>${opts(uniqueFrom(all,"party"),f.party)}</select></div>
-      <div class="field"><label>City</label><select onchange="${setF}(this,'city')"><option value="">All</option>${opts(uniqueFrom(all,"city"),f.city)}</select></div>
-      <div class="field"><label>Filling Plant</label><select onchange="${setF}(this,'plant')"><option value="">All</option>${opts(uniqueFrom(all,"plant"),f.plant)}</select></div>
-      <div class="field"><label>Loaded From</label><select onchange="${setF}(this,'loadedFrom')"><option value="">All</option>${opts(MASTER.plants,f.loadedFrom)}</select></div>
-    </div>
-  </div>
-  <div class="stats">
-    <div class="stat"><span>Records</span><b>${rows.length}</b></div>
-    <div class="stat"><span>Load Qty (Ton)</span><b>${loadT.toFixed(3)}</b></div>
-    <div class="stat"><span>Unload Qty (Ton)</span><b>${unloadT.toFixed(3)}</b></div>
-    <div class="stat"><span>Amount (PKR)</span><b>${money(amtT)}</b></div>
-    <div class="stat"><span>Parties</span><b>${new Set(rows.map(r=>r.party)).size}</b></div>
-  </div>
-  <div class="sheet-wrap">
-    ${sheetHead(title)}
-    <div class="note" style="margin-bottom:6px">${rows.length} of ${all.length} rows</div>
-    <table class="data">
-      <thead><tr>
-        <th>No</th><th>Loading Date</th><th>LPG/GAS Quality</th><th>Unloading Date</th>
-        <th>Bowser No</th><th>Party</th><th>City</th><th>Filling Plant</th>
-        <th>Unit</th><th>Load Qty</th><th>Unload Qty</th><th>Base Rate</th>
-        <th>Rate</th><th>Amount (PKR)</th><th>Actions</th>
-      </tr></thead>
-      <tbody>${body}</tbody>
-    </table>
-  </div>`;
-}
-function txRows(rows, arr, editFn, delFn) {
-  return rows.map(r => {
-    const i = arr.indexOf(r);
-    return `<tr>
-      <td>${r.no}</td><td>${r.loadDate}</td><td>${esc(r.brand)}</td><td>${r.unloadDate}</td>
-      <td>${esc(r.bowser)}</td><td>${esc(r.party)}</td><td>${esc(r.city)}</td><td>${esc(r.plant)}</td>
-      <td>${r.unit}</td><td>${num(r.loadQty)}</td><td>${num(r.unloadQty)}</td>
-      <td>${r.baseRate||""}</td>
-      <td>${Number(r.rate).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-      <td>${money(r.amount)}</td>
-      <td class="actions">
-        <button onclick="${editFn}(${i})">Edit</button>
-        <button class="del" onclick="${delFn}(${i})">Delete</button>
-        <button onclick="downloadRow('${editFn}',${i})">Download</button>
-      </td></tr>`;
-  }).join("");
-}
-function purchaseListView(){ const rows=applyListFilter(PURCHASES,PF); return listShell("purchase",PF,PURCHASES,rows,"LPG PURCHASE - June 2026", txRows(rows,PURCHASES,"editPurchase","deletePurchase"), "openNewPurchase()"); }
-function saleListView(){ const rows=applyListFilter(SALES,SF); return listShell("sale",SF,SALES,rows,"LPG SALE - June 2026", txRows(rows,SALES,"editSale","deleteSale"), "openNewSale()"); }
-function setPF(el,key){ PF[key]=el.value; render(); }
-function setSF(el,key){ SF[key]=el.value; render(); }
-function resetPF(){ Object.keys(PF).forEach(k=>PF[k]=k==="month"?"June 2026":""); render(); }
-function resetSF(){ Object.keys(SF).forEach(k=>SF[k]=k==="month"?"June 2026":""); render(); }
-function openNewPurchase(){ editingPurchase=null; page="purchaseForm"; render(); }
-function openNewSale(){ editingSale=null; page="saleForm"; render(); }
-
-function locationRow(loc="", qty="") {
-  return `<div class="loc-card"><div class="loc-grid">
-    <div class="field"><label>Loaded From (Location) <span class="req">*</span></label>
-      <select class="loc-name"><option value="">Plant, border, ya supplier</option>${opts(MASTER.plants, loc)}</select></div>
-    <div class="field"><label>City</label><select class="loc-city"><option value=""></option>${opts(MASTER.cities)}</select></div>
-    <div class="field"><label>Qty from here (Ton)</label><input class="loc-qty" type="number" step="0.001" value="${qty||""}" placeholder="Optional split" /></div>
-    <button class="icon-btn" type="button" onclick="this.closest('.loc-card').remove()">×</button>
-  </div></div>`;
-}
-function destinationRow(pref="") {
-  return `<div class="dest-card">
-    <div class="dest-grid">
-      <div class="field"><label>Type</label><select class="d-type"><option>Company stock</option><option ${pref==="Party"?"selected":""}>Party</option></select></div>
-      <div class="field"><label>Destination</label><select class="d-dest">${opts(MASTER.parties, pref==="Party"?"":"RPG Plant - STOCK")}</select></div>
-      <div class="field"><label>City</label><select class="d-city"><option value=""></option>${opts(MASTER.cities)}</select></div>
-      <div class="field"><label>Qty (Ton) <span class="req">*</span></label><input class="d-qty" type="number" step="0.001" oninput="updateAlloc()" /></div>
-      <div class="field"><label>Unload date</label><input class="d-date" type="date" /></div>
-      <button class="icon-btn" type="button" onclick="this.closest('.dest-card').remove();updateAlloc()">×</button>
-    </div>
-    <div class="field" style="margin-top:8px;max-width:320px"><label>Filling Plant</label>
-      <select class="d-plant"><option value=""></option>${opts(MASTER.plants)}</select></div>
-  </div>`;
-}
-function entryChrome(sale) {
-  return `<div class="mode-row">
-      <div class="mode active" id="modeA" onclick="setMode('A')">
-        <h4>${sale?"Deliver to a party":"Place in company stock"}</h4>
-        <p>${sale?"Load split ho sakta hai — multiple parties / locations.":"Pehle stock line. Hissa party ko jana ho to destination add karein."}</p>
-      </div>
-      <div class="mode" id="modeB" onclick="setMode('B')">
-        <h4>${sale?"Split across locations / parties":"Deliver directly to a party"}</h4>
-        <p>Loaded From bhi multiple plants / borders se ho sakta hai.</p>
-      </div>
-    </div>`;
-}
-function purchaseFormView() {
-  const e = editingPurchase;
-  return `<div class="entry-wrap">
-    ${entryChrome(false)}
-    <div class="section-label">1. LOADING</div>
-    <div class="form-grid">
-      <div class="field"><label>Loading Date <span class="req">*</span></label><input type="date" id="loadDate" /></div>
-      <div class="field"><label>Bowser / Vehicle Number <span class="req">*</span></label>
-        <select id="bowser"><option value="">Select</option>${opts(MASTER.bowsers, e?e.bowser:"")}</select></div>
-      <div class="field"><label>Type / Origin of Goods / Brand <span class="req">*</span></label>
-        <select id="brand"><option value="">Select</option>${opts(MASTER.brands, e?e.brand:"")}</select></div>
-    </div>
-    <div class="section-label">LOADED FROM (LOCATION) — multiple allowed</div>
-    <p class="hint" style="margin:-4px 0 8px">Loading date ke baad. Ek load kai plants / borders se aa sakta hai.</p>
-    <div id="locs">${locationRow(e&&e.loadedFrom?e.loadedFrom[0]:"")}</div>
-    <div class="row-actions"><span class="note">Do jagah se load ho to + Add location.</span>
-      <button class="add-link" type="button" onclick="addLocation()">+ Add location</button></div>
-    <div class="form-grid">
-      <div class="field"><label>Purchasing Party / Trading Party <span class="req">*</span></label>
-        <select id="tradingParty"><option value="">Select</option>${opts(MASTER.parties, e?e.tradingParty:"MLG")}</select></div>
-      <div class="field"><label>Load Qty (Ton) <span class="req">*</span></label>
-        <input id="loadQty" type="number" step="0.001" value="${e?e.loadQty:""}" oninput="calcAmount()" /></div>
-      <div class="field"><label>Rate (optional)</label>
-        <input id="rate" type="number" step="0.01" placeholder="Blank if later" value="${e&&e.rate?e.rate:""}" oninput="calcAmount()" /></div>
-      <div class="field"><label>Amount (auto)</label><input id="amount" disabled /></div>
-    </div>
-    <div class="section-label">2. DESTINATIONS — LOAD CAN SPLIT</div>
-    <div id="dests">${destinationRow()}</div>
-    <div class="row-actions"><span class="note" id="alloc">Allocated 0 T of loaded 0 T.</span>
-      <button class="add-link" type="button" onclick="addDestination()">+ Add destination</button></div>
-    <div class="field" style="margin:8px 0 16px"><label>Narration / Details</label><input id="narration" placeholder="Party ledger note" /></div>
-    <button class="primary" onclick="savePurchase()">Save Purchase</button>
-    <button class="btn" style="margin-left:8px" onclick="page='purchases';render()">Back to list</button>
-  </div>`;
-}
-function saleFormView() {
-  const e = editingSale;
-  return `<div class="entry-wrap">
-    ${entryChrome(true)}
-    <div class="section-label">1. LOADING / SALE</div>
-    <div class="form-grid">
-      <div class="field"><label>Loading Date <span class="req">*</span></label><input type="date" id="loadDate" /></div>
-      <div class="field"><label>Bowser / Vehicle Number <span class="req">*</span></label>
-        <select id="bowser"><option value="">Select</option>${opts(MASTER.bowsers, e?e.bowser:"")}</select></div>
-      <div class="field"><label>Type / Origin of Goods / Brand <span class="req">*</span></label>
-        <select id="brand"><option value="">Select</option>${opts(MASTER.brands, e?e.brand:"")}</select></div>
-    </div>
-    <div class="section-label">LOADED FROM (LOCATION) — multiple allowed</div>
-    <p class="hint" style="margin:-4px 0 8px">Sale ka load bhi kai stock / plant / border locations se nikal sakta hai.</p>
-    <div id="locs">${locationRow(e&&e.loadedFrom?e.loadedFrom[0]:"")}</div>
-    <div class="row-actions"><span class="note">Multiple locations se load ho to + Add location.</span>
-      <button class="add-link" type="button" onclick="addLocation()">+ Add location</button></div>
-    <div class="form-grid">
-      <div class="field"><label>Load Qty (Ton) <span class="req">*</span></label>
-        <input id="loadQty" type="number" step="0.001" value="${e?e.loadQty:""}" oninput="calcAmount()" /></div>
-      <div class="field"><label>Rate</label>
-        <input id="rate" type="number" step="0.01" value="${e&&e.rate?e.rate:""}" oninput="calcAmount()" /></div>
-      <div class="field"><label>Amount (auto)</label><input id="amount" disabled /></div>
-    </div>
-    <div class="section-label">2. DESTINATIONS — LOAD CAN SPLIT</div>
-    <p class="hint" style="margin:-4px 0 8px">Ek load do parties ya do cities par split ho sakta hai.</p>
-    <div id="dests">${destinationRow("Party")}</div>
-    <div class="row-actions"><span class="note" id="alloc">Allocated 0 T of loaded 0 T.</span>
-      <button class="add-link" type="button" onclick="addDestination('Party')">+ Add destination</button></div>
-    <div class="field" style="margin:8px 0 16px"><label>Narration / Details</label><input id="narration" placeholder="Party ledger note" /></div>
-    <button class="primary" onclick="saveSale()">Save Sale</button>
-    <button class="btn" style="margin-left:8px" onclick="page='sales';render()">Back to list</button>
-  </div>`;
-}
-function setMode(m){
-  document.getElementById("modeA").classList.toggle("active", m==="A");
-  document.getElementById("modeB").classList.toggle("active", m==="B");
-}
-function addLocation(){ document.getElementById("locs").insertAdjacentHTML("beforeend", locationRow()); }
-function addDestination(pref){ document.getElementById("dests").insertAdjacentHTML("beforeend", destinationRow(pref||"")); }
-function calcAmount(){
-  const q=Number(document.getElementById("loadQty")?.value||0);
-  const r=Number(document.getElementById("rate")?.value||0);
-  const el=document.getElementById("amount"); if(el) el.value = r ? money(q*r) : "";
-  updateAlloc();
-}
-function updateAlloc(){
-  const loaded=Number(document.getElementById("loadQty")?.value||0);
-  let used=0; document.querySelectorAll(".d-qty").forEach(i=>used+=Number(i.value||0));
-  const el=document.getElementById("alloc");
-  if(el) el.textContent=`Allocated ${used.toFixed(3)} T of loaded ${loaded.toFixed(3)} T.`;
-}
-function fmtDateInput(id){
-  const v=document.getElementById(id)?.value; if(!v) return "";
-  const d=new Date(v);
-  return `${d.getDate()}-${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getMonth()]}-${String(d.getFullYear()).slice(2)}`;
-}
-function collectLocs(){ return [...document.querySelectorAll(".loc-name")].map(s=>s.value).filter(Boolean); }
-function collectDests(){
-  return [...document.querySelectorAll(".dest-card")].map(c => ({
-    type: c.querySelector(".d-type")?.value,
-    dest: c.querySelector(".d-dest")?.value,
-    city: c.querySelector(".d-city")?.value,
-    plant: c.querySelector(".d-plant")?.value,
-    qty: Number(c.querySelector(".d-qty")?.value||0),
-    date: c.querySelector(".d-date")?.value
-  }));
-}
-function savePurchase(){
-  const brand=document.getElementById("brand").value, bowser=document.getElementById("bowser").value;
-  const tradingParty=document.getElementById("tradingParty").value;
-  const loadQty=Number(document.getElementById("loadQty").value||0);
-  const rate=Number(document.getElementById("rate").value||0);
-  const locs=collectLocs(), dests=collectDests();
-  if(!fmtDateInput("loadDate") || !brand || !bowser || !tradingParty || !loadQty || !locs.length){
-    alert("Loading Date, Loaded From, Bowser/Vehicle Number, Brand, Purchasing Party aur Load Qty required hain."); return;
-  }
-  const first=dests[0]||{};
-  PURCHASES.unshift({ no:Math.max(0,...PURCHASES.map(x=>x.no))+1, loadDate:fmtDateInput("loadDate"), brand,
-    unloadDate:first.date||"", bowser, party:first.dest||"", city:first.city||"", plant:first.plant||locs[0],
-    unit:"Ton", loadQty, unloadQty:first.qty||loadQty, baseRate:"", rate, amount:loadQty*rate, tradingParty, loadedFrom:locs, dests });
-  page="purchases"; render();
-}
-function saveSale(){
-  const brand=document.getElementById("brand").value, bowser=document.getElementById("bowser").value;
-  const loadQty=Number(document.getElementById("loadQty").value||0);
-  const rate=Number(document.getElementById("rate").value||0);
-  const locs=collectLocs(), dests=collectDests();
-  if(!fmtDateInput("loadDate") || !brand || !bowser || !loadQty || !locs.length){
-    alert("Loading Date, Loaded From, Bowser/Vehicle Number, Brand aur Load Qty required hain."); return;
-  }
-  const first=dests[0]||{};
-  SALES.unshift({ no:Math.max(0,...SALES.map(x=>x.no))+1, loadDate:fmtDateInput("loadDate"), brand,
-    unloadDate:first.date||"", bowser, party:first.dest||"", city:first.city||"", plant:first.plant||locs[0],
-    unit:"Ton", loadQty, unloadQty: dests.reduce((s,d)=>s+Number(d.qty||0),0) || loadQty,
-    baseRate:"", rate, amount:loadQty*rate, loadedFrom:locs, dests });
-  page="sales"; render();
-}
-function editPurchase(i){ editingPurchase=PURCHASES[i]; page="purchaseForm"; render(); }
-function deletePurchase(i){ if(confirm("Delete this purchase?")){ PURCHASES.splice(i,1); render(); } }
-function editSale(i){ editingSale=SALES[i]; page="saleForm"; render(); }
-function deleteSale(i){ if(confirm("Delete this sale?")){ SALES.splice(i,1); render(); } }
-function toCSV(rows){
-  const header=["No","Loading Date","LPG/GAS Quality","Unloading Date","Bowser No","Party","City","Filling Plant","Unit","Load Qty","Unload Qty","Base Rate","Rate","Amount (PKR)"];
-  return header.join(",")+"\n"+rows.map(r=>[r.no,r.loadDate,r.brand,r.unloadDate,r.bowser,r.party,r.city,r.plant,r.unit,r.loadQty,r.unloadQty,r.baseRate||"",r.rate,r.amount].join(",")).join("\n");
-}
-function saveFile(name,text){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type:"text/csv"})); a.download=name; a.click(); }
-function downloadPurchases(){ saveFile("LPG-PURCHASE-filtered.csv", toCSV(applyListFilter(PURCHASES,PF))); }
-function downloadSales(){ saveFile("LPG-SALE-filtered.csv", toCSV(applyListFilter(SALES,SF))); }
-function downloadRow(kind,i){
-  const row = kind==="editPurchase" ? PURCHASES[i] : SALES[i];
-  saveFile(`${kind==="editPurchase"?"purchase":"sale"}-${row.no}.csv`, toCSV([row]));
-}
-
-function paymentListView() {
-  return `<div class="filters-top" style="margin-bottom:12px">
-    <div class="note">Har payment save hote hi <b>Master Ledger — Meer Gas</b> aur us bank ki ledger update hoti hai.</div>
-    <div style="display:flex;gap:8px">
-      <button class="btn" onclick="downloadPayments()">Download</button>
-      <button class="btn green" onclick="page='paymentForm';render()">+ Add Payment</button>
-    </div>
-  </div>
-  <div class="sheet-wrap">
-    ${sheetHead("PAYMENTS — source of Master Ledger")}
-    <table class="data">
-      <thead><tr>
-        <th>Serial</th><th>Date</th><th>Description</th><th>Bank title</th>
-        <th>TID</th><th>Sender</th><th>Receiver</th><th>In</th><th>Out</th><th>Actions</th>
-      </tr></thead>
-      <tbody>${PAYMENTS.map((p,i)=>`<tr>
-        <td>${p.serial}</td><td>${p.date}</td><td>${esc(p.description)}</td><td>${esc(p.bank)}</td>
-        <td>${esc(p.tid)}</td><td>${esc(p.sender)}</td><td>${esc(p.receiver)}</td>
-        <td class="cr">${p.amountIn?money(p.amountIn):""}</td>
-        <td class="dr">${p.amountOut?money(p.amountOut):""}</td>
-        <td class="actions"><button class="del" onclick="deletePayment(${i})">Delete</button></td>
-      </tr>`).join("")}</tbody>
-    </table>
-  </div>`;
-}
-function paymentFormView() {
-  return `<div class="entry-wrap">
-    <div class="section-label">PAYMENT ENTRY — posts to Master Ledger</div>
-    <div class="form-grid">
-      <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="pDate" /></div>
-      <div class="field"><label>Bank title <span class="req">*</span></label>
-        <select id="pBank"><option value="">Select Meer Gas bank</option>${opts(MASTER.banks)}</select></div>
-      <div class="field"><label>TID</label><input id="pTid" placeholder="Transaction ID" /></div>
-      <div class="field"><label>Sender <span class="req">*</span></label><input id="pSender" placeholder="Who sent" /></div>
-      <div class="field"><label>Receiver <span class="req">*</span></label><input id="pReceiver" placeholder="Who received" /></div>
-      <div class="field"><label>Type</label>
-        <select id="pType"><option value="in">Receipt (In)</option><option value="out">Payment (Out)</option></select></div>
-      <div class="field"><label>Amount (PKR) <span class="req">*</span></label><input id="pAmt" type="number" step="0.01" /></div>
-      <div class="field" style="grid-column:1/-1"><label>Description</label>
-        <input id="pDesc" placeholder="Auto-fills bank title if left blank" /></div>
-    </div>
-    <div style="margin-top:16px">
-      <button class="primary" onclick="savePayment()">Save Payment</button>
-      <button class="btn" style="margin-left:8px" onclick="page='payments';render()">Back</button>
-      <span class="note" style="margin-left:10px">Yeh entry Master Ledger + selected bank ledger dono mein dikhegi.</span>
-    </div>
-  </div>`;
-}
-function savePayment(){
-  const date=fmtDateInput("pDate") || "21-Sep-26";
-  const bank=document.getElementById("pBank").value;
-  const tid=document.getElementById("pTid").value || ("TID-"+Date.now().toString().slice(-6));
-  const sender=document.getElementById("pSender").value;
-  const receiver=document.getElementById("pReceiver").value;
-  const type=document.getElementById("pType").value;
-  const amt=Number(document.getElementById("pAmt").value||0);
-  if(!bank || !sender || !receiver || !amt){ alert("Date, Bank title, Sender, Receiver aur Amount required hain."); return; }
-  const desc=(document.getElementById("pDesc").value.trim()) || `${type==="in"?"Receipt":"Payment"} — ${bank}`;
-  PAYMENTS.push({
-    serial: Math.max(0,...PAYMENTS.map(x=>x.serial))+1, date, bank,
-    description: desc.includes(bank)?desc:`${desc} / ${bank}`,
-    tid, sender, receiver, amountIn: type==="in"?amt:0, amountOut: type==="out"?amt:0
-  });
-  ledgerBank = bank;
-  page="masterLedger"; render();
-}
-function deletePayment(i){ if(confirm("Delete payment? Master Ledger se bhi hat jayegi.")){ PAYMENTS.splice(i,1); render(); } }
-function downloadPayments(){
-  saveFile("PAYMENTS.csv", "Serial,Date,Description,Bank title,TID,Sender,Receiver,In,Out\n"+
-    PAYMENTS.map(p=>[p.serial,p.date,p.description,p.bank,p.tid,p.sender,p.receiver,p.amountIn||"",p.amountOut||""].join(",")).join("\n"));
-}
-function ledgerRows(bank) {
-  const src = PAYMENTS.filter(p => bank==="ALL" || p.bank===bank).slice().sort((a,b)=>a.serial-b.serial);
-  let bal = 0;
-  return src.map(p => { bal += Number(p.amountIn||0) - Number(p.amountOut||0); return {...p, balance: bal}; });
-}
-function masterLedgerView() {
-  const rows = ledgerRows(ledgerBank);
-  const inT = rows.reduce((s,r)=>s+Number(r.amountIn||0),0);
-  const outT = rows.reduce((s,r)=>s+Number(r.amountOut||0),0);
-  const bal = rows.length ? rows[rows.length-1].balance : 0;
-  return `<div class="filters">
-    <div class="filters-top">
-      <div>
-        <strong>Meer Gas — Master Ledger</strong>
-        <div class="note">Data Payments se aata hai. MLG kisi bhi bank ka alag ledger yahan dekh sakta hai.</div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn" onclick="downloadLedger()">Download</button>
-        <button class="btn green" onclick="page='paymentForm';render()">+ Add Payment</button>
-      </div>
-    </div>
-    <div class="tabs">
-      <button class="tab ${ledgerBank==="ALL"?"active":""}" onclick="ledgerBank='ALL';render()">All banks</button>
-      ${MASTER.banks.map(b=>`<button class="tab ${ledgerBank===b?"active":""}" onclick="setLedgerBank(this)">${esc(b)}</button>`).join("")}
-    </div>
-  </div>
-  <div class="stats">
-    <div class="stat"><span>Entries</span><b>${rows.length}</b></div>
-    <div class="stat"><span>Total In</span><b class="cr">${money(inT)}</b></div>
-    <div class="stat"><span>Total Out</span><b class="dr">${money(outT)}</b></div>
-    <div class="stat"><span>Balance</span><b>${money(bal)}</b></div>
-    <div class="stat"><span>View</span><b style="font-size:13px">${ledgerBank==="ALL"?"All Meer Gas banks":esc(ledgerBank)}</b></div>
-  </div>
-  <div class="sheet-wrap">
-    ${sheetHead(ledgerBank==="ALL" ? "MASTER LEDGER — MEER GAS" : "BANK LEDGER — "+esc(ledgerBank))}
-    <table class="data">
-      <thead><tr>
-        <th>Serial</th><th>Date</th><th>Description</th><th>Bank title</th>
-        <th>TID</th><th>Sender</th><th>Receiver</th><th>Amount</th><th>Balance</th>
-      </tr></thead>
-      <tbody>${rows.map(r=>{
-        const amt = Number(r.amountIn||0) - Number(r.amountOut||0);
-        const cls = amt>=0?"cr":"dr";
-        const shown = (amt>=0?"":"-") + money(Math.abs(amt));
-        return `<tr>
-          <td>${r.serial}</td><td>${r.date}</td><td>${esc(r.description)}</td><td>${esc(r.bank)}</td>
-          <td>${esc(r.tid)}</td><td>${esc(r.sender)}</td><td>${esc(r.receiver)}</td>
-          <td class="${cls}">${shown}</td><td>${money(r.balance)}</td>
-        </tr>`;
-      }).join("")}</tbody>
-    </table>
-  </div>`;
-}
-function setLedgerBank(btn){ ledgerBank = btn.textContent; render(); }
-function downloadLedger(){
-  const rows=ledgerRows(ledgerBank);
-  saveFile("MEER-GAS-LEDGER.csv", "Serial,Date,Description,Bank title,TID,Sender,Receiver,Amount,Balance\n"+
-    rows.map(r=>[r.serial,r.date,r.description,r.bank,r.tid,r.sender,r.receiver,(r.amountIn||0)-(r.amountOut||0),r.balance].join(",")).join("\n"));
-}
-function openModal(key,title){ modalTarget=key; document.getElementById("modalTitle").textContent="Add "+title; document.getElementById("modalValue").value=""; document.getElementById("modal").classList.add("show"); }
-function closeModal(){ document.getElementById("modal").classList.remove("show"); }
-function saveModal(){ const val=document.getElementById("modalValue").value.trim(); if(val) MASTER[modalTarget].push(val); closeModal(); render(); }
-function removeMaster(key,i){ MASTER[key].splice(i,1); render(); }
-
-render();
+window.createApp = createApp;

@@ -25,6 +25,7 @@ const initialMaster = {
     'Hothi Nisar BP 250','Salam Gas','Gwadar','Turbat','RPG Plant - STOCK'
   ],
   bank: [
+    'MLG HBL Account','VTR Meezan Bank','VTR HBL Bank',
     'MBL Pak Rice Commission Agent','HBL Wakeel Ahmed Enterprises',
     'UBL Ibadat LPG PVT LTD','ASK Bank Wakeel Ahmed Enterprises',
     'ABL Pak Rice Commission Agent','BALH Ibadat Rice Mills',
