@@ -684,56 +684,60 @@
             </div>
 
             <div>
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-3">1. Loading — bowser trip</p>
-              <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loading Date *</label>
-                  <input type="date" x-model="purchaseForm.loadingDate" @change="syncSourceDates()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser / Vehicle Number *</label>
-                  <input list="bowserList" x-model="purchaseForm.bowser" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-3">Loaded from — each source is a full line</p>
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-3">1. Loading — one complete line per source</p>
               <div class="space-y-3">
                 <template x-for="(src, si) in purchaseForm.sources" :key="'src'+si">
-                  <div class="grid md:grid-cols-2 lg:grid-cols-6 gap-3 p-4 rounded-2xl border border-slate-200 bg-slate-50/70">
-                    <div>
-                      <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loaded From (Location) *</label>
-                      <input list="loadFromList" x-model="src.location" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Plant / border / supplier">
+                  <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50/70">
+                    <div class="flex items-center justify-between mb-2" x-show="si > 0">
+                      <button type="button" class="text-[11px] font-semibold text-teal-700" @click="copyFirstSource(si)">Same as first line (all fields)</button>
+                      <button type="button" class="text-rose-600 text-xs" @click="removePurchaseSource(si)">Remove line</button>
                     </div>
-                    <div>
-                      <label class="block text-[11px] font-semibold text-slate-500 mb-1">Load date</label>
-                      <input type="date" x-model="src.date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                    </div>
-                    <div>
-                      <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type / Origin / Brand</label>
-                      <input list="sourceList" x-model="src.brand" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                    </div>
-                    <div>
-                      <label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label>
-                      <input list="cityList" x-model="src.city" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                    </div>
-                    <div>
-                      <label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty (Ton) *</label>
-                      <input type="number" step="0.001" x-model="src.qty" @input="recalcPurchaseFromSources()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                    </div>
-                    <div class="flex gap-2">
-                      <div class="flex-1">
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate (optional)</label>
-                        <input type="number" step="0.01" x-model="src.rate" @input="recalcPurchaseFromSources()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Later">
+                    <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2">
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loading Date *</label>
+                        <input type="date" x-model="src.date" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
+                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'date')">same as first</button>
                       </div>
-                      <button type="button" class="self-end mb-1 text-rose-600 text-xs" x-show="purchaseForm.sources.length > 1" @click="removePurchaseSource(si)">✕</button>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser / Vehicle *</label>
+                        <input list="bowserList" x-model="src.bowser" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
+                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'bowser')">same as first</button>
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loaded From *</label>
+                        <input list="loadFromList" x-model="src.location" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" placeholder="Plant / border">
+                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'location')">same as first</button>
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type / Origin / Brand</label>
+                        <input list="sourceList" x-model="src.brand" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
+                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'brand')">same as first</button>
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label>
+                        <input list="cityList" x-model="src.city" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
+                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'city')">same as first</button>
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty (Ton) *</label>
+                        <input type="number" step="0.001" x-model="src.qty" @input="recalcPurchaseFromSources()" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
+                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'qty'); recalcPurchaseFromSources()">same as first</button>
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate (optional)</label>
+                        <input type="number" step="0.01" x-model="src.rate" @input="recalcPurchaseFromSources()" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" placeholder="Later">
+                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'rate'); recalcPurchaseFromSources()">same as first</button>
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount</label>
+                        <input type="text" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-slate-100 font-semibold" :value="sourceLineAmount(src)" readonly>
+                      </div>
                     </div>
                   </div>
                 </template>
               </div>
               <div class="flex items-center justify-between mt-3">
-                <p class="text-[11px] text-slate-500">Total loaded <b x-text="fmt(purchaseSourceQty())"></b> T. Same date auto-fills; change only if this source loaded on another day.</p>
+                <p class="text-[11px] text-slate-500">Total loaded <b x-text="fmt(purchaseSourceQty())"></b> T · Total amount <b x-text="purchaseForm.amount || '—'"></b></p>
                 <button type="button" class="text-xs font-semibold text-teal-700" @click="addPurchaseSource()">+ Add another Loaded From location</button>
               </div>
             </div>
@@ -832,7 +836,7 @@
           </div>
         </div>
 
-        <div class="card overflow-hidden rounded-2xl">
+        <div class="card overflow-hidden rounded-2xl ring-1 ring-slate-200">
           <div class="px-5 py-3 border-b bg-slate-50/80 flex items-center justify-between">
             <div>
               <h3 class="font-bold text-sm tracking-wide">LPG PURCHASE — June 2026</h3>
