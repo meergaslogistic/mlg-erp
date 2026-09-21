@@ -59,10 +59,14 @@ const initialInventories = [
 ];
 
 const samplePurchases = [
-  { id: 1, date: '24-Jun-26', bowser: 'TMQ 013', party: 'RPG Plant - STOCK', city: 'Karachi', plant: 'Mand', qty: '52.320', rate: '312200', amount: '16,334,304', status: 'Delivered' },
-  { id: 2, date: '22-Jun-26', bowser: 'TMP 010', party: 'RPG Plant - STOCK', city: 'Karachi', plant: 'BP 250', qty: '48.240', rate: '314760', amount: '15,184,022', status: 'Delivered' },
-  { id: 3, date: '21-Jun-26', bowser: 'TLX 297', party: 'Bugti Plant', city: 'Jamshoro', plant: 'Mand', qty: '46.175', rate: '312200', amount: '14,415,835', status: 'Delivered' },
-  { id: 4, date: '20-Jun-26', bowser: 'JQ 2432', party: 'Royal Gas', city: 'Sukkur', plant: 'Mand', qty: '47.865', rate: '312200', amount: '14,943,453', status: 'Delivered' }
+  { id: 1, date: '1-Jun-26', brand: 'Mehman bandar - Meer Gas', unloadDate: '5-Jun-26', bowser: 'TMQ 013', party: 'Bugti Plant', city: 'Jamshoro', plant: 'Mand', unit: 'Ton', qty: '47.490', loadQty: '47.490', unloadQty: '47.490', baseRate: '', rate: '312200.00', amount: '14,826,378', status: 'Delivered' },
+  { id: 2, date: '1-Jun-26', brand: 'Bandar - Meer Gas', unloadDate: '4-Jun-26', bowser: 'JU 3050', party: 'VTR Gas', city: 'Qazi Ahmed', plant: 'Mand', unit: 'Ton', qty: '48.470', loadQty: '48.470', unloadQty: '48.470', baseRate: '', rate: '312200.00', amount: '15,132,334', status: 'Delivered' },
+  { id: 3, date: '2-Jun-26', brand: 'Aftab - Meer Gas', unloadDate: '6-Jun-26', bowser: 'JQ 2432', party: 'Zulfiqar LPG', city: 'Karachi', plant: 'Mand', unit: 'Ton', qty: '48.960', loadQty: '48.960', unloadQty: '48.960', baseRate: '', rate: '312200.00', amount: '15,285,312', status: 'Delivered' },
+  { id: 4, date: '3-Jun-26', brand: 'bandar Abbas - Meer Gas', unloadDate: '6-Jun-26', bowser: 'TMQ 588', party: 'RPG Plant - STOCK', city: 'Karachi', plant: 'Mand', unit: 'Ton', qty: '50.420', loadQty: '50.420', unloadQty: '50.420', baseRate: '', rate: '312200.00', amount: '15,741,124', status: 'Delivered' },
+  { id: 5, date: '4-Jun-26', brand: 'Asloia Aftab - Meer Gas', unloadDate: '7-Jun-26', bowser: 'TLX 297', party: 'Bugti Plant', city: 'Jamshoro', plant: 'BP 250', unit: 'Ton', qty: '46.845', loadQty: '46.845', unloadQty: '46.650', baseRate: '', rate: '314760.00', amount: '14,744,932', status: 'Delivered' },
+  { id: 6, date: '5-Jun-26', brand: 'Jamshoro - Meer Gas', unloadDate: '5-Jun-26', bowser: 'TLF 863', party: 'Bhatti Associates', city: 'Multan', plant: 'Jamshoro - Bugti', unit: 'Ton', qty: '29.805', loadQty: '29.805', unloadQty: '29.805', baseRate: '4425', rate: '375000.00', amount: '11,176,875', status: 'Delivered' },
+  { id: 7, date: '8-Jun-26', brand: 'Bandar Abbas - Meer Gas', unloadDate: '12-Jun-26', bowser: 'TLX 586', party: 'RPG Plant - STOCK', city: 'Karachi', plant: 'Mand', unit: 'Ton', qty: '48.500', loadQty: '48.500', unloadQty: '48.500', baseRate: '', rate: '312200.00', amount: '15,141,700', status: 'Delivered' },
+  { id: 8, date: '10-Jun-26', brand: 'Mehman - Meer Gas', unloadDate: '13-Jun-26', bowser: 'TMQ 013', party: 'Bugti Plant', city: 'Jamshoro', plant: 'Mand', unit: 'Ton', qty: '49.980', loadQty: '49.980', unloadQty: '49.980', baseRate: '', rate: '312200.00', amount: '15,603,756', status: 'Delivered' }
 ];
 
 const sampleSales = [
