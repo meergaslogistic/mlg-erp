@@ -1,1239 +1,722 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MLG Advanced ERP – Meer Logistics & Gas Energy</title>
-
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
-        }
-      }
+  <title>MLG Advanced ERP — Updated</title>
+  <style>
+    :root {
+      --navy: #0f2744;
+      --navy-2: #16345a;
+      --navy-3: #1c3d66;
+      --sidebar: #102a4a;
+      --accent: #0d9b6e;
+      --accent-2: #0b7d58;
+      --accent-soft: #e7f7f1;
+      --line: #e6edf5;
+      --text: #1b2b3f;
+      --muted: #6b7c90;
+      --card: #ffffff;
+      --bg: #f4f7fb;
+      --danger: #c0392b;
+      --warn: #d97706;
     }
-  </script>
-
-  <!-- Icons + Font -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-
-  <!-- App Styles -->
-  <link rel="stylesheet" href="./styles/main.css" />
-
-
-  <!-- PDF Generation (A4 + Letterhead) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 232px;
+      background: linear-gradient(180deg, #0d2440 0%, #0b1e36 100%);
+      color: #d7e4f2;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 10px;
+      padding: 18px 16px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .logo {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #3ad39a, #0b6b4a);
+      display: grid; place-items: center; font-weight: 800; color: #fff; font-size: 11px;
+    }
+    .brand h1 { font-size: 13px; color: #fff; line-height: 1.2; font-weight: 700; }
+    .brand p { font-size: 9px; letter-spacing: .6px; color: #8fb0d0; text-transform: uppercase; }
+    .nav { padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; }
+    .nav button {
+      background: transparent; border: 0; color: #c5d6e8;
+      text-align: left; padding: 10px 12px; border-radius: 10px;
+      cursor: pointer; font-size: 13.5px; display: flex; align-items: center; gap: 10px;
+    }
+    .nav button:hover { background: rgba(255,255,255,.06); }
+    .nav button.active { background: #fff; color: var(--navy); font-weight: 600; }
+    .nav .ico { width: 16px; text-align: center; opacity: .85; }
+    .sidebar-foot {
+      margin-top: auto; padding: 14px 16px 18px;
+      border-top: 1px solid rgba(255,255,255,.08);
+      font-size: 11px; color: #8fb0d0;
+    }
+    .sidebar-foot strong { color: #fff; display: block; font-size: 12.5px; margin-top: 2px; }
+    .chip {
+      display: inline-block; margin-top: 8px; background: #0d9b6e; color: #fff;
+      font-size: 10px; padding: 3px 8px; border-radius: 6px;
+    }
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .topbar {
+      height: 64px; background: #fff; border-bottom: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 28px;
+    }
+    .topbar h2 { font-size: 22px; font-weight: 700; }
+    .top-right { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; }
+    .ghost-btn {
+      border: 1px solid var(--line); background: #fff; border-radius: 10px;
+      padding: 7px 12px; font-size: 13px; cursor: pointer;
+    }
+    .content { padding: 20px 24px 32px; overflow: auto; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .card {
+      background: #fff; border: 1px solid #e8eef5; border-radius: 16px; padding: 16px 16px 14px;
+      box-shadow: 0 1px 0 rgba(16,42,74,.02);
+    }
+    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .card-head h3 { font-size: 16px; font-weight: 700; }
+    .add-link { color: var(--accent); font-size: 13px; cursor: pointer; font-weight: 600; background: none; border: 0; }
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      background: #f3f6fa; border: 1px solid #e6edf4; color: #33465c;
+      padding: 6px 11px; border-radius: 999px; font-size: 12.5px;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .pill .x { color: #9aa8b8; cursor: pointer; font-size: 11px; }
+    .section-label {
+      font-size: 11px; letter-spacing: .8px; color: var(--muted);
+      font-weight: 700; margin: 4px 0 12px;
+    }
+    .mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+    .mode {
+      border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; cursor: pointer; background: #fff;
+    }
+    .mode.active { border-color: #7ad1b3; background: #eefaf5; box-shadow: inset 0 0 0 1px #b7e8d4; }
+    .mode h4 { font-size: 15px; margin-bottom: 4px; }
+    .mode p { font-size: 12.5px; color: var(--muted); }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px 16px; }
+    .field label { display: block; font-size: 13px; margin-bottom: 6px; font-weight: 600; }
+    .field label .req { color: #e11d48; }
+    .field input, .field select, .field textarea {
+      width: 100%; height: 42px; border: 1px solid #dbe4ee; border-radius: 10px;
+      padding: 0 12px; font-size: 13.5px; background: #fff; color: var(--text);
+    }
+    .field textarea { height: 42px; padding-top: 10px; resize: vertical; }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none; border-color: #7ad1b3; box-shadow: 0 0 0 3px rgba(13,155,110,.12);
+    }
+    .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .dest-card, .loc-card {
+      border: 1px solid #e8eef5; border-radius: 14px; padding: 12px; background: #fbfcfe; margin-bottom: 10px;
+    }
+    .dest-grid { display: grid; grid-template-columns: 1.1fr 1.3fr 1fr 0.8fr 1fr 36px; gap: 10px; align-items: end; }
+    .loc-grid { display: grid; grid-template-columns: 1.4fr 1fr 0.8fr 36px; gap: 10px; align-items: end; }
+    .icon-btn {
+      height: 42px; width: 36px; border: 1px solid #efd2d0; background: #fff5f4; color: var(--danger);
+      border-radius: 10px; cursor: pointer; font-size: 16px;
+    }
+    .row-actions { display: flex; justify-content: space-between; align-items: center; margin: 8px 0 16px; }
+    .primary {
+      background: var(--accent); color: #fff; border: 0; border-radius: 10px;
+      padding: 11px 16px; font-weight: 700; cursor: pointer; font-size: 14px;
+    }
+    .primary:hover { background: var(--accent-2); }
+    .note { font-size: 12.5px; color: var(--muted); }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap; }
+    .toolbar-left, .toolbar-right { display: flex; gap: 8px; align-items: center; }
+    .search {
+      height: 38px; border: 1px solid #dbe4ee; border-radius: 10px; padding: 0 12px; min-width: 240px;
+    }
+    .btn {
+      height: 38px; border-radius: 10px; border: 1px solid #dbe4ee; background: #fff;
+      padding: 0 12px; cursor: pointer; font-size: 13px;
+    }
+    .btn.green { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+    .btn.red { color: var(--danger); border-color: #f0c7c3; }
+    table.data { width: 100%; border-collapse: collapse; font-size: 12px; background: #fff; }
+    table.data th {
+      text-align: left; background: #fff; color: #111; padding: 8px 7px; font-weight: 700;
+      white-space: nowrap; border-bottom: 2px solid #111; font-size: 11.5px;
+    }
+    table.data td { padding: 7px 7px; border-bottom: 1px solid #ddd; white-space: nowrap; }
+    table.data tr:hover td { background: #f7fbf9; }
+    .sheet-wrap { background: #fff; border-radius: 14px; overflow: auto; border: 1px solid var(--line); padding: 8px 8px 12px; }
+    .actions a, .actions button {
+      background: none; border: 0; color: var(--accent); cursor: pointer; font-size: 12px; margin-right: 8px; font-weight: 600;
+    }
+    .actions .del { color: var(--danger); }
+    .sheet-logo { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+    .sheet-logo .mark { width:34px; height:34px; border-radius:50%; background: radial-gradient(circle at 30% 30%, #3ad39a, #0b6b4a); color:#fff; display:grid; place-items:center; font-size:10px; font-weight:800; }
+    .sheet-title {
+      padding: 14px 16px 8px; display: flex; justify-content: space-between; align-items: flex-end;
+    }
+    .sheet-title h3 { font-size: 18px; }
+    .co { font-size: 12px; color: var(--muted); }
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(10,20,35,.45); display: none;
+      align-items: center; justify-content: center; z-index: 50; padding: 20px;
+    }
+    .modal-bg.show { display: flex; }
+    .modal {
+      background: #fff; width: min(520px, 100%); border-radius: 16px; padding: 18px;
+    }
+    .modal h3 { margin-bottom: 12px; }
+    .hidden { display: none !important; }
+    .alloc { font-size: 12.5px; color: var(--muted); margin: 6px 0 12px; }
+    .page-sub { color: var(--muted); font-size: 13px; margin: -8px 0 16px; }
+  </style>
 </head>
-
-<body class="text-slate-800" x-data="app" x-cloak>
-
-  <div class="app-frame">
-  <div class="shell">
-
-  <aside class="sidebar"
-         :class="sidebarOpen ? 'open' : ''">
+<body>
+<div class="app">
+  <aside class="sidebar">
     <div class="brand">
-      <img src="./assets/logo.png" alt="MLG Logo" />
-      <div class="brand-text">
-        <b>Meer Logistics</b>
-        <span>&amp; GAS ENERGY</span>
+      <div class="logo">MLG</div>
+      <div>
+        <h1>Meer Logistics</h1>
+        <p>&amp; Gas Energy</p>
       </div>
     </div>
-    <nav class="nav-list">
-      <template x-for="item in nav" :key="item.id">
-        <button type="button" @click="go(item.id)" class="nav-item"
-                :class="section === item.id ? 'active' : ''">
-          <i :class="item.icon"></i>
-          <span x-text="item.label"></span>
-        </button>
-      </template>
+    <nav class="nav">
+      <button data-page="dashboard"><span class="ico">⌂</span> Dashboard</button>
+      <button data-page="dataflow"><span class="ico">⇄</span> Data Flow</button>
+      <button data-page="ledgers"><span class="ico">☰</span> Parties &amp; Ledgers</button>
+      <button data-page="purchases" class="active"><span class="ico">⛽</span> Purchase / Loading</button>
+      <button data-page="sales"><span class="ico">▣</span> Sale</button>
+      <button data-page="payments"><span class="ico">₨</span> Payments</button>
+      <button data-page="inventory"><span class="ico">▭</span> Inventory</button>
+      <button data-page="diesel"><span class="ico">⛽</span> Diesel &amp; Cash</button>
+      <button data-page="master"><span class="ico">▦</span> Master Data</button>
     </nav>
     <div class="sidebar-foot">
-      Operations desk<br>
-      <b>MLG Advanced ERP</b>
-      <span class="role-tag">Auto Party Ledger</span>
+      Operations desk
+      <strong>MLG Advanced ERP</strong>
+      <span class="chip">Auto Party Ledger</span>
     </div>
   </aside>
 
-  <div class="main">
-    <header class="topbar">
-      <div class="topbar-left">
-        <button type="button" class="nav-toggle-btn lg:hidden" @click="sidebarOpen = !sidebarOpen">☰</button>
-        <h1 x-text="titles[section] || section"></h1>
+  <section class="main">
+    <div class="topbar">
+      <h2 id="pageTitle">Purchase / Loading</h2>
+      <div class="top-right">
+        <button class="ghost-btn">Business Profile</button>
+        <span>Mon, 21 Sept 2026</span>
       </div>
-      <div class="topbar-right">
-        <button type="button" class="btn-ghost-sm" @click="openBusinessProfile()">
-          <i class="fas fa-building"></i> Business Profile
-        </button>
-        <div class="topbar-date" x-text="clockDate"></div>
-      </div>
-    </header>
+    </div>
+    <div class="content" id="view"></div>
+  </section>
+</div>
 
-    <div class="content">
-    <div class="content-inner">
-
-      <div class="dash-hero" x-show="section === 'dashboard'">
-        <div>
-          <h2>
-            <span class="greet-icon" x-text="greetIcon"></span>
-            <span x-text="greeting + ', Meer Gas!'"></span>
-          </h2>
-          <p x-text="'Today’s logistics overview — ' + clockDate"></p>
-        </div>
-        <div class="hero-right">
-          <div class="vip-slogan">
-            <p class="vip-slogan-en">Your Trust, Our Priority</p>
-            <div class="urdu-tagline">آپ کا اعتماد، ہماری اولین ترجیح</div>
-          </div>
-          <div class="hero-clock">
-            <span>Current time</span>
-            <b x-text="clockNow">--:--:--</b>
-          </div>
-        </div>
-      </div>
-
-      <!-- ==================== DASHBOARD ==================== -->
-      <section x-show="section === 'dashboard'" x-transition.opacity>
-        <div class="card p-5 mb-5 rounded-2xl bg-slate-50 border border-slate-100">
-          <p class="text-xs font-semibold text-slate-500 uppercase mb-3">Start with the transaction type</p>
-          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <button type="button" @click="startWork('buy_stock')" class="text-left p-3 rounded-xl bg-white border hover:border-teal-400">
-              <p class="font-bold text-sm">1. Purchase into stock</p>
-              <p class="text-[11px] text-slate-500 mt-1">Inventory increases automatically at RPG Stock.</p>
-            </button>
-            <button type="button" @click="startWork('buy_direct')" class="text-left p-3 rounded-xl bg-white border hover:border-teal-400">
-              <p class="font-bold text-sm">2. Purchase to a party</p>
-              <p class="text-[11px] text-slate-500 mt-1">No warehouse movement. Party ledger only.</p>
-            </button>
-            <button type="button" @click="startWork('sell_stock')" class="text-left p-3 rounded-xl bg-white border hover:border-emerald-400">
-              <p class="font-bold text-sm">3. Sale from stock</p>
-              <p class="text-[11px] text-slate-500 mt-1">Inventory decreases. Buyer is debited.</p>
-            </button>
-            <button type="button" @click="startWork('sell_direct')" class="text-left p-3 rounded-xl bg-white border hover:border-emerald-400">
-              <p class="font-bold text-sm">4. Direct sale</p>
-              <p class="text-[11px] text-slate-500 mt-1">No inventory change. Buyer ledger debit.</p>
-            </button>
-            <button type="button" @click="startWork('pay')" class="text-left p-3 rounded-xl bg-white border hover:border-blue-400">
-              <p class="font-bold text-sm">5. Payment / TID / slip</p>
-              <p class="text-[11px] text-slate-500 mt-1">Received, paid, or party-to-party settlement.</p>
-            </button>
-            <button type="button" @click="go('guide')" class="text-left p-3 rounded-xl bg-white border hover:border-indigo-400">
-              <p class="font-bold text-sm">6. Data flow guide</p>
-              <p class="text-[11px] text-slate-500 mt-1">Registers, stock effect, and document columns.</p>
-            </button>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="card-vip accent-teal p-5 pl-6">
-            <p class="vip-label">Total Purchased</p>
-            <p class="vip-value mt-1" x-text="fmt(totals.purchased) + ' Ton'"></p>
-            <p class="vip-sub">June 2026</p>
-          </div>
-          <div class="card-vip accent-emerald p-5 pl-6">
-            <p class="vip-label">Total Sold</p>
-            <p class="vip-value mt-1" x-text="fmt(totals.sold) + ' Ton'"></p>
-            <p class="vip-sub">All parties</p>
-          </div>
-          <div class="card-vip accent-sky p-5 pl-6">
-            <p class="vip-label">Available Stock</p>
-            <p class="vip-value mt-1 text-teal-700" x-text="'~ ' + fmt(totals.stock) + ' Ton'"></p>
-            <p class="vip-sub">RPG Plant – STOCK</p>
-          </div>
-          <div class="card-vip accent-rose p-5 pl-6">
-            <p class="vip-label">Sold Out</p>
-            <p class="vip-value mt-1 text-rose-600" x-text="fmt(totals.soldOut || 0) + ' Ton'"></p>
-            <p class="vip-sub">Depleted stock</p>
-          </div>
-        </div>
-
-        <div class="grid lg:grid-cols-3 gap-5">
-          <div class="card p-5 lg:col-span-2">
-            <h3 class="font-bold text-sm mb-4">Recent Activity</h3>
-            <div class="space-y-1">
-              <template x-for="(t, i) in recentActivity" :key="i">
-                <div class="flex justify-between items-center py-2.5 border-b border-slate-50 last:border-0">
-                  <div>
-                    <span class="font-medium text-sm" x-text="t.title"></span>
-                    <span class="text-slate-400 text-xs ml-2" x-text="t.sub"></span>
-                  </div>
-                  <span class="text-xs font-semibold" :class="t.color" x-text="t.value"></span>
-                </div>
-              </template>
-            </div>
-          </div>
-
-          <div class="card p-5 border-l-4 border-teal-400">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="font-bold text-sm">Stock Snapshot</h3>
-              <button type="button" @click="go('inventory')" class="text-[11px] text-teal-600 font-medium hover:underline">View all →</button>
-            </div>
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-sm text-slate-600">RPG Plant – STOCK</span>
-              <span class="font-bold" x-text="'~ ' + fmt(totals.stock) + ' Ton'"></span>
-            </div>
-            <div class="w-full bg-slate-100 rounded-full h-2 mb-3">
-              <div class="bg-teal-500 h-2 rounded-full" style="width:100%"></div>
-            </div>
-            <p class="text-xs text-slate-500">Only active inventory • Multi-ready</p>
-          </div>
-        </div>
-      </section>
-
-      <section x-show="section === 'guide'" x-transition.opacity>
-        <div class="mb-5">
-          <p class="text-[11px] font-semibold tracking-widest text-teal-700 uppercase">Meer Logistics &amp; Gas Energy</p>
-          <h2 class="text-2xl font-extrabold text-slate-900 mt-1">End-to-end data flow</h2>
-          <p class="text-sm text-slate-500 mt-1 max-w-3xl">Every operational event follows one path from source to document. Product either enters RPG Stock or moves directly to a trading party. Money is recorded on the party ledger with TID / slip proof.</p>
-        </div>
-
-        <!-- TOP TO BOTTOM FLOW -->
-        <div class="card p-6 rounded-2xl mb-5 overflow-x-auto">
-          <p class="text-xs font-semibold text-slate-400 uppercase mb-4">Level 1 — Origin</p>
-          <div class="flex flex-wrap gap-3 mb-2">
-            <div class="px-4 py-3 rounded-xl bg-slate-900 text-white text-sm font-semibold">Loading source / border / plant</div>
-            <div class="px-4 py-3 rounded-xl bg-slate-800 text-white text-sm font-semibold">Bowser + Qty (MT)</div>
-            <div class="px-4 py-3 rounded-xl bg-slate-700 text-white text-sm font-semibold">Rate (now or later)</div>
-          </div>
-          <div class="h-8 w-px bg-slate-300 ml-6 my-1"></div>
-          <p class="text-xs font-semibold text-slate-400 uppercase mb-3">Level 2 — Choose destination of the gas</p>
-          <div class="grid md:grid-cols-2 gap-4">
-            <div class="rounded-2xl border-2 border-teal-200 bg-teal-50/70 p-4">
-              <p class="text-[11px] font-bold text-teal-800 uppercase">Path A — Into company stock</p>
-              <p class="text-sm font-bold mt-1">Purchase type: Place in RPG Stock</p>
-              <p class="text-xs text-slate-600 mt-2">Writes Purchase register → Inventory IN → Stock voucher PDF</p>
-              <div class="mt-3 text-[11px] bg-white rounded-lg p-3 border border-teal-100 leading-relaxed">
-                <span class="font-semibold">Then sale from stock:</span> Sale register → Inventory OUT → Buyer ledger Debit → Sale voucher PDF
-              </div>
-            </div>
-            <div class="rounded-2xl border-2 border-amber-200 bg-amber-50/70 p-4">
-              <p class="text-[11px] font-bold text-amber-800 uppercase">Path B — Direct to party</p>
-              <p class="text-sm font-bold mt-1">Purchase type: Direct to party</p>
-              <p class="text-xs text-slate-600 mt-2">Writes Purchase register → Party ledger Debit (no inventory) → Purchase voucher PDF</p>
-              <div class="mt-3 text-[11px] bg-white rounded-lg p-3 border border-amber-100 leading-relaxed">
-                <span class="font-semibold">Matching sale (same bowser):</span> Sale register → Buyer ledger Debit → Sale voucher PDF
-              </div>
-            </div>
-          </div>
-          <div class="h-8 w-px bg-slate-300 ml-6 my-1"></div>
-          <p class="text-xs font-semibold text-slate-400 uppercase mb-3">Level 3 — Settlement of money</p>
-          <div class="grid md:grid-cols-3 gap-3">
-            <div class="rounded-xl border bg-emerald-50 p-4 text-sm">
-              <p class="font-bold text-emerald-800">Received</p>
-              <p class="text-xs text-slate-600 mt-1">Party → MLG bank. Party Credit + company bank Debit. Split across multiple MLG accounts if needed.</p>
-            </div>
-            <div class="rounded-xl border bg-rose-50 p-4 text-sm">
-              <p class="font-bold text-rose-800">Made</p>
-              <p class="text-xs text-slate-600 mt-1">MLG → one or many parties. Each payee Debit + MLG bank Credit.</p>
-            </div>
-            <div class="rounded-xl border bg-indigo-50 p-4 text-sm">
-              <p class="font-bold text-indigo-800">Slip / instructed</p>
-              <p class="text-xs text-slate-600 mt-1">One payer → one party, many parties, or many accounts of the same party. Both ledgers per line.</p>
-            </div>
-          </div>
-          <div class="h-8 w-px bg-slate-300 ml-6 my-1"></div>
-          <p class="text-xs font-semibold text-slate-400 uppercase mb-3">Level 4 — Where the operator looks</p>
-          <div class="grid sm:grid-cols-4 gap-3 text-sm">
-            <div class="p-3 rounded-xl bg-slate-50 border font-semibold">Purchase list</div>
-            <div class="p-3 rounded-xl bg-slate-50 border font-semibold">Sale list</div>
-            <div class="p-3 rounded-xl bg-slate-50 border font-semibold">Inventory movements</div>
-            <div class="p-3 rounded-xl bg-slate-50 border font-semibold">Party ledger + PDF</div>
-          </div>
-        </div>
-
-        <!-- DOCUMENT COLUMNS -->
-        <div class="card p-6 rounded-2xl mb-5">
-          <h3 class="font-bold text-slate-900 mb-1">Document columns created after each save</h3>
-          <p class="text-xs text-slate-500 mb-4">These fields are stored on the record, posted into Description / Narration where relevant, and printed on the A4 voucher or ledger PDF.</p>
-          <div class="overflow-x-auto">
-            <table class="w-full text-xs text-left">
-              <thead>
-                <tr class="text-slate-500 uppercase border-b">
-                  <th class="py-2 pr-3">Event</th>
-                  <th class="py-2 pr-3">Registers written</th>
-                  <th class="py-2 pr-3">Stock effect</th>
-                  <th class="py-2 pr-3">Ledger effect</th>
-                  <th class="py-2">Columns on the document</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y text-slate-700">
-                <tr>
-                  <td class="py-3 pr-3 font-semibold">Stock purchase</td>
-                  <td class="py-3 pr-3">Purchases</td>
-                  <td class="py-3 pr-3 text-teal-700">IN (qty, bowser, source)</td>
-                  <td class="py-3 pr-3">None (destination is RPG Stock)</td>
-                  <td class="py-3">Date, Bowser, Party (RPG Stock), City, Plant, Source, Qty MT, Rate, Amount, Status, Narration</td>
-                </tr>
-                <tr>
-                  <td class="py-3 pr-3 font-semibold">Direct purchase</td>
-                  <td class="py-3 pr-3">Purchases</td>
-                  <td class="py-3 pr-3">No change</td>
-                  <td class="py-3 pr-3">Party Debit</td>
-                  <td class="py-3">Same as above + ledger Date, Description (bowser, qty, rate, remarks), Debit, Balance</td>
-                </tr>
-                <tr>
-                  <td class="py-3 pr-3 font-semibold">Sale from stock</td>
-                  <td class="py-3 pr-3">Sales</td>
-                  <td class="py-3 pr-3 text-rose-700">OUT</td>
-                  <td class="py-3 pr-3">Buyer Debit</td>
-                  <td class="py-3">Date, Bowser, Party, City, Filling Plant, Qty MT, Rate, Amount, Narration</td>
-                </tr>
-                <tr>
-                  <td class="py-3 pr-3 font-semibold">Direct sale</td>
-                  <td class="py-3 pr-3">Sales</td>
-                  <td class="py-3 pr-3">No change</td>
-                  <td class="py-3 pr-3">Buyer Debit</td>
-                  <td class="py-3">Same sale columns. Description includes Rate pending if rate is blank</td>
-                </tr>
-                <tr>
-                  <td class="py-3 pr-3 font-semibold">Payment received</td>
-                  <td class="py-3 pr-3">Payments</td>
-                  <td class="py-3 pr-3">—</td>
-                  <td class="py-3 pr-3">Party Credit</td>
-                  <td class="py-3">Date, Type, Party, From, To, TID, Slip / Voucher, Bank, Amount, Remarks</td>
-                </tr>
-                <tr>
-                  <td class="py-3 pr-3 font-semibold">Payment made</td>
-                  <td class="py-3 pr-3">Payments</td>
-                  <td class="py-3 pr-3">—</td>
-                  <td class="py-3 pr-3">Party Debit</td>
-                  <td class="py-3">Same payment columns</td>
-                </tr>
-                <tr>
-                  <td class="py-3 pr-3 font-semibold">Slip / split transfer</td>
-                  <td class="py-3 pr-3">Payments</td>
-                  <td class="py-3 pr-3">—</td>
-                  <td class="py-3 pr-3">Payer Credit + each receiver Debit (1 line = 1 account / party)</td>
-                  <td class="py-3">Date, From, To / Account lines (Party, Bank, TID, Slip, Amount), Proof note</td>
-                </tr>
-                <tr>
-                  <td class="py-3 pr-3 font-semibold">Rate update later</td>
-                  <td class="py-3 pr-3">Same purchase / sale row</td>
-                  <td class="py-3 pr-3">Unchanged</td>
-                  <td class="py-3 pr-3">Debit amount refreshed</td>
-                  <td class="py-3">Qty × new Rate = Amount. Description drops “Rate pending”</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="grid lg:grid-cols-2 gap-5 mb-5">
-          <div class="card p-6 rounded-2xl">
-            <h3 class="font-bold mb-3">Ledger line (every financial event)</h3>
-            <p class="text-xs text-slate-500 mb-3">Printed on Party Ledger PDF in this order.</p>
-            <div class="flex flex-wrap gap-2 text-[11px]">
-              <span class="px-2 py-1 rounded bg-slate-100">S#</span>
-              <span class="px-2 py-1 rounded bg-slate-100">Date</span>
-              <span class="px-2 py-1 rounded bg-slate-100">Description / Narration</span>
-              <span class="px-2 py-1 rounded bg-slate-100">Bowser</span>
-              <span class="px-2 py-1 rounded bg-slate-100">Qty MT</span>
-              <span class="px-2 py-1 rounded bg-slate-100">Rate</span>
-              <span class="px-2 py-1 rounded bg-slate-100">TID</span>
-              <span class="px-2 py-1 rounded bg-slate-100">From → To</span>
-              <span class="px-2 py-1 rounded bg-rose-50 text-rose-700">Debit</span>
-              <span class="px-2 py-1 rounded bg-emerald-50 text-emerald-700">Credit</span>
-              <span class="px-2 py-1 rounded bg-slate-900 text-white">Balance</span>
-            </div>
-            <p class="text-xs text-slate-500 mt-3">Narration concatenates operation + bowser + qty + plant + source + remarks + TID + slip so the Excel team sees the full story on one line.</p>
-          </div>
-          <div class="card p-6 rounded-2xl">
-            <h3 class="font-bold mb-3">Inventory movement line</h3>
-            <p class="text-xs text-slate-500 mb-3">Only Path A (stock in / stock out) and manual adjustments.</p>
-            <div class="flex flex-wrap gap-2 text-[11px]">
-              <span class="px-2 py-1 rounded bg-slate-100">Date</span>
-              <span class="px-2 py-1 rounded bg-teal-50">Type IN</span>
-              <span class="px-2 py-1 rounded bg-rose-50">Type OUT</span>
-              <span class="px-2 py-1 rounded bg-slate-100">Qty MT</span>
-              <span class="px-2 py-1 rounded bg-slate-100">Remarks (bowser – source / sale party)</span>
-            </div>
-            <p class="text-xs text-slate-500 mt-3">Direct loads never appear here. That is intentional: the product did not sit in RPG Stock.</p>
-          </div>
-        </div>
-
-        <div class="card p-6 rounded-2xl text-sm text-slate-600">
-          <p class="font-bold text-slate-900 mb-2">How to brief the client</p>
-          <p>Product either rests in RPG Stock or is delivered straight to a party. Stock is inventory. Party exposure is the ledger. After every save the system issues a list row plus an A4 voucher; payments also stamp TID and slip number onto both the payment register and the ledger description so the transaction can be traced without leaving the ERP.</p>
-        </div>
-      </section>
-
-      <!-- ==================== PARTIES ==================== -->
-      <section x-show="section === 'parties'" x-transition.opacity>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-          <div class="card-vip accent-indigo p-4 pl-5">
-            <p class="vip-label">Total Parties</p>
-            <p class="vip-value mt-1" x-text="parties.length"></p>
-            <p class="vip-sub">In master list</p>
-          </div>
-          <div class="card-vip accent-rose p-4 pl-5">
-            <p class="vip-label">With Outstanding</p>
-            <p class="vip-value mt-1 text-rose-600" x-text="parties.filter(p => Number(p.balance) > 0).length"></p>
-            <p class="vip-sub">Balance due</p>
-          </div>
-          <div class="card-vip accent-emerald p-4 pl-5">
-            <p class="vip-label">Settled</p>
-            <p class="vip-value mt-1 text-emerald-600" x-text="parties.filter(p => !Number(p.balance)).length"></p>
-            <p class="vip-sub">Zero balance</p>
-          </div>
-          <div class="card-vip accent-amber p-4 pl-5">
-            <p class="vip-label">Total Outstanding</p>
-            <p class="vip-value mt-1 text-amber-600 text-lg" x-text="fmtMoney(parties.reduce((s,p) => s + (Number(p.balance)||0), 0))"></p>
-            <p class="vip-sub">All parties</p>
-          </div>
-        </div>
-
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
-          <div class="relative flex-1 min-w-[200px] max-w-md">
-            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-            <input type="text" x-model="partySearch" placeholder="Search party name or city..."
-                   class="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm bg-white">
-          </div>
-          <button type="button" @click="showAddParty = true"
-                  class="btn-primary px-4 py-2.5 text-sm flex items-center gap-2">
-            <i class="fas fa-plus"></i> Add Party
-          </button>
-        </div>
-
-        <div class="card overflow-hidden rounded-2xl">
-          <div class="table-scroll">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="text-left text-[11px] text-slate-500 uppercase">
-                  <th class="px-4 py-3">Party</th>
-                  <th class="px-4 py-3">City</th>
-                  <th class="px-4 py-3 text-right">Outstanding</th>
-                  <th class="px-4 py-3 text-right">Last Activity</th>
-                  <th class="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <template x-for="p in filteredParties" :key="p.id">
-                  <tr class="hover:bg-slate-50 cursor-pointer" @click="openPartyLedger(p)">
-                    <td class="px-4 py-3 font-medium" x-text="p.name"></td>
-                    <td class="px-4 py-3 text-slate-500" x-text="p.city || '—'"></td>
-                    <td class="px-4 py-3 text-right font-semibold"
-                        :class="p.balance > 0 ? 'text-rose-600' : (p.balance < 0 ? 'text-emerald-600' : 'text-slate-600')"
-                        x-text="fmtMoney(p.balance)"></td>
-                    <td class="px-4 py-3 text-right text-xs text-slate-400" x-text="p.last || '—'"></td>
-                    <td class="px-4 py-3 text-right">
-                      <span class="text-teal-600 text-xs font-medium">Ledger →</span>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Party Ledger Panel -->
-        <div x-show="activeParty" x-transition class="fixed inset-0 z-50 flex justify-end">
-          <div class="absolute inset-0 bg-black/30" @click="activeParty = null"></div>
-          <div class="relative w-full max-w-6xl bg-white h-full shadow-2xl flex flex-col" @click.stop>
-            <div class="p-5 border-b flex items-center justify-between shrink-0 gap-3">
-              <div class="min-w-0">
-                <h2 class="font-bold text-lg truncate" x-text="activeParty?.name"></h2>
-                <p class="text-xs text-slate-500">Auto-updating Party Ledger</p>
-              </div>
-              <div class="flex items-center gap-2 shrink-0">
-                <button type="button" @click="openPdfOptions('ledger', activeParty)"
-                        class="flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg transition">
-                  <i class="fas fa-file-pdf"></i> Download PDF
-                </button>
-                <button type="button" @click="activeParty = null" class="p-2 hover:bg-slate-100 rounded-lg">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
-            </div>
-            <div class="p-5 flex-1 overflow-auto">
-              <div class="grid grid-cols-2 gap-3 mb-5">
-                <div class="card p-4 rounded-2xl">
-                  <p class="text-[11px] text-slate-400 uppercase">Outstanding Balance</p>
-                  <p class="text-xl font-bold mt-1"
-                     :class="activeParty?.balance > 0 ? 'text-rose-600' : 'text-emerald-600'"
-                     x-text="fmtMoney(activeParty?.balance || 0)"></p>
-                </div>
-                <div class="card p-4 rounded-2xl">
-                  <p class="text-[11px] text-slate-400 uppercase">Ledger Entries</p>
-                  <p class="text-xl font-bold mt-1" x-text="(activeParty?.ledger || []).length"></p>
-                </div>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                  <thead class="bg-slate-50">
-                    <tr class="text-left text-[11px] text-slate-500 uppercase">
-                      <th class="px-3 py-2.5">S#</th>
-                      <th class="px-3 py-2.5">Date</th>
-                      <th class="px-3 py-2.5">Description</th>
-                      <th class="px-3 py-2.5 text-right">Debit</th>
-                      <th class="px-3 py-2.5 text-right">Credit</th>
-                      <th class="px-3 py-2.5 text-right">Balance</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    <template x-for="(e, i) in (activeParty?.ledger || [])" :key="i">
-                      <tr>
-                        <td class="px-3 py-2 text-xs text-slate-400" x-text="(activeParty.ledger.length - i)"></td>
-                        <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap" x-text="e.date"></td>
-                        <td class="px-3 py-2 text-sm text-slate-800" x-text="formatLedgerDesc(e)"></td>
-                        <td class="px-3 py-2 text-right text-rose-600" x-text="e.debit ? fmtMoney(e.debit) : ''"></td>
-                        <td class="px-3 py-2 text-right text-emerald-600" x-text="e.credit ? fmtMoney(e.credit) : ''"></td>
-                        <td class="px-3 py-2 text-right font-medium" x-text="fmtMoney(e.balance)"></td>
-                      </tr>
-                    </template>
-                    <tr x-show="!(activeParty?.ledger || []).length">
-                      <td colspan="6" class="px-3 py-8 text-center text-slate-400 text-sm">No entries yet</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== INVENTORY ==================== -->
-      <section x-show="section === 'inventory'" x-transition.opacity>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="card p-5 rounded-2xl">
-            <p class="text-[11px] font-semibold text-slate-400 uppercase">Total Purchased</p>
-            <p class="text-xl font-extrabold mt-1" x-text="fmt(totals.purchased) + ' Ton'"></p>
-          </div>
-          <div class="card p-5 rounded-2xl">
-            <p class="text-[11px] font-semibold text-slate-400 uppercase">Total Sold</p>
-            <p class="text-xl font-extrabold mt-1" x-text="fmt(totals.sold) + ' Ton'"></p>
-          </div>
-          <div class="card p-5 rounded-2xl">
-            <p class="text-[11px] font-semibold text-slate-400 uppercase">Available Stock</p>
-            <p class="text-xl font-extrabold text-teal-700 mt-1" x-text="'~ ' + fmt(totals.stock) + ' Ton'"></p>
-            <p class="text-xs text-slate-400 mt-1">RPG Plant – STOCK</p>
-          </div>
-          <div class="card p-5 rounded-2xl">
-            <p class="text-[11px] font-semibold text-slate-400 uppercase">Sold Out</p>
-            <p class="text-xl font-extrabold text-rose-600 mt-1">0 Ton</p>
-            <p class="text-xs text-slate-400 mt-1">No sold-out locations</p>
-          </div>
-        </div>
-
-        <!-- Multi-inventory selector (shows only when >1) -->
-        <div x-show="inventories.length > 1" class="mb-6">
-          <h3 class="font-bold text-sm mb-3">Select Inventory / Location</h3>
-          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <template x-for="inv in inventories" :key="inv.id">
-              <button type="button" @click="selectedInv = inv.id"
-                      class="card p-4 text-left border-2 transition w-full"
-                      :class="selectedInv === inv.id ? 'border-teal-400 ring-2 ring-teal-100' : 'border-slate-100 hover:border-teal-200'">
-                <div class="flex justify-between items-start gap-2">
-                  <div>
-                    <p class="font-semibold text-sm" x-text="inv.name"></p>
-                    <p class="text-[11px] text-slate-400 mt-0.5" x-text="inv.type"></p>
-                  </div>
-                  <span class="badge" :class="inv.statusClass" x-text="inv.status"></span>
-                </div>
-                <p class="text-lg font-extrabold mt-3" x-text="inv.qtyLabel + ' Ton'"></p>
-              </button>
-            </template>
-          </div>
-        </div>
-
-        <div class="grid lg:grid-cols-3 gap-5 mb-6">
-          <div class="card p-5 lg:col-span-2">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="font-bold text-sm">Stock Details – <span x-text="currentInv?.name"></span></h3>
-              <span class="badge bg-slate-100 text-slate-600">Current Inventory</span>
-            </div>
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="text-left text-[11px] text-slate-500 uppercase border-b border-slate-100">
-                  <th class="pb-2.5 pr-4">Location / Plant</th>
-                  <th class="pb-2.5 pr-4">Type</th>
-                  <th class="pb-2.5 pr-4 text-right">Qty (Ton)</th>
-                  <th class="pb-2.5 text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="py-3 pr-4 font-medium" x-text="currentInv?.name"></td>
-                  <td class="py-3 pr-4"><span class="badge" :class="currentInv?.typeClass" x-text="currentInv?.type"></span></td>
-                  <td class="py-3 pr-4 text-right font-semibold" x-text="currentInv?.qtyLabel"></td>
-                  <td class="py-3 text-right"><span class="badge" :class="currentInv?.statusClass" x-text="currentInv?.status"></span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="card p-5 rounded-2xl">
-            <h3 class="font-bold text-sm mb-1">Exception adjustment only</h3>
-            <p class="text-[11px] text-slate-500 mb-4">Daily stock should move from Purchase (IN) and Sale from stock (OUT). Use this panel only for a physical-count variance.</p>
-            <form @submit.prevent="adjustStock" class="space-y-3">
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Location</label>
-                <input type="text" x-model="stockForm.location" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
-                <select x-model="stockForm.type" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                  <option value="In">Stock In (+)</option>
-                  <option value="Out">Stock Out (−)</option>
-                  <option value="Adjustment">Set quantity (physical count)</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Quantity (Ton)</label>
-                <input type="number" step="0.001" x-model="stockForm.qty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Remarks</label>
-                <input type="text" x-model="stockForm.notes" placeholder="e.g. Physical count" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-              </div>
-              <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-sm font-semibold">
-                <i class="fas fa-save mr-1.5"></i> Update Stock
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <div class="card overflow-hidden rounded-2xl">
-          <div class="px-5 py-3.5 border-b border-slate-100 bg-slate-50/50">
-            <h3 class="font-semibold text-sm">Recent Stock Movements – <span x-text="currentInv?.name"></span></h3>
-          </div>
-          <div class="table-scroll">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="text-left text-[11px] text-slate-500 uppercase">
-                  <th class="px-4 py-3">Date</th>
-                  <th class="px-4 py-3">Type</th>
-                  <th class="px-4 py-3">Qty</th>
-                  <th class="px-4 py-3">Remarks</th>
-                  <th class="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <template x-for="(m, i) in (currentInv?.movements || [])" :key="i">
-                  <tr>
-                    <td class="px-4 py-2.5 text-slate-500" x-text="m.date"></td>
-                    <td class="px-4 py-2.5">
-                      <span class="badge" :class="m.type === 'In' ? 'bg-teal-50 text-teal-700' : 'bg-rose-50 text-rose-700'" x-text="m.type"></span>
-                    </td>
-                    <td class="px-4 py-2.5 font-semibold" x-text="m.qty"></td>
-                    <td class="px-4 py-2.5 text-xs text-slate-500" x-text="m.remarks || '—'"></td>
-                    <td class="px-4 py-2.5 text-right">
-                      <button type="button" class="text-rose-600 text-xs" @click="deleteMovement(m, i)">Delete</button>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== PURCHASE ==================== -->
-      <section x-show="section === 'purchase'" x-transition.opacity>
-        <div class="card p-6 mb-5 rounded-2xl">
-          <h2 class="text-base font-bold mb-5">
-            <i class="fas fa-truck-loading text-teal-600 mr-2"></i>LPG Purchase / Loading Entry
-          </h2>
-          <form @submit.prevent="savePurchase" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div class="md:col-span-2 lg:col-span-3 grid sm:grid-cols-2 gap-3">
-              <button type="button" @click="setPurchaseDeal('stock')"
-                      class="p-3 rounded-xl border text-left"
-                      :class="purchaseForm.dealType === 'stock' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'">
-                <p class="font-bold text-sm">Place in company stock</p>
-                <p class="text-[11px] text-slate-500">Starts with one stock line. Add more destinations if part of the load goes to a party.</p>
-              </button>
-              <button type="button" @click="setPurchaseDeal('direct')"
-                      class="p-3 rounded-xl border text-left"
-                      :class="purchaseForm.dealType === 'direct' ? 'border-amber-500 bg-amber-50' : 'border-slate-200'">
-                <p class="font-bold text-sm">Deliver directly to a party</p>
-                <p class="text-[11px] text-slate-500">Starts with one party line. Add a stock line if leftover quantity goes to RPG.</p>
-              </button>
-            </div>
-            <p class="md:col-span-2 lg:col-span-3 text-[11px] font-semibold uppercase tracking-wide text-slate-400">1. Loading</p>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loading Date *</label>
-              <input type="date" x-model="purchaseForm.loadingDate" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loaded from</label>
-              <input list="loadFromList" x-model="purchaseForm.source" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Plant, border, or supplier where the bowser was loaded">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser *</label>
-              <input list="bowserList" x-model="purchaseForm.bowser" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Load Qty (Ton) *</label>
-              <input type="number" step="0.001" x-model="purchaseForm.qty" @input="calcPurchase" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate (optional)</label>
-              <input type="number" x-model="purchaseForm.rate" @input="calcPurchase" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Leave blank if rate will come later">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount (auto)</label>
-              <input type="text" x-model="purchaseForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50" readonly>
-            </div>
-
-            <div class="md:col-span-2 lg:col-span-3 flex items-center justify-between mt-1">
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">2. Destinations — one load can split</p>
-              <button type="button" @click="addPurchaseSplit()" class="text-xs font-semibold text-teal-700 hover:underline">
-                + Add destination
-              </button>
-            </div>
-            <div class="md:col-span-2 lg:col-span-3 space-y-3">
-              <template x-for="(line, si) in purchaseForm.splits" :key="si">
-                <div class="grid md:grid-cols-2 lg:grid-cols-5 gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/60">
-                  <div>
-                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
-                    <select x-model="line.destType" @change="onSplitTypeChange(line)" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                      <option value="stock">Company stock</option>
-                      <option value="party">Trading party</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Destination</label>
-                    <input list="partyList" x-model="line.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
-                           :readonly="line.destType === 'stock'" placeholder="Party name">
-                  </div>
-                  <div>
-                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label>
-                    <input list="cityList" x-model="line.city" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                  </div>
-                  <div>
-                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty (Ton) *</label>
-                    <input type="number" step="0.001" x-model="line.qty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                  </div>
-                  <div class="flex gap-2">
-                    <div class="flex-1">
-                      <label class="block text-[11px] font-semibold text-slate-500 mb-1">Unload date</label>
-                      <input type="date" x-model="line.unloadDate" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                    </div>
-                    <button type="button" class="self-end mb-1 text-rose-600 text-xs" x-show="purchaseForm.splits.length > 1" @click="removePurchaseSplit(si)">✕</button>
-                  </div>
-                </div>
-              </template>
-              <p class="text-[11px] text-slate-500">
-                Allocated <span class="font-semibold" x-text="purchaseSplitQtyTotal()"></span> T
-                of loaded <span class="font-semibold" x-text="purchaseForm.qty || 0"></span> T.
-                Leftover stays on route until you add another destination.
-              </p>
-            </div>
-            <div class="md:col-span-2 lg:col-span-3">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Details</label>
-              <input type="text" x-model="purchaseForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Any note that should appear on the party ledger">
-            </div>
-            <div class="md:col-span-2 lg:col-span-3 flex flex-wrap items-center gap-3 pt-2">
-              <button type="submit" class="btn-primary px-6 py-2.5 text-sm">
-                <i class="fas fa-save mr-1.5"></i> Save Purchase
-              </button>
-              <p class="text-xs text-slate-500">Each destination line posts separately: stock lines increase inventory, party lines debit that party’s ledger. Rate can stay blank.</p>
-            </div>
-          </form>
-        </div>
-
-        <div class="card overflow-hidden rounded-2xl">
-          <div class="px-5 py-3 border-b bg-slate-50/50 font-semibold text-sm">Recent Purchases</div>
-          <div class="table-scroll">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="text-left text-[11px] text-slate-500 uppercase">
-                  <th class="px-4 py-3">Date</th>
-                  <th class="px-4 py-3">Bowser</th>
-                  <th class="px-4 py-3">Party</th>
-                  <th class="px-4 py-3">Qty</th>
-                  <th class="px-4 py-3">Amount</th>
-                  <th class="px-4 py-3">Status</th>
-                  <th class="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <template x-for="r in purchases.slice(0, 20)" :key="r.id">
-                  <tr class="hover:bg-slate-50">
-                    <td class="px-4 py-2.5" x-text="r.date"></td>
-                    <td class="px-4 py-2.5 font-medium" x-text="r.bowser"></td>
-                    <td class="px-4 py-2.5" x-text="r.party"></td>
-                    <td class="px-4 py-2.5" x-text="r.qty"></td>
-                    <td class="px-4 py-2.5 font-semibold text-teal-700">
-                      <span x-show="r.amount" x-text="r.amount"></span>
-                      <span x-show="!r.amount" class="text-amber-600 text-xs">Rate pending
-                        <button type="button" class="underline ml-1" @click="applyPendingRate('purchase', r.id, prompt('Rate per Ton?'))">set rate</button>
-                      </span>
-                    </td>
-                    <td class="px-4 py-2.5">
-                      <span class="badge" :class="r.status === 'Delivered' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'" x-text="r.status"></span>
-                    </td>
-                    <td class="px-4 py-2.5 text-right whitespace-nowrap">
-                      <button type="button" @click.stop="editPurchase(r)" class="text-slate-600 text-xs mr-2">Edit</button>
-                      <button type="button" @click.stop="deletePurchase(r)" class="text-rose-600 text-xs mr-2">Delete</button>
-                      <button type="button" @click.stop="openPdfOptions('purchase', r)"
-                              class="text-rose-600 hover:text-rose-700 text-xs font-medium" title="Download PDF">
-                        <i class="fas fa-file-pdf"></i>
-                      </button>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== SALE ==================== -->
-      <section x-show="section === 'sale'" x-transition.opacity>
-        <div class="card p-6 mb-5 rounded-2xl">
-          <h2 class="text-base font-bold mb-5">
-            <i class="fas fa-file-invoice-dollar text-emerald-600 mr-2"></i>LPG Sale Entry
-          </h2>
-          <form @submit.prevent="saveSale" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div class="md:col-span-2 lg:col-span-3 grid sm:grid-cols-2 gap-3">
-              <button type="button" @click="setSaleDeal('from_stock')"
-                      class="p-3 rounded-xl border text-left"
-                      :class="saleForm.dealType === 'from_stock' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'">
-                <p class="font-bold text-sm">Sell from company stock</p>
-                <p class="text-[11px] text-slate-500">Inventory OUT and buyer ledger debit.</p>
-              </button>
-              <button type="button" @click="setSaleDeal('direct')"
-                      class="p-3 rounded-xl border text-left"
-                      :class="saleForm.dealType === 'direct' ? 'border-amber-500 bg-amber-50' : 'border-slate-200'">
-                <p class="font-bold text-sm">Direct sale (no stock)</p>
-                <p class="text-[11px] text-slate-500">Buyer ledger only. Inventory unchanged.</p>
-              </button>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sale Date *</label>
-              <input type="date" x-model="saleForm.date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser *</label>
-              <input list="bowserList" x-model="saleForm.bowser" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Party *</label>
-              <input list="partyList" x-model="saleForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label>
-              <input list="cityList" x-model="saleForm.city" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Filling Plant</label>
-              <input list="plantList" x-model="saleForm.plant" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty (Ton) *</label>
-              <input type="number" step="0.001" x-model="saleForm.qty" @input="calcSale" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate (optional)</label>
-              <input type="number" x-model="saleForm.rate" @input="calcSale" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Leave blank if unknown">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount (auto)</label>
-              <input type="text" x-model="saleForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50" readonly>
-            </div>
-            <div class="md:col-span-2 lg:col-span-3">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Details</label>
-              <input type="text" x-model="saleForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Direct load / stock sale / extra note">
-            </div>
-            <div class="md:col-span-2 lg:col-span-3 pt-2">
-              <button type="submit" class="btn-success px-6 py-2.5 text-sm">
-                <i class="fas fa-save mr-1.5"></i> Save Sale (Auto Ledger + Stock)
-              </button>
-              <p class="text-xs text-slate-500 mt-2">“Sell from stock” reduces RPG inventory automatically. Direct sale does not touch inventory.</p>
-            </div>
-          </form>
-        </div>
-
-        <div class="card overflow-hidden rounded-2xl">
-          <div class="px-5 py-3 border-b bg-slate-50/50 font-semibold text-sm">Recent Sales</div>
-          <div class="table-scroll">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="text-left text-[11px] text-slate-500 uppercase">
-                  <th class="px-4 py-3">Date</th>
-                  <th class="px-4 py-3">Bowser</th>
-                  <th class="px-4 py-3">Party</th>
-                  <th class="px-4 py-3">Qty</th>
-                  <th class="px-4 py-3">Amount</th>
-                  <th class="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <template x-for="s in sales.slice(0, 15)" :key="s.id">
-                  <tr class="hover:bg-slate-50">
-                    <td class="px-4 py-2.5" x-text="s.date"></td>
-                    <td class="px-4 py-2.5 font-medium" x-text="s.bowser"></td>
-                    <td class="px-4 py-2.5" x-text="s.party"></td>
-                    <td class="px-4 py-2.5" x-text="s.qty"></td>
-                    <td class="px-4 py-2.5 font-semibold text-emerald-700">
-                      <span x-show="s.amount" x-text="s.amount"></span>
-                      <span x-show="!s.amount" class="text-amber-600 text-xs">Rate pending
-                        <button type="button" class="underline ml-1" @click="applyPendingRate('sale', s.id, prompt('Rate per Ton?'))">set rate</button>
-                      </span>
-                    </td>
-                    <td class="px-4 py-2.5 text-right whitespace-nowrap">
-                      <button type="button" @click.stop="editSale(s)" class="text-slate-600 text-xs mr-2">Edit</button>
-                      <button type="button" @click.stop="deleteSale(s)" class="text-rose-600 text-xs mr-2">Delete</button>
-                      <button type="button" @click.stop="openPdfOptions('sale', s)"
-                              class="text-rose-600 hover:text-rose-700 text-xs font-medium" title="Download PDF">
-                        <i class="fas fa-file-pdf"></i>
-                      </button>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== PAYMENT ==================== -->
-      <section x-show="section === 'payment'" x-transition.opacity>
-        <div class="card p-6 mb-5 rounded-2xl">
-          <h2 class="text-base font-bold mb-5">
-            <i class="fas fa-money-bill-wave text-blue-600 mr-2"></i>Payment Entry
-          </h2>
-          <form @submit.prevent="savePayment" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Date *</label>
-              <input type="date" x-model="paymentForm.date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
-              <select x-model="paymentForm.type" @change="onPaymentTypeChange()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                <option value="Received">Received from party</option>
-                <option value="Made">Paid to party</option>
-                <option value="Transfer">Party paid another party</option>
-              </select>
-            </div>
-            <div x-show="paymentForm.type === 'Received'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">From party *</label>
-              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Who paid us">
-            </div>
-            <div x-show="paymentForm.type === 'Made'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Party (optional)</label>
-              <input list="partyList" x-model="paymentForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Used if a line has no party">
-            </div>
-            <div x-show="paymentForm.type === 'Transfer'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Who paid *</label>
-              <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Payer name">
-            </div>
-            <div x-show="paymentForm.type === 'Received'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">To bank (our account)</label>
-              <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Where money came in">
-            </div>
-            <div x-show="paymentForm.type === 'Made'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">From bank (our account)</label>
-              <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Which account we paid from">
-            </div>
-            <div x-show="paymentForm.type === 'Transfer'">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">From bank (payer account)</label>
-              <input list="bankList" x-model="paymentForm.fromBank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Payer sent from this bank">
-            </div>
-            <div class="md:col-span-2 lg:col-span-3">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Note</label>
-              <input type="text" x-model="paymentForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Short note or slip reference">
-            </div>
-
-            <div class="md:col-span-2 lg:col-span-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-              <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <div>
-                  <p class="text-sm font-semibold text-slate-800">Payment details</p>
-                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Received'">Which bank received the money — one bank or more.</p>
-                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Made'">Who we paid — one party, many parties, or many accounts.</p>
-                  <p class="text-[11px] text-slate-500" x-show="paymentForm.type === 'Transfer'">One party paid others, or paid into many accounts of one party.</p>
-                </div>
-                <div class="text-right">
-                  <p class="text-[11px] text-slate-500 uppercase">Total</p>
-                  <p class="text-sm font-bold text-slate-900" x-text="fmtMoney(paymentLinesTotal())"></p>
-                </div>
-              </div>
-              <div class="overflow-x-auto">
-                <table class="w-full text-sm min-w-[720px]">
-                  <thead>
-                    <tr class="text-left text-[10px] uppercase text-slate-500">
-                      <th class="pb-2 pr-2" x-text="paymentForm.type === 'Received' ? 'To bank (our account)' : 'Party'"></th>
-                      <th class="pb-2 pr-2" x-show="paymentForm.type === 'Made'">From bank (our account)</th>
-                      <th class="pb-2 pr-2" x-show="paymentForm.type === 'Transfer'">To bank (receiver account)</th>
-                      <th class="pb-2 pr-2">TID</th>
-                      <th class="pb-2 pr-2">Slip</th>
-                      <th class="pb-2 pr-2 w-32">Amount *</th>
-                      <th class="pb-2 w-8"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <template x-for="(line, idx) in paymentForm.lines" :key="idx">
-                      <tr>
-                        <td class="pr-2 pb-2">
-                          <input x-show="paymentForm.type === 'Received'" list="bankList" x-model="line.bank" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="To bank — our account">
-                          <input x-show="paymentForm.type !== 'Received'" list="partyList" x-model="line.party" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="Party">
-                        </td>
-                        <td class="pr-2 pb-2" x-show="paymentForm.type === 'Made'">
-                          <input list="bankList" x-model="line.bank" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="From bank — our account">
-                        </td>
-                        <td class="pr-2 pb-2" x-show="paymentForm.type === 'Transfer'">
-                          <input list="bankList" x-model="line.bank" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm bg-white" placeholder="To bank — receiver account">
-                        </td>
-                        <td class="pr-2 pb-2">
-                          <input type="text" x-model="line.tid" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="TID">
-                        </td>
-                        <td class="pr-2 pb-2">
-                          <input type="text" x-model="line.slip" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="Slip no">
-                        </td>
-                        <td class="pr-2 pb-2">
-                          <input type="number" step="any" x-model="line.amount" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-sm" placeholder="0">
-                        </td>
-                        <td class="pb-2">
-                          <button type="button" class="text-rose-500 text-xs" @click="removePaymentLine(idx)" title="Remove line">✕</button>
-                        </td>
-                      </tr>
-                    </template>
-                  </tbody>
-                </table>
-              </div>
-              <div class="flex flex-wrap gap-2 mt-1">
-                <button type="button" class="text-xs font-semibold text-blue-700 bg-white border border-blue-200 rounded-lg px-3 py-1.5" @click="addPaymentLine('party')">
-                  + Add party
-                </button>
-                <button type="button" class="text-xs font-semibold text-indigo-700 bg-white border border-indigo-200 rounded-lg px-3 py-1.5" @click="addPaymentLine('account')">
-                  + Add another account
-                </button>
-              </div>
-            </div>
-
-            <div class="md:col-span-2 lg:col-span-3">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Photo / slip (optional)</label>
-              <p class="text-[11px] text-slate-400 mb-2">One image for this payment. It prints on the voucher.</p>
-              <div class="flex flex-wrap items-center gap-3">
-                <input type="file" accept="image/*,.pdf" @change="onProofFile($event)" class="text-xs">
-                <span class="text-xs text-teal-700" x-show="paymentForm.proofName" x-text="paymentForm.proofName"></span>
-                <button type="button" class="text-xs text-rose-600" x-show="paymentForm.proofData" @click="clearProof()">Remove</button>
-              </div>
-              <img x-show="paymentForm.proofData" :src="paymentForm.proofData" alt="Proof preview" class="mt-3 max-h-28 rounded-lg border border-slate-200">
-            </div>
-            <div class="md:col-span-2 lg:col-span-3 pt-1">
-              <p class="text-xs text-slate-500 mb-3">
-                Save updates both ledgers. Enter date and party once; add extra lines only when needed.
-              </p>
-              <button type="submit" class="btn-info px-6 py-2.5 text-sm">
-                <i class="fas fa-save mr-1.5"></i> Save Payment
-              </button>
-              <span class="text-xs text-amber-700 ml-3" x-show="paymentForm.editingId">Edit mode — save will replace this payment</span>
-            </div>
-          </form>
-        </div>
-
-        <div class="card overflow-hidden rounded-2xl" x-show="payments.length">
-          <div class="px-5 py-3 border-b bg-slate-50/50 font-semibold text-sm">Recent Payments</div>
-          <div class="table-scroll">
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="text-left text-[11px] text-slate-500 uppercase">
-                  <th class="px-4 py-3">Date</th>
-                  <th class="px-4 py-3">Type</th>
-                  <th class="px-4 py-3">From</th>
-                  <th class="px-4 py-3">To</th>
-                  <th class="px-4 py-3">TID</th>
-                  <th class="px-4 py-3">Bank</th>
-                  <th class="px-4 py-3 text-right">Amount</th>
-                  <th class="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <template x-for="p in payments.slice(0, 15)" :key="p.id">
-                  <tr>
-                    <td class="px-4 py-2.5" x-text="p.date"></td>
-                    <td class="px-4 py-2.5">
-                      <span class="badge"
-                            :class="p.type === 'Received' ? 'bg-emerald-50 text-emerald-700' : (p.type === 'Transfer' ? 'bg-indigo-50 text-indigo-700' : 'bg-rose-50 text-rose-700')"
-                            x-text="p.type + ((p.lines && p.lines.length > 1) ? (' ×' + p.lines.length) : '')"></span>
-                    </td>
-                    <td class="px-4 py-2.5 font-medium text-xs" x-text="paymentFromLabel(p)"></td>
-                    <td class="px-4 py-2.5 font-medium text-xs" x-text="paymentTargetLabel(p)"></td>
-                    <td class="px-4 py-2.5 text-xs text-slate-600" x-text="p.tid || p.slip || ((p.lines && p.lines[0] && (p.lines[0].tid || p.lines[0].slip)) || '—')"></td>
-                    <td class="px-4 py-2.5 text-xs text-slate-500" x-text="p.bank || '—'"></td>
-                    <td class="px-4 py-2.5 text-right font-semibold" x-text="fmtMoney(p.amount)"></td>
-                    <td class="px-4 py-2.5 text-right whitespace-nowrap">
-                      <button type="button" @click="editPayment(p)" class="text-slate-600 text-xs mr-2">Edit</button>
-                      <button type="button" @click="deletePayment(p)" class="text-rose-600 text-xs mr-2">Delete</button>
-                      <button type="button" @click="openPdfOptions('payment', p)" class="text-rose-600 text-xs"><i class="fas fa-file-pdf"></i></button>
-                    </td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== DIESEL ==================== -->
-      <section x-show="section === 'diesel'" x-transition.opacity>
-        <div class="card p-6 mb-5 rounded-2xl">
-          <h2 class="text-base font-bold mb-5">
-            <i class="fas fa-gas-pump text-orange-500 mr-2"></i>Diesel & Cash Entry
-          </h2>
-          <form @submit.prevent="saveDiesel" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Date</label>
-              <input type="date" x-model="dieselForm.date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser</label>
-              <input list="bowserList" x-model="dieselForm.bowser" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
-              <select x-model="dieselForm.type" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                <option value="Diesel">Diesel</option>
-                <option value="Cash">Cash</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Location</label>
-              <input type="text" x-model="dieselForm.location" placeholder="Mand / Gwadar / Turbat" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty / Amount</label>
-              <input type="number" x-model="dieselForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div class="flex items-end">
-              <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold">
-                <i class="fas fa-save mr-1.5"></i> Save
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <!-- ==================== MASTER ==================== -->
-      <section x-show="section === 'master'" x-transition.opacity>
-        <div class="grid md:grid-cols-2 gap-5">
-          <template x-for="m in masterSections" :key="m.key">
-            <div class="card p-5 rounded-2xl">
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="font-bold text-sm" x-text="m.title"></h3>
-                <button type="button" @click="addMasterItem(m.key)" class="text-xs text-teal-600 font-medium hover:underline">+ Add New</button>
-              </div>
-              <div class="flex flex-wrap gap-2 max-h-44 overflow-auto">
-                <template x-for="(v, i) in master[m.key]" :key="i">
-                  <span class="badge bg-slate-100 text-slate-600 border border-slate-200" x-text="v"></span>
-                </template>
-              </div>
-            </div>
-          </template>
-        </div>
-      </section>
-
-    </div><!-- /.content-inner -->
-    </div><!-- /.content -->
-  </div><!-- /.main -->
-  </div><!-- /.shell -->
-  </div><!-- /.app-frame -->
-
-  <!-- Toast -->
-  <div x-show="toast.show" x-transition class="toast">
-    <i class="fas fa-check-circle text-emerald-400"></i>
-    <span x-text="toast.msg"></span>
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Add item</h3>
+    <div class="field" style="margin-bottom:12px">
+      <label>Name</label>
+      <input id="modalValue" />
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn green" onclick="saveModal()">Save</button>
+    </div>
   </div>
+</div>
 
-  <!-- Add Party Modal -->
-  <div x-show="showAddParty" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition.opacity>
-    <div class="absolute inset-0 bg-black/40" @click="showAddParty = false"></div>
-    <div class="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl" @click.stop>
-      <h3 class="font-bold text-lg mb-4">Add New Party</h3>
-      <input type="text" x-model="newPartyName" placeholder="Party name *"
-             class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm mb-3"
-             @keydown.enter="confirmAddParty">
-      <input type="text" x-model="newPartyCity" placeholder="City (optional)"
-             class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm mb-5">
-      <div class="flex justify-end gap-2">
-        <button type="button" @click="showAddParty = false" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-        <button type="button" @click="confirmAddParty" class="btn-primary px-5 py-2 text-sm">Add Party</button>
+<script>
+const MASTER = {
+  parties: ["Bugti Plant","VTR LPG","VTR Gas","Royal Gas","Zulfiqar LPG","Farhan Gas","Bhatti Associates","Aziz Plant","Dilshad Enterprises","Al Macca Gas","Jahanzaib Gas","NEW JAMALI","Arshad Gas","Lal Energy","Umar Energy","Hussain Gas","Sachal Gas","RPG Plant - STOCK","Heaven Gas","Salam LPG","MLG"],
+  bowsers: ["TMQ 013","JU 3050","JQ 2432","TMQ 588","TLX 297","TLX 586","TMP 012","TLX 288","TAT 188","TMN 806","TMR 025","JQ 3148","TMP 200","TMU 062","TMP 010","TMP 100","TMQ 015","TMP 017","TLF 863","TMN 006","NLA 026","TLX 645","TLA 701","TLH 912"],
+  cities: ["Karachi","Jamshoro","Multan","Sukkur","Qazi Ahmed","Liyyah","Nawabshah","Kashmore","JACCOBABAD","Sadiqabad","Dogran"],
+  plants: ["Mand","BP 250","Allanaz - Karachi","Jamshoro - Bugti","RPG STOCK - Karachi","Hothi Nisar BP 250","Salam Gas","Gwadar","Turbat","RPG Plant - STOCK","Taftan Border"],
+  banks: ["MBL Pak Rice Commission Agent","HBL Wakeel Ahmed Enterprises","UBL Ibadat LPG PVT LTD","ASK Bank Wakeel Ahmed Enterprises","ABL Pak Rice Commission Agent","BALH Ibadat Rice Mills","BALF Ibadat Rice Mills","MCB Shabeer Ahmed Enterprises","FB Saddam Enterprises","Meezan - Naik Muhammad Enterprises","MLG HBL Account","VTR Meezan Bank","VTR HBL Bank"],
+  brands: ["Mehman bandar - Meer Gas","Bandar - Meer Gas","Aftab - Meer Gas","bandar Abbas - Meer Gas","Asloia Aftab - Meer Gas","Bandar Asloia - Meer Gas","Botan - Meer Gas","Jamshoro - Meer Gas","Allanaz - Karachi","Meer Gas","Mehman - Meer Gas","Rum Flam Gas - Meer Gas"]
+};
+
+const PURCHASES = [
+  {no:1, loadDate:"1-Jun-26", brand:"Mehman bandar - Meer Gas", unloadDate:"5-Jun-26", bowser:"TMQ 013", party:"Bugti Plant", city:"Jamshoro", plant:"Mand", unit:"Ton", loadQty:47.490, unloadQty:47.490, baseRate:"", rate:312200, amount:14826378, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:2, loadDate:"1-Jun-26", brand:"Bandar - Meer Gas", unloadDate:"4-Jun-26", bowser:"JU 3050", party:"VTR Gas", city:"Qazi Ahmed", plant:"Mand", unit:"Ton", loadQty:48.470, unloadQty:48.470, baseRate:"", rate:312200, amount:15132334, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:3, loadDate:"2-Jun-26", brand:"Aftab - Meer Gas", unloadDate:"6-Jun-26", bowser:"JQ 2432", party:"Zulfiqar LPG", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:48.960, unloadQty:48.960, baseRate:"", rate:312200, amount:15285312, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:4, loadDate:"3-Jun-26", brand:"bandar Abbas - Meer Gas", unloadDate:"6-Jun-26", bowser:"TMQ 588", party:"RPG Plant - STOCK", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:50.420, unloadQty:50.420, baseRate:"", rate:312200, amount:15741124, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:5, loadDate:"4-Jun-26", brand:"Asloia Aftab - Meer Gas", unloadDate:"7-Jun-26", bowser:"TLX 297", party:"Bugti Plant", city:"Jamshoro", plant:"BP 250", unit:"Ton", loadQty:46.845, unloadQty:46.650, baseRate:"", rate:314760, amount:14744932, tradingParty:"MLG", loadedFrom:["BP 250"]},
+  {no:6, loadDate:"5-Jun-26", brand:"Jamshoro - Meer Gas", unloadDate:"5-Jun-26", bowser:"TLF 863", party:"Bhatti Associates", city:"Multan", plant:"Jamshoro - Bugti", unit:"Ton", loadQty:29.805, unloadQty:29.805, baseRate:4425, rate:375000, amount:11176875, tradingParty:"MLG", loadedFrom:["Jamshoro - Bugti"]},
+  {no:7, loadDate:"5-Jun-26", brand:"Allanaz - Karachi", unloadDate:"6-Jun-26", bowser:"TMN 006", party:"Royal Gas", city:"Sukkur", plant:"Allanaz - Karachi", unit:"Ton", loadQty:31.030, unloadQty:30.565, baseRate:"", rate:362000, amount:11232860, tradingParty:"MLG", loadedFrom:["Allanaz - Karachi"]},
+  {no:8, loadDate:"8-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"12-Jun-26", bowser:"TLX 586", party:"RPG Plant - STOCK", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:48.500, unloadQty:48.500, baseRate:"", rate:312200, amount:15141700, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:9, loadDate:"8-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"15-Jun-26", bowser:"TMP 012", party:"Sachal Gas", city:"Liyyah", plant:"Mand", unit:"Ton", loadQty:49.260, unloadQty:49.260, baseRate:"", rate:312200, amount:15378972, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:10, loadDate:"8-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"15-Jun-26", bowser:"TLX 288", party:"RPG Plant - STOCK", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:42.300, unloadQty:42.300, baseRate:"", rate:312200, amount:13206060, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:11, loadDate:"7-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"10-Jun-26", bowser:"TAT 188", party:"Farhan Gas", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:40.850, unloadQty:40.850, baseRate:"", rate:312200, amount:12753370, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:12, loadDate:"7-Jun-26", brand:"Bandar Abbas - Meer Gas", unloadDate:"23-Jun-26", bowser:"TMN 806", party:"Al Macca Gas", city:"Multan", plant:"Mand", unit:"Ton", loadQty:45.855, unloadQty:45.855, baseRate:"", rate:312200, amount:14315931, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:13, loadDate:"8-Jun-26", brand:"Allanaz - Karachi", unloadDate:"9-Jun-26", bowser:"TMN 006", party:"Royal Gas", city:"Sukkur", plant:"Allanaz - Karachi", unit:"Ton", loadQty:29.890, unloadQty:29.870, baseRate:"", rate:360000, amount:10760400, tradingParty:"MLG", loadedFrom:["Allanaz - Karachi"]},
+  {no:14, loadDate:"9-Jun-26", brand:"Meer Gas", unloadDate:"12-Jun-26", bowser:"TMP 100", party:"RPG Plant - STOCK", city:"Karachi", plant:"Hothi Nisar BP 250", unit:"Ton", loadQty:46.835, unloadQty:46.950, baseRate:"", rate:257569, amount:12063244, tradingParty:"MLG", loadedFrom:["Hothi Nisar BP 250"]},
+  {no:15, loadDate:"10-Jun-26", brand:"Mehman - Meer Gas", unloadDate:"13-Jun-26", bowser:"TMQ 013", party:"Bugti Plant", city:"Jamshoro", plant:"Mand", unit:"Ton", loadQty:49.980, unloadQty:49.980, baseRate:"", rate:312200, amount:15603756, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:16, loadDate:"10-Jun-26", brand:"Allanaz - Karachi", unloadDate:"12-Jun-26", bowser:"TMN 006", party:"NEW JAMALI", city:"JACCOBABAD", plant:"Allanaz - Karachi", unit:"Ton", loadQty:29.450, unloadQty:29.595, baseRate:"", rate:367000, amount:10808150, tradingParty:"MLG", loadedFrom:["Allanaz - Karachi"]},
+  {no:17, loadDate:"11-Jun-26", brand:"Rum Flam Gas - Meer Gas", unloadDate:"18-Jun-26", bowser:"TLY 407", party:"RPG Plant - STOCK", city:"Karachi", plant:"Rum Flam Gas", unit:"Ton", loadQty:41.990, unloadQty:42.340, baseRate:"", rate:364000, amount:15284160, tradingParty:"MLG", loadedFrom:["Rum Flam Gas"]},
+  {no:18, loadDate:"13-Jun-26", brand:"Jamshoro - Meer Gas", unloadDate:"13-Jun-26", bowser:"TLF 863", party:"Al Macca", city:"Multan", plant:"Jamshoro - Bugti", unit:"Ton", loadQty:29.325, unloadQty:29.325, baseRate:5800, rate:491525.42, amount:14413983, tradingParty:"MLG", loadedFrom:["Jamshoro - Bugti"]},
+  {no:19, loadDate:"13-Jun-26", brand:"Bandar Asloia - Meer Gas", unloadDate:"17-Jun-26", bowser:"TMR 025", party:"RPG Plant - STOCK", city:"Karachi", plant:"BP 250", unit:"Ton", loadQty:44.810, unloadQty:44.980, baseRate:"", rate:314760, amount:14104396, tradingParty:"MLG", loadedFrom:["BP 250"]},
+  {no:20, loadDate:"13-Jun-26", brand:"Bandar Asloia - Meer Gas", unloadDate:"18-Jun-26", bowser:"TMQ 588", party:"RPG Plant - STOCK", city:"Karachi", plant:"Mand", unit:"Ton", loadQty:47.750, unloadQty:47.750, baseRate:"", rate:312200, amount:14907550, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:21, loadDate:"15-Jun-26", brand:"Bandar Aftab - Meer Gas", unloadDate:"17-Jun-26", bowser:"JU 3050", party:"Bugti Plant", city:"Jamshoro", plant:"Mand", unit:"Ton", loadQty:49.970, unloadQty:49.970, baseRate:"", rate:312200, amount:15600634, tradingParty:"MLG", loadedFrom:["Mand"]},
+  {no:22, loadDate:"16-Jun-26", brand:"Bandar Asloia - Meer Gas", unloadDate:"19-Jun-26", bowser:"JQ 3148", party:"RPG Plant - STOCK", city:"Karachi", plant:"BP 250", unit:"Ton", loadQty:41.430, unloadQty:41.450, baseRate:"", rate:314760, amount:13040507, tradingParty:"MLG", loadedFrom:["BP 250"]}
+];
+
+const SALES = [
+  {no:1, date:"10-Jun-26", brand:"Bandar - Meer Gas", bowser:"JU 3050", party:"VTR Gas", city:"Qazi Ahmed", qty:20.000, rate:325000, amount:6500000, loadedFrom:["RPG Plant - STOCK"]}
+];
+
+let page = "purchases";
+let modalTarget = null;
+let editingPurchase = null;
+let locCount = 1;
+let destCount = 1;
+
+const TITLES = {
+  dashboard: "Dashboard",
+  dataflow: "Data Flow",
+  ledgers: "Parties & Ledgers",
+  purchases: "Purchase / Loading",
+  purchaseForm: "LPG Purchase / Loading Entry",
+  sales: "Sale",
+  saleForm: "LPG Sale Entry",
+  payments: "Payments",
+  inventory: "Inventory",
+  diesel: "Diesel & Cash",
+  master: "Master Data"
+};
+
+document.querySelectorAll(".nav button").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".nav button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    page = btn.dataset.page;
+    render();
+  };
+});
+
+function opts(list, selected="") {
+  return list.map(x => `<option ${x===selected?"selected":""}>${x}</option>`).join("");
+}
+function money(n){ return Number(n||0).toLocaleString("en-PK"); }
+function num(n){ return Number(n||0).toFixed(3); }
+
+function render() {
+  document.getElementById("pageTitle").textContent = TITLES[page] || page;
+  const v = document.getElementById("view");
+  if (page === "master") v.innerHTML = masterView();
+  else if (page === "purchases") v.innerHTML = purchaseListView();
+  else if (page === "purchaseForm") v.innerHTML = purchaseFormView();
+  else if (page === "sales") v.innerHTML = saleListView();
+  else if (page === "saleForm") v.innerHTML = saleFormView();
+  else if (page === "dashboard") v.innerHTML = `<div class="card"><h3>Dashboard</h3><p class="page-sub">Totals update from Purchase / Sale ledgers. Field labels on transaction screens now use Type/Origin of Goods/Brand, Loaded From (Location) and Bowser/Vehicle Number.</p></div>`;
+  else v.innerHTML = `<div class="card"><h3>${TITLES[page]}</h3><p class="note">Is menu ki listing screens pe jahan brand / source, loaded from aur bowser dikhte hain wahan updated labels apply ho chuke hain.</p></div>`;
+}
+
+function masterCard(title, key) {
+  return `<div class="card">
+    <div class="card-head"><h3>${title}</h3><button class="add-link" onclick="openModal('${key}','${title}')">+ Add New</button></div>
+    <div class="pills">${MASTER[key].map((x,i)=>`<span class="pill">${x} <span class="x" onclick="removeMaster('${key}',${i})">✕</span></span>`).join("")}</div>
+  </div>`;
+}
+
+function masterView() {
+  return `<div class="grid-2">
+    ${masterCard("Parties","parties")}
+    ${masterCard("Bowsers / Vehicles","bowsers")}
+    ${masterCard("Cities","cities")}
+    ${masterCard("Filling Plants / Boarders","plants")}
+    ${masterCard("Banks / Accounts","banks")}
+    ${masterCard("Type / Origin of Goods / Brand","brands")}
+  </div>
+  <p class="note" style="margin-top:12px">Pehle yeh box <b>Sources / Descriptions</b> tha. Ab yeh <b>Type / Origin of Goods / Brand</b> hai kyunke values brands hain (Meer Gas origins).</p>`;
+}
+
+function purchaseListView() {
+  return `<div class="toolbar">
+    <div class="toolbar-left">
+      <input class="search" id="q" placeholder="Search..." oninput="filterPurchases()" />
+      <select class="btn" id="month"><option>June 2026</option><option>May 2026</option></select>
+    </div>
+    <div class="toolbar-right">
+      <button class="btn" onclick="downloadPurchases()">Download</button>
+      <button class="btn" onclick="window.print()">Print</button>
+      <button class="btn green" onclick="page='purchaseForm'; locCount=1; destCount=1; editingPurchase=null; render()">+ Add New</button>
+    </div>
+  </div>
+  <div class="sheet-wrap">
+    <div class="sheet-title">
+      <div>
+        <div class="sheet-logo"><div class="mark">MLG</div>
+          <div>
+            <strong>MEER LOGISTICS &amp; GAS ENERGY</strong>
+            <div class="co">Logistics, gas, trade and import export firm</div>
+          </div>
+        </div>
+        <h3>LPG PURCHASE - June 2026</h3>
       </div>
+    </div>
+    <table class="data" id="purchaseTable">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Loading Date</th>
+          <th>LPG/GAS Quality</th>
+          <th>Unloading Date</th>
+          <th>Bowser No</th>
+          <th>Party</th>
+          <th>City</th>
+          <th>Filling Plant</th>
+          <th>Unit</th>
+          <th>Load Qty</th>
+          <th>Unload Qty</th>
+          <th>Base Rate</th>
+          <th>Rate</th>
+          <th>Amount (PKR)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>${purchaseRows(PURCHASES)}</tbody>
+    </table>
+  </div>`;
+}
+
+function purchaseRows(rows) {
+  return rows.map((r,i)=>`<tr>
+    <td>${r.no}</td>
+    <td>${r.loadDate}</td>
+    <td>${r.brand}</td>
+    <td>${r.unloadDate}</td>
+    <td>${r.bowser}</td>
+    <td>${r.party}</td>
+    <td>${r.city}</td>
+    <td>${r.plant}</td>
+    <td>${r.unit}</td>
+    <td>${Number(r.loadQty).toFixed(3)}</td>
+    <td>${Number(r.unloadQty).toFixed(3)}</td>
+    <td>${r.baseRate||""}</td>
+    <td>${Number(r.rate).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+    <td>${money(r.amount)}</td>
+    <td class="actions">
+      <button onclick="editPurchase(${i})">Edit</button>
+      <button class="del" onclick="deletePurchase(${i})">Delete</button>
+      <button onclick="downloadOne(${i})">Download</button>
+    </td>
+  </tr>`).join("");
+}
+
+function purchaseFormView() {
+  const e = editingPurchase;
+  return `<p class="page-sub">Field sequence: 1 Loading Date · 2 Type/Origin of Goods/Brand · 3 Loaded From (Location) — multiple · 4 Bowser/Vehicle Number · 5 Purchasing Party/Trading Party · then qty / rate / destinations.</p>
+  <div class="mode-row">
+    <div class="mode active" id="modeStock" onclick="setMode('stock')">
+      <h4>Place in company stock</h4>
+      <p>Starts with one stock line. Add more destinations if part of the load goes to a party.</p>
+    </div>
+    <div class="mode" id="modeParty" onclick="setMode('party')">
+      <h4>Deliver directly to a party</h4>
+      <p>Starts with one party line. Add a stock line if leftover quantity goes to RPG.</p>
     </div>
   </div>
 
-
-  <!-- PDF Download Options Modal -->
-  <div x-show="pdfOptions.show" x-transition class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/40" @click="pdfOptions.show = false"></div>
-    <div class="relative bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" @click.stop>
-      <h3 class="font-bold text-lg mb-1">Download PDF</h3>
-      <p class="text-xs text-slate-500 mb-4">Select what to include on the page</p>
-
-      <div class="space-y-3 mb-5">
-        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
-          <input type="checkbox" x-model="pdfOptions.header" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
-          <div>
-            <p class="text-sm font-semibold">Header</p>
-            <p class="text-[11px] text-slate-400">Company banner at top</p>
-          </div>
-        </label>
-        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
-          <input type="checkbox" x-model="pdfOptions.footer" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
-          <div>
-            <p class="text-sm font-semibold">Footer</p>
-            <p class="text-[11px] text-slate-400">Brand strip at bottom</p>
-          </div>
-        </label>
-        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
-          <input type="checkbox" x-model="pdfOptions.logo" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
-          <div>
-            <p class="text-sm font-semibold">Logo</p>
-            <p class="text-[11px] text-slate-400">Same circular mark cropped from the letterhead, same top-left position</p>
-          </div>
-        </label>
-        <label class="flex items-center gap-3 p-3 rounded-xl border border-teal-200 bg-teal-50/40 hover:bg-teal-50 cursor-pointer">
-          <input type="checkbox" x-model="pdfOptions.watermark" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
-          <div>
-            <p class="text-sm font-semibold">Watermark</p>
-            <p class="text-[11px] text-slate-400">Centered faded mark under content (on by default)</p>
-          </div>
-        </label>
-      </div>
-
-      <div class="flex gap-2">
-        <button type="button" @click="pdfOptions.show = false"
-                class="px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-        <button type="button" @click="confirmPdfDownload('print')"
-                class="flex-1 px-3 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-lg">
-          <i class="fas fa-print mr-1.5"></i> Print
-        </button>
-        <button type="button" @click="confirmPdfDownload('download')"
-                class="flex-1 px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-lg">
-          <i class="fas fa-download mr-1.5"></i> Download
-        </button>
-      </div>
-      <p class="text-[10px] text-slate-400 mt-3 text-center leading-relaxed">Print &amp; Download = same full-color PDF.<br>Print dialog mein <b>Margins → None</b> select karein.</p>
+  <div class="section-label">1. LOADING</div>
+  <div class="form-grid">
+    <div class="field">
+      <label>Loading Date <span class="req">*</span></label>
+      <input type="date" id="loadDate" value="${e?e.loadDateISO||'':''}" />
+    </div>
+    <div class="field">
+      <label>Type / Origin of Goods / Brand <span class="req">*</span></label>
+      <select id="brand"><option value="">Select brand / origin</option>${opts(MASTER.brands, e?e.brand:"")}</select>
+    </div>
+    <div class="field">
+      <label>Bowser / Vehicle Number <span class="req">*</span></label>
+      <select id="bowser"><option value="">Select bowser / vehicle</option>${opts(MASTER.bowsers, e?e.bowser:"")}</select>
+    </div>
+    <div class="field">
+      <label>Purchasing Party / Trading Party <span class="req">*</span></label>
+      <select id="tradingParty"><option value="">Select purchasing / trading party</option>${opts(MASTER.parties, e?e.tradingParty:"MLG")}</select>
+      <div class="hint">Woh party jis ke naam pe purchase book ho rahi hai</div>
+    </div>
+    <div class="field">
+      <label>Load Qty (Ton) <span class="req">*</span></label>
+      <input id="loadQty" type="number" step="0.001" value="${e?e.loadQty:''}" oninput="calcAmount()" />
+    </div>
+    <div class="field">
+      <label>Rate (optional)</label>
+      <input id="rate" type="number" step="0.01" placeholder="Leave blank if rate will come later" value="${e?e.rate:''}" oninput="calcAmount()" />
+    </div>
+    <div class="field">
+      <label>Amount (auto)</label>
+      <input id="amount" disabled />
     </div>
   </div>
 
-  <!-- Datalists -->
-  <datalist id="bowserList"></datalist>
-  <datalist id="partyList"></datalist>
-  <datalist id="cityList"></datalist>
-  <datalist id="plantList"></datalist>
-  <datalist id="bankList"></datalist>
-  <datalist id="sourceList"></datalist>
-  <datalist id="loadFromList"></datalist>
+  <div class="section-label" style="margin-top:18px">LOADED FROM (LOCATION) — one load can come from multiple locations</div>
+  <div id="locs">${locationRow(0)}</div>
+  <div class="row-actions">
+    <span class="note">Agar bowser do plants / borders se load hua ho to + Add location dabayein.</span>
+    <button class="add-link" onclick="addLocation()">+ Add location</button>
+  </div>
 
-  <!-- Load order: data → helpers → app → Alpine (100% reliable, no modules) -->
-  <script src="./src/utils/helpers.js"></script>
-  <script src="./src/data/store.js"></script>
-  <script src="./src/modules/app.js"></script>
+  <div class="section-label">2. DESTINATIONS — ONE LOAD CAN SPLIT</div>
+  <div id="dests">${destinationRow(0)}</div>
+  <div class="row-actions">
+    <span class="alloc" id="alloc">Allocated 0 T of loaded 0 T. Leftover stays on route until you add another destination.</span>
+    <button class="add-link" onclick="addDestination()">+ Add destination</button>
+  </div>
 
-  <script>
-    // Register with Alpine before it starts
-    document.addEventListener('alpine:init', () => {
-      Alpine.data('app', window.createApp);
-    });
-  </script>
+  <div class="field" style="margin-bottom:16px">
+    <label>Narration / Details</label>
+    <input id="narration" placeholder="Any note that should appear on the party ledger" />
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <button class="primary" onclick="savePurchase()">Save Purchase</button>
+    <button class="btn" onclick="page='purchases';render()">Back to list</button>
+    <span class="note">Each destination line posts separately: stock lines increase inventory, party lines debit that party’s ledger. Rate can stay blank.</span>
+  </div>`;
+}
 
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
+function locationRow(i, loc="", qty="") {
+  return `<div class="loc-card" id="loc${i}">
+    <div class="loc-grid">
+      <div class="field">
+        <label>Loaded From (Location) ${i===0?"<span class='req'>*</span>":""}</label>
+        <select class="loc-name"><option value="">Plant, border, or supplier where the bowser was loaded</option>${opts(MASTER.plants, loc)}</select>
+      </div>
+      <div class="field">
+        <label>City</label>
+        <select class="loc-city"><option value=""></option>${opts(MASTER.cities)}</select>
+      </div>
+      <div class="field">
+        <label>Qty from this location (Ton)</label>
+        <input class="loc-qty" type="number" step="0.001" value="${qty}" placeholder="Optional split" />
+      </div>
+      <button class="icon-btn" title="Remove location" onclick="this.parentElement.parentElement.remove()">×</button>
+    </div>
+  </div>`;
+}
+
+function destinationRow(i) {
+  return `<div class="dest-card" id="dest${i}">
+    <div class="dest-grid">
+      <div class="field">
+        <label>Type</label>
+        <select class="d-type"><option>Company stock</option><option>Party</option></select>
+      </div>
+      <div class="field">
+        <label>Destination</label>
+        <select class="d-dest">${opts(MASTER.parties, "RPG Plant - STOCK")}</select>
+      </div>
+      <div class="field">
+        <label>City</label>
+        <select class="d-city"><option value=""></option>${opts(MASTER.cities)}</select>
+      </div>
+      <div class="field">
+        <label>Qty (Ton) <span class="req">*</span></label>
+        <input class="d-qty" type="number" step="0.001" oninput="updateAlloc()" />
+      </div>
+      <div class="field">
+        <label>Unload date</label>
+        <input class="d-date" type="date" />
+      </div>
+      <button class="icon-btn" onclick="this.parentElement.parentElement.remove();updateAlloc()">×</button>
+    </div>
+    <div class="field" style="margin-top:8px;max-width:320px">
+      <label>Filling Plant</label>
+      <select class="d-plant"><option value=""></option>${opts(MASTER.plants)}</select>
+    </div>
+  </div>`;
+}
+
+function saleListView() {
+  return `<div class="toolbar">
+    <div class="toolbar-left"><input class="search" placeholder="Search..." /></div>
+    <div class="toolbar-right">
+      <button class="btn" onclick="downloadSales()">Download</button>
+      <button class="btn green" onclick="page='saleForm';render()">+ Add New</button>
+    </div>
+  </div>
+  <div class="sheet-wrap">
+    <div class="sheet-title">
+      <div>
+        <div class="sheet-logo"><div class="mark">MLG</div>
+          <div>
+            <strong>MEER LOGISTICS &amp; GAS ENERGY</strong>
+            <div class="co">Logistics, gas, trade and import export firm</div>
+          </div>
+        </div>
+        <h3>LPG SALE - June 2026</h3>
+      </div>
+    </div>
+    <table class="data">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>Loading Date</th>
+          <th>LPG/GAS Quality</th>
+          <th>Unloading Date</th>
+          <th>Bowser No</th>
+          <th>Party</th>
+          <th>City</th>
+          <th>Filling Plant</th>
+          <th>Unit</th>
+          <th>Load Qty</th>
+          <th>Unload Qty</th>
+          <th>Base Rate</th>
+          <th>Rate</th>
+          <th>Amount (PKR)</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>${SALES.map((r,i)=>`<tr>
+        <td>${r.no}</td>
+        <td>${r.date}</td>
+        <td>${r.brand}</td>
+        <td>${r.date}</td>
+        <td>${r.bowser}</td>
+        <td>${r.party}</td>
+        <td>${r.city}</td>
+        <td>${(r.loadedFrom||[])[0]||""}</td>
+        <td>Ton</td>
+        <td>${num(r.qty)}</td>
+        <td>${num(r.qty)}</td>
+        <td></td>
+        <td>${Number(r.rate).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+        <td>${money(r.amount)}</td>
+        <td class="actions"><button>Edit</button><button class="del" onclick="SALES.splice(${i},1);render()">Delete</button><button>Download</button></td>
+      </tr>`).join("")}</tbody>
+    </table>
+  </div>`;
+}
+
+function saleFormView() {
+  return `<div class="section-label">SALE ENTRY</div>
+  <div class="form-grid">
+    <div class="field"><label>Sale Date <span class="req">*</span></label><input type="date" /></div>
+    <div class="field"><label>Type / Origin of Goods / Brand <span class="req">*</span></label><select><option value="">Select brand / origin</option>${opts(MASTER.brands)}</select></div>
+    <div class="field"><label>Bowser / Vehicle Number <span class="req">*</span></label><select><option value="">Select bowser / vehicle</option>${opts(MASTER.bowsers)}</select></div>
+    <div class="field"><label>Selling Party <span class="req">*</span></label><select><option value="">Select party</option>${opts(MASTER.parties)}</select></div>
+    <div class="field"><label>Qty (Ton) <span class="req">*</span></label><input type="number" step="0.001" /></div>
+    <div class="field"><label>Rate</label><input type="number" /></div>
+    <div class="field"><label>Amount (auto)</label><input disabled /></div>
+  </div>
+  <div class="section-label" style="margin-top:18px">LOADED FROM (LOCATION) — multiple allowed</div>
+  <div id="locs">${locationRow(0)}</div>
+  <div class="row-actions">
+    <span class="note">Sale bhi multiple stock / plant locations se nikal sakti hai.</span>
+    <button class="add-link" onclick="addLocation()">+ Add location</button>
+  </div>
+  <div class="field" style="margin:12px 0 16px"><label>Narration / Details</label><input placeholder="Ledger narration" /></div>
+  <button class="primary" onclick="alert('Sale saved in this preview. Wire this to your API.'); page='sales'; render()">Save Sale</button>
+  <button class="btn" style="margin-left:8px" onclick="page='sales';render()">Back to list</button>`;
+}
+
+function setMode(m) {
+  document.getElementById("modeStock").classList.toggle("active", m==="stock");
+  document.getElementById("modeParty").classList.toggle("active", m==="party");
+}
+function addLocation() {
+  locCount++;
+  document.getElementById("locs").insertAdjacentHTML("beforeend", locationRow(locCount));
+}
+function addDestination() {
+  destCount++;
+  document.getElementById("dests").insertAdjacentHTML("beforeend", destinationRow(destCount));
+}
+function calcAmount() {
+  const q = Number(document.getElementById("loadQty")?.value||0);
+  const r = Number(document.getElementById("rate")?.value||0);
+  const el = document.getElementById("amount");
+  if (el) el.value = r ? money(q*r) : "";
+  updateAlloc();
+}
+function updateAlloc() {
+  const loaded = Number(document.getElementById("loadQty")?.value||0);
+  let used = 0;
+  document.querySelectorAll(".d-qty").forEach(i => used += Number(i.value||0));
+  const el = document.getElementById("alloc");
+  if (el) el.textContent = `Allocated ${used.toFixed(3)} T of loaded ${loaded.toFixed(3)} T. Leftover stays on route until you add another destination.`;
+}
+function savePurchase() {
+  const brand = document.getElementById("brand").value;
+  const bowser = document.getElementById("bowser").value;
+  const tradingParty = document.getElementById("tradingParty").value;
+  const loadQty = Number(document.getElementById("loadQty").value||0);
+  const rate = Number(document.getElementById("rate").value||0);
+  const locs = [...document.querySelectorAll(".loc-name")].map(s=>s.value).filter(Boolean);
+  if (!brand || !bowser || !tradingParty || !loadQty || !locs.length) {
+    alert("Loading Date, Type/Origin of Goods/Brand, Loaded From (Location), Bowser/Vehicle Number, Purchasing Party/Trading Party aur Load Qty required hain.");
+    return;
+  }
+  PURCHASES.unshift({
+    no: PURCHASES.length+1,
+    loadDate: document.getElementById("loadDate").value || "21-Sep-26",
+    brand, unloadDate:"", bowser, party: document.querySelector(".d-dest")?.value || "",
+    city: document.querySelector(".d-city")?.value || "",
+    plant: document.querySelector(".d-plant")?.value || "",
+    unit:"Ton", loadQty, unloadQty: Number(document.querySelector(".d-qty")?.value||loadQty),
+    baseRate:"", rate, amount: loadQty*rate, tradingParty, loadedFrom: locs
+  });
+  page = "purchases";
+  render();
+}
+function editPurchase(i) {
+  editingPurchase = PURCHASES[i];
+  page = "purchaseForm";
+  render();
+}
+function deletePurchase(i) {
+  if (confirm("Delete this purchase entry?")) { PURCHASES.splice(i,1); render(); }
+}
+function downloadOne(i) {
+  const r = PURCHASES[i];
+  const csv = toCSV([r]);
+  saveFile(`purchase-${r.no}.csv`, csv);
+}
+function downloadPurchases() {
+  saveFile("LPG-PURCHASE-June-2026.csv", toCSV(PURCHASES));
+}
+function downloadSales() {
+  saveFile("LPG-SALE.csv", "No,Date,Type/Origin of Goods/Brand,Bowser/Vehicle Number,Party,City,Loaded From (Location),Qty,Rate,Amount\n" +
+    SALES.map(r=>[r.no,r.date,r.brand,r.bowser,r.party,r.city,(r.loadedFrom||[]).join(" + "),r.qty,r.rate,r.amount].join(",")).join("\n"));
+}
+function toCSV(rows) {
+  const header = ["No","Loading Date","LPG/GAS Quality","Unloading Date","Bowser No","Party","City","Filling Plant","Unit","Load Qty","Unload Qty","Base Rate","Rate","Amount (PKR)"];
+  const body = rows.map(r => [r.no,r.loadDate,r.brand,r.unloadDate,r.bowser,r.party,r.city,r.plant,r.unit,r.loadQty,r.unloadQty,r.baseRate||"",r.rate,r.amount].join(","));
+  return header.join(",") + "\n" + body.join("\n");
+}
+function saveFile(name, text) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type:"text/csv"}));
+  a.download = name; a.click();
+}
+function filterPurchases() {
+  const q = (document.getElementById("q")?.value||"").toLowerCase();
+  const rows = PURCHASES.filter(r => JSON.stringify(r).toLowerCase().includes(q));
+  document.querySelector("#purchaseTable tbody").innerHTML = purchaseRows(rows);
+}
+function openModal(key, title) {
+  modalTarget = key;
+  document.getElementById("modalTitle").textContent = "Add " + title;
+  document.getElementById("modalValue").value = "";
+  document.getElementById("modal").classList.add("show");
+}
+function closeModal(){ document.getElementById("modal").classList.remove("show"); }
+function saveModal(){
+  const val = document.getElementById("modalValue").value.trim();
+  if (val) MASTER[modalTarget].push(val);
+  closeModal(); render();
+}
+function removeMaster(key,i){ MASTER[key].splice(i,1); render(); }
+
+render();
+</script>
 </body>
 </html>
