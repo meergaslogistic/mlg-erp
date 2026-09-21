@@ -66,7 +66,7 @@ function createApp() {
     dieselEntries: [],
     ledgerBank: 'ALL',
     purchaseFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'', status:'' },
-    saleFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'' },
+    saleFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'', dealType:'' },
     paymentFilter: { q:'', type:'', party:'', bank:'' },
     dieselFilter: { q:'', type:'', bowser:'', location:'' },
     partyFilter: { q:'', city:'', outstanding:'' },
@@ -93,6 +93,8 @@ function createApp() {
     // ========== Forms ==========
     purchaseForm: {
       showForm: false,
+      alsoCreateSale: false,
+      saleRate: '',
       dealType: 'stock',
       loadingDate: '', bowser: '', party: 'RPG Plant - STOCK', city: '', plant: '',
       qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '',
@@ -104,9 +106,11 @@ function createApp() {
       ]
     },
     saleForm: {
+      showForm: false,
       dealType: 'from_stock',
       date: '', bowser: '', party: '', city: '', plant: 'RPG STOCK - Karachi',
       qty: '', rate: '', amount: '', remarks: '', brand: '', source: '',
+      linkedPurchaseId: '',
       loadFroms: [],
       splits: [
         { destType: 'party', party: '', city: '', qty: '', unloadDate: '' }
@@ -281,6 +285,67 @@ function createApp() {
       this.purchaseForm.bowser = first.bowser || this.purchaseForm.bowser;
       this.purchaseForm.loadingDate = first.date || this.purchaseForm.loadingDate;
     },
+
+    toggleSaleForm() { this.saleForm.showForm = !this.saleForm.showForm; },
+    resetSaleFilters() { this.saleFilter = { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'', dealType:'' }; },
+    saleSummary() {
+      const rows = this.sales || [];
+      const ton = rows.reduce((s,r)=>s+(parseFloat(r.qty)||0),0);
+      const amount = rows.reduce((s,r)=>s+(parseAmount(r.amount)||0),0);
+      const fromStock = rows.filter(r => r.dealType === 'from_stock').length;
+      const direct = rows.filter(r => r.dealType !== 'from_stock').length;
+      return { ton, amount, fromStock, direct };
+    },
+    linkablePurchases() {
+      const used = new Set((this.sales||[]).map(s => String(s.linkedPurchaseId||'')).filter(Boolean));
+      return (this.purchases||[]).filter(p => {
+        const toParty = p.dealType === 'direct' || p.dealType === 'split' || (p.party && !String(p.party).toUpperCase().includes('STOCK'));
+        return toParty && !used.has(String(p.id));
+      }).slice(0, 40);
+    },
+    applyLinkedPurchase() {
+      const id = this.saleForm.linkedPurchaseId;
+      const p = (this.purchases||[]).find(x => String(x.id) === String(id));
+      if (!p) return;
+      this.saleForm.dealType = 'direct';
+      this.saleForm.date = '';
+      this.saleForm.bowser = p.bowser || '';
+      this.saleForm.party = (p.party||'').split(' + ')[0].replace(/\s+\d+(\.\d+)?T$/,'') || p.party;
+      this.saleForm.city = p.city || '';
+      this.saleForm.plant = p.plant || '';
+      this.saleForm.brand = p.brand || p.source || '';
+      this.saleForm.qty = p.unloadQty || p.qty || '';
+      this.saleForm.remarks = 'Linked purchase ' + (p.bowser||'') + ' / ' + (p.date||'');
+      this.calcSale();
+      this.showToast('Purchase trip fill ho gaya. Sirf sale rate likhein.');
+    },
+    createSaleFromPurchase(p, saleRate) {
+      const party = (p.party||'').split(' + ')[0].replace(/\s+\d+(\.\d+)?T$/,'') || p.party;
+      const qty = p.unloadQty || p.qty || '';
+      const rec = {
+        id: Date.now()+1,
+        date: p.unloadDate || p.date,
+        bowser: p.bowser,
+        party,
+        city: p.city || '',
+        plant: p.plant || '',
+        brand: p.brand || p.source || '',
+        remarks: 'Auto from purchase ' + (p.bowser||''),
+        qty,
+        rate: saleRate || '',
+        amount: saleRate ? calcAmount(qty, saleRate) : '',
+        ratePending: !saleRate,
+        dealType: 'direct',
+        linkedPurchaseId: p.id
+      };
+      this.sales.unshift(rec);
+      if (saleRate) {
+        this.postToLedger(party, this.rebuildLedgerNarration('Sale', rec), parseAmount(rec.amount), 0, {
+          qty, rate: saleRate, bowser: p.bowser, date: rec.date, sourceType: 'sale', sourceId: rec.id
+        });
+      }
+      p.linkedSaleId = rec.id;
+    },
     togglePurchaseForm() {
       this.purchaseForm.showForm = !this.purchaseForm.showForm;
     },
@@ -347,6 +412,7 @@ function createApp() {
         if (f.city && r.city !== f.city) return false;
         if (f.plant && r.plant !== f.plant) return false;
         if (f.status && r.status !== f.status) return false;
+        if (f.dealType && r.dealType !== f.dealType) return false;
         if (f.month) {
           const d = String(r.date || r.loadDate || '');
           if (!d.toLowerCase().includes(f.month.toLowerCase().slice(0,3))) return false;
@@ -1098,6 +1164,9 @@ function createApp() {
         splits
       };
       this.purchases.unshift(rec);
+      if (f.alsoCreateSale && hasParty) {
+        this.createSaleFromPurchase(rec, f.saleRate || '');
+      }
 
       splits.forEach(s => {
         const q = parseFloat(s.qty) || 0;
@@ -1110,7 +1179,7 @@ function createApp() {
             formatDateDisplay(s.unloadDate || f.loadingDate),
             rec.id
           );
-        } else {
+        } else if (!f.alsoCreateSale) {
           this.postToLedger(
             s.party,
             this.rebuildLedgerNarration('Purchase / Loading', {
@@ -1135,6 +1204,8 @@ function createApp() {
         : (dealType === 'stock' ? 'Purchase posted to company stock' : 'Purchase posted to party ledger'));
       this.purchaseForm = {
         showForm: true,
+        alsoCreateSale: false,
+        saleRate: '',
         dealType: dealType === 'direct' ? 'direct' : 'stock',
         loadingDate: '', bowser: '', party: dealType === 'direct' ? '' : 'RPG Plant - STOCK', city: '', plant: '',
         qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '', remarks: '', editingId: null,
@@ -1200,17 +1271,19 @@ function createApp() {
       }
       const rec = {
         id: Date.now(),
-        date: f.date,
+        date: formatDateDisplay(f.date) || f.date,
         bowser: f.bowser,
         party: f.party,
         city: f.city,
         plant: f.plant,
+        brand: f.brand || '',
         remarks: f.remarks,
         qty: f.qty,
         rate: f.rate || '',
         amount: f.rate ? calcAmount(f.qty, f.rate) : '',
         ratePending: !f.rate,
-        dealType: f.dealType || 'direct'
+        dealType: f.dealType || 'direct',
+        linkedPurchaseId: f.linkedPurchaseId || ''
       };
       this.sales.unshift(rec);
 
@@ -1226,10 +1299,12 @@ function createApp() {
 
       this.showToast(rec.ratePending ? 'Sale ledger me • Rate pending' : 'Sale saved • Party Ledger auto-updated');
       this.saleForm = {
+        showForm: true,
         dealType: f.dealType || 'from_stock',
         date: '', bowser: '', party: '', city: '',
         plant: fromStock ? 'RPG STOCK - Karachi' : '',
-        qty: '', rate: '', amount: '', remarks: '', editingId: null
+        qty: '', rate: '', amount: '', remarks: '', brand: '', source: '',
+        linkedPurchaseId: '', editingId: null
       };
       this.recalcTotals();
       this.saveToStorage();
