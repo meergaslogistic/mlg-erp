@@ -12,6 +12,9 @@ function createApp() {
   return {
     // ========== UI State ==========
     section: 'dashboard',
+    globalQuery: '',
+    masterQuery: '',
+    ledgerFilter: { q:'', month:'' },
     sidebarOpen: false,
     partySearch: '',
     activeParty: null,
@@ -124,6 +127,7 @@ function createApp() {
       lines: [{ party: '', bank: '', tid: '', slip: '', amount: '', note: '' }]
     },
     stockForm: {
+      showForm: false,
       location: 'RPG Plant – STOCK', type: 'In', qty: '', notes: ''
     },
     dieselForm: {
@@ -498,6 +502,10 @@ function createApp() {
         return this.sales.filter(x => inRange(x.date) && matchParty(x.party) && matchBowser(x.bowser))
           .map(x => ({ c1:x.date, c2:x.bowser, c3:x.party, c4:x.qty, c5:x.amount, c6:x.plant||'' }));
       }
+      if (type === 'pnl') {
+        return this.sales.filter(x => inRange(x.date) && matchParty(x.party) && matchBowser(x.bowser))
+          .map(x => ({ c1:x.date, c2:x.bowser, c3:x.party, c4:x.qty, c5:x.amount, c6: this.saleProfitLabel(x) }));
+      }
       if (type === 'payments') {
         return this.payments.filter(x => inRange(x.date) && matchParty(x.party||x.fromParty||x.toParty) && matchBank(x.bank))
           .map(x => ({ c1:x.date, c2:x.type, c3:x.party||x.fromParty||x.toParty||'', c4:x.bank||'', c5:x.tid||x.slip||'', c6:x.amount }));
@@ -549,6 +557,7 @@ function createApp() {
         diesel: ['Date','Type','Bowser','Location','Qty','Amount'],
         outstanding: ['Party','City','Last','','Outstanding',''],
         ledger: ['Date','Description','Bank','TID','Amount','Balance'],
+        pnl: ['Date','Bowser','Party','Qty','Amount','Profit'],
         stock: ['Location','Type','Qty','Status','','']
       };
       return map[t] || map.summary;
@@ -582,6 +591,51 @@ function createApp() {
     filteredSaleRows() { return this.applyRowFilter(this.sales || [], this.saleFilter || {}); },
     uniqueField(rows, key) {
       return [...new Set((rows || []).map(r => r[key]).filter(Boolean))];
+    },
+    filteredMasterLedgerRows() {
+      let rows = this.masterLedgerRows();
+      const q = (this.ledgerFilter && this.ledgerFilter.q || '').toLowerCase();
+      const month = this.ledgerFilter && this.ledgerFilter.month;
+      if (month) rows = rows.filter(r => String(r.date||'').toLowerCase().includes(month.toLowerCase().slice(0,3)));
+      if (q) rows = rows.filter(r => [r.bank,r.tid,r.sender,r.receiver,r.description].join(' ').toLowerCase().includes(q));
+      return rows;
+    },
+    masterLedgerTotals() {
+      const rows = this.filteredMasterLedgerRows();
+      const inn = rows.filter(r => r.amount>0).reduce((s,r)=>s+r.amount,0);
+      const out = rows.filter(r => r.amount<0).reduce((s,r)=>s+Math.abs(r.amount),0);
+      const bal = rows.length ? rows[rows.length-1].balance : 0;
+      return { inn, out, bal };
+    },
+    setReportPreset(type, month) {
+      this.report.type = type;
+      if (month !== undefined) this.report.month = month;
+      this.showToast('Report ready: ' + type);
+    },
+    filteredMasterList(key) {
+      const q = (this.masterQuery||'').toLowerCase();
+      return (this.master[key]||[]).filter(v => !q || String(v).toLowerCase().includes(q));
+    },
+    globalHits() {
+      const q = (this.globalQuery||'').toLowerCase().trim();
+      if (q.length < 2) return [];
+      const hits = [];
+      (this.purchases||[]).forEach(r => {
+        const blob = [r.bowser,r.party,r.brand,r.city,r.plant].join(' ').toLowerCase();
+        if (blob.includes(q)) hits.push({ id:'p'+r.id, section:'purchase', title: (r.bowser||'')+' '+ (r.party||''), sub: (r.date||'')+' purchase' });
+      });
+      (this.sales||[]).forEach(r => {
+        const blob = [r.bowser,r.party,r.city,r.plant].join(' ').toLowerCase();
+        if (blob.includes(q)) hits.push({ id:'s'+r.id, section:'sale', title: (r.bowser||'')+' '+ (r.party||''), sub: (r.date||'')+' sale' });
+      });
+      (this.payments||[]).forEach(r => {
+        const blob = [r.party,r.bank,r.tid,r.slip].join(' ').toLowerCase();
+        if (blob.includes(q)) hits.push({ id:'y'+r.id, section:'payment', title: (r.type||'')+' '+(r.party||''), sub: String(r.amount||'') });
+      });
+      (this.parties||[]).forEach(r => {
+        if ((r.name||'').toLowerCase().includes(q)) hits.push({ id:r.id, section:'parties', title: r.name, sub: 'Party ledger' });
+      });
+      return hits.slice(0, 12);
     },
     masterLedgerRows() {
       const bank = this.ledgerBank;
