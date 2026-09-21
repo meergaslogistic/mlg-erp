@@ -98,7 +98,7 @@ function createApp() {
       qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '',
       tradingParty: 'MLG', remarks: '',
       loadFroms: [],
-      sources: [{ date: '', location: '', brand: '', city: '', qty: '', rate: '' }],
+      sources: [{ date: '', bowser: '', location: '', brand: '', city: '', qty: '', rate: '' }],
       splits: [
         { destType: 'stock', party: 'RPG Plant - STOCK', city: '', plant: '', qty: '', rate: '', unloadDate: '', origin: '' }
       ]
@@ -223,7 +223,27 @@ function createApp() {
       this.purchaseForm.dealType = this.purchaseForm.splits.length > 1 ? 'split' : this.purchaseForm.dealType;
     },
     blankPurchaseSource(copyDate) {
-      return { date: copyDate || this.purchaseForm.loadingDate || '', location: '', brand: '', city: '', qty: '', rate: '' };
+      const first = (this.purchaseForm.sources || [])[0] || {};
+      return { date: copyDate || first.date || this.purchaseForm.loadingDate || '', bowser: '', location: '', brand: '', city: '', qty: '', rate: '' };
+    },
+    copyFirstSource(i) {
+      const first = (this.purchaseForm.sources || [])[0];
+      if (!first || !this.purchaseForm.sources[i]) return;
+      const keepQty = this.purchaseForm.sources[i].qty;
+      this.purchaseForm.sources[i] = { ...first };
+      if (keepQty) this.purchaseForm.sources[i].qty = keepQty;
+      this.recalcPurchaseFromSources();
+    },
+    sameAsFirst(i, field) {
+      const first = (this.purchaseForm.sources || [])[0];
+      if (!first || !this.purchaseForm.sources[i]) return;
+      this.purchaseForm.sources[i][field] = first[field];
+    },
+    sourceLineAmount(src) {
+      const q = parseFloat(src && src.qty) || 0;
+      const r = parseFloat(src && src.rate) || 0;
+      if (!q || !r) return '';
+      return (q * r).toLocaleString('en-PK', { maximumFractionDigits: 0 });
     },
     addPurchaseSource() {
       if (!this.purchaseForm.sources || !this.purchaseForm.sources.length) {
@@ -258,6 +278,8 @@ function createApp() {
       this.purchaseForm.source = first.location || '';
       this.purchaseForm.brand = first.brand || '';
       this.purchaseForm.city = first.city || this.purchaseForm.city;
+      this.purchaseForm.bowser = first.bowser || this.purchaseForm.bowser;
+      this.purchaseForm.loadingDate = first.date || this.purchaseForm.loadingDate;
     },
     togglePurchaseForm() {
       this.purchaseForm.showForm = !this.purchaseForm.showForm;
@@ -979,16 +1001,19 @@ function createApp() {
       this.recalcPurchaseFromSources();
       const sources = (f.sources || []).map(s => ({
         date: s.date || f.loadingDate || '',
+        bowser: s.bowser || f.bowser || '',
         location: (s.location || '').trim(),
         brand: s.brand || '',
         city: s.city || '',
         qty: s.qty,
         rate: s.rate || ''
-      })).filter(s => s.location || parseFloat(s.qty));
+      })).filter(s => s.location || parseFloat(s.qty) || s.bowser);
       if (!sources.length && (f.source || f.qty)) {
         sources.push({ date: f.loadingDate, location: f.source || '', brand: f.brand || '', city: f.city || '', qty: f.qty, rate: f.rate || '' });
       }
       const loadQty = sources.reduce((s, r) => s + (parseFloat(r.qty) || 0), 0) || (parseFloat(f.qty) || 0);
+      f.bowser = f.bowser || (sources[0] && sources[0].bowser) || '';
+      f.loadingDate = f.loadingDate || (sources[0] && sources[0].date) || '';
       if (!f.loadingDate || !f.bowser || !loadQty) {
         this.showToast('Loading date, bowser and at least one loaded quantity are required. Unload and rate can wait.');
         return;
@@ -1114,7 +1139,7 @@ function createApp() {
         loadingDate: '', bowser: '', party: dealType === 'direct' ? '' : 'RPG Plant - STOCK', city: '', plant: '',
         qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '', remarks: '', editingId: null,
         tradingParty: 'MLG',
-        sources: [{ date: '', location: '', brand: '', city: '', qty: '', rate: '' }],
+        sources: [{ date: '', bowser: '', location: '', brand: '', city: '', qty: '', rate: '' }],
         splits: dealType === 'direct'
           ? [{ destType: 'party', party: '', city: '', plant: '', qty: '', rate: '', unloadDate: '', origin: '' }]
           : [{ destType: 'stock', party: 'RPG Plant - STOCK', city: '', plant: '', qty: '', rate: '', unloadDate: '', origin: '' }]
