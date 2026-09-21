@@ -412,7 +412,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <template x-for="p in filteredParties" :key="p.id">
+                <template x-for="p in filteredPartyRows()" :key="p.id">
                   <tr class="hover:bg-slate-50 cursor-pointer" @click="openPartyLedger(p)">
                     <td class="px-4 py-3 font-medium" x-text="p.name"></td>
                     <td class="px-4 py-3 text-slate-500" x-text="p.city || '—'"></td>
@@ -668,20 +668,19 @@
             </div>
 
             <div class="md:col-span-2 lg:col-span-3">
-              <div class="flex items-center justify-between mb-2">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Loaded From extra locations</p>
-                <button type="button" @click="addLoadFrom('purchaseForm')" class="text-xs font-semibold text-teal-700">+ Add location</button>
-              </div>
-              <template x-for="(loc, li) in (purchaseForm.loadFroms || [])" :key="li">
-                <div class="grid md:grid-cols-3 gap-3 mb-2">
-                  <input list="loadFromList" x-model="loc.location" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Extra plant / border">
-                  <input list="cityList" x-model="loc.city" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="City">
-                  <div class="flex gap-2">
-                    <input type="number" step="0.001" x-model="loc.qty" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Qty from here">
-                    <button type="button" class="text-rose-600" @click="removeLoadFrom('purchaseForm', li)">✕</button>
+              <button type="button" @click="addLoadFrom('purchaseForm')" class="text-xs font-semibold text-teal-700">+ Add another Loaded From location</button>
+              <div class="mt-2 space-y-2" x-show="(purchaseForm.loadFroms || []).length">
+                <template x-for="(loc, li) in (purchaseForm.loadFroms || [])" :key="li">
+                  <div class="grid md:grid-cols-3 gap-3">
+                    <input list="loadFromList" x-model="loc.location" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Extra plant / border">
+                    <input list="cityList" x-model="loc.city" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="City">
+                    <div class="flex gap-2">
+                      <input type="number" step="0.001" x-model="loc.qty" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Qty from here">
+                      <button type="button" class="text-rose-600" @click="removeLoadFrom('purchaseForm', li)">✕</button>
+                    </div>
                   </div>
-                </div>
-              </template>
+                </template>
+              </div>
             </div>
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type / Origin of Goods / Brand</label>
@@ -761,8 +760,20 @@
           </form>
         </div>
 
-        <div class="card overflow-hidden rounded-2xl">
-          <div class="px-5 py-3 border-b bg-slate-50/50 font-semibold text-sm">Recent Purchases</div>
+        
+        <div class="card p-4 mb-4 rounded-2xl">
+          <div class="grid md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <input class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search..." x-model="purchaseFilter.q">
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="purchaseFilter.brand"><option value="">All brands</option><template x-for="v in uniqueField(purchases,'brand')" :key="'pb'+v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="purchaseFilter.party"><option value="">All parties</option><template x-for="v in uniqueField(purchases,'party')" :key="v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="purchaseFilter.bowser"><option value="">All bowsers</option><template x-for="v in uniqueField(purchases,'bowser')" :key="v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="purchaseFilter.city"><option value="">All cities</option><template x-for="v in uniqueField(purchases,'city')" :key="v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="purchaseFilter.plant"><option value="">All plants</option><template x-for="v in uniqueField(purchases,'plant')" :key="v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="purchaseFilter.month"><option value="">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option></select>
+          </div>
+        </div>
+<div class="card overflow-hidden rounded-2xl">
+          <div class="px-5 py-3 border-b bg-slate-50/50 font-semibold text-sm">Purchase Register</div>
           <div class="table-scroll">
             <table class="w-full text-sm">
               <thead>
@@ -871,20 +882,19 @@
               <input list="sourceList" x-model="saleForm.brand" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
             </div>
             <div class="md:col-span-2 lg:col-span-3">
-              <div class="flex items-center justify-between mb-2">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Loaded From extra locations</p>
-                <button type="button" @click="addLoadFrom('saleForm')" class="text-xs font-semibold text-teal-700">+ Add location</button>
-              </div>
-              <template x-for="(loc, li) in (saleForm.loadFroms || [])" :key="'s'+li">
-                <div class="grid md:grid-cols-3 gap-3 mb-2">
-                  <input list="loadFromList" x-model="loc.location" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Extra location">
-                  <input list="cityList" x-model="loc.city" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="City">
-                  <div class="flex gap-2">
-                    <input type="number" step="0.001" x-model="loc.qty" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Qty">
-                    <button type="button" class="text-rose-600" @click="removeLoadFrom('saleForm', li)">✕</button>
+              <button type="button" @click="addLoadFrom('saleForm')" class="text-xs font-semibold text-teal-700">+ Add another Loaded From location</button>
+              <div class="mt-2 space-y-2" x-show="(saleForm.loadFroms || []).length">
+                <template x-for="(loc, li) in (saleForm.loadFroms || [])" :key="'s'+li">
+                  <div class="grid md:grid-cols-3 gap-3">
+                    <input list="loadFromList" x-model="loc.location" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Extra location">
+                    <input list="cityList" x-model="loc.city" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="City">
+                    <div class="flex gap-2">
+                      <input type="number" step="0.001" x-model="loc.qty" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Qty">
+                      <button type="button" class="text-rose-600" @click="removeLoadFrom('saleForm', li)">✕</button>
+                    </div>
                   </div>
-                </div>
-              </template>
+                </template>
+              </div>
             </div>
             <div class="md:col-span-2 lg:col-span-3 flex items-center justify-between">
               <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Destinations — load can split</p>
@@ -925,8 +935,18 @@
           </form>
         </div>
 
-        <div class="card overflow-hidden rounded-2xl">
-          <div class="px-5 py-3 border-b bg-slate-50/50 font-semibold text-sm">Recent Sales</div>
+                <div class="card p-4 mb-4 rounded-2xl">
+          <div class="grid md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <input class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search sales..." x-model="saleFilter.q">
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.party"><option value="">All parties</option><template x-for="v in uniqueField(sales,'party')" :key="'sp'+v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.bowser"><option value="">All bowsers</option><template x-for="v in uniqueField(sales,'bowser')" :key="'sb'+v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.city"><option value="">All cities</option><template x-for="v in uniqueField(sales,'city')" :key="'sc'+v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.plant"><option value="">All plants</option><template x-for="v in uniqueField(sales,'plant')" :key="'spt'+v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.month"><option value="">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option></select>
+          </div>
+        </div>
+<div class="card overflow-hidden rounded-2xl">
+          <div class="px-5 py-3 border-b bg-slate-50/50 font-semibold text-sm">Sale Register</div>
           <div class="table-scroll">
             <table class="w-full text-sm">
               <thead>
@@ -1104,6 +1124,23 @@
           </form>
         </div>
 
+        <div class="card p-4 mb-4 rounded-2xl">
+          <div class="grid md:grid-cols-4 gap-3">
+            <input class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search payments..." x-model="paymentFilter.q">
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="paymentFilter.type">
+              <option value="">All types</option>
+              <option>Received</option>
+              <option>Made</option>
+              <option>Paid</option>
+              <option>Transfer</option>
+            </select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="paymentFilter.bank">
+              <option value="">All banks</option>
+              <template x-for="v in master.bank" :key="'pfb'+v"><option x-text="v"></option></template>
+            </select>
+            <input class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Party" x-model="paymentFilter.party">
+          </div>
+        </div>
         <div class="card overflow-hidden rounded-2xl" x-show="payments.length">
           <div class="px-5 py-3 border-b bg-slate-50/50 font-semibold text-sm">Recent Payments</div>
           <div class="table-scroll">
@@ -1121,7 +1158,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                <template x-for="p in payments.slice(0, 15)" :key="p.id">
+                <template x-for="p in filteredPaymentRows()" :key="p.id">
                   <tr>
                     <td class="px-4 py-2.5" x-text="p.date"></td>
                     <td class="px-4 py-2.5">
@@ -1238,6 +1275,93 @@
               </button>
             </div>
           </form>
+        </div>
+      </section>
+
+
+      <!-- ==================== REPORTS ==================== -->
+      <section x-show="section === 'reports'" x-transition.opacity>
+        <div class="card p-5 mb-5 rounded-2xl">
+          <h2 class="font-bold mb-4">Management Reports</h2>
+          <div class="grid md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.type">
+              <option value="summary">Summary</option>
+              <option value="monthly">Monthly</option>
+              <option value="purchases">Purchase records</option>
+              <option value="sales">Sale records</option>
+              <option value="payments">Payment records</option>
+              <option value="ledger">Master ledger</option>
+              <option value="outstanding">Outstanding parties</option>
+              <option value="diesel">Diesel & cash</option>
+            </select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.month">
+              <option value="">All months</option>
+              <option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option>
+              <option>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option>
+            </select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.party">
+              <option value="">All parties</option>
+              <template x-for="v in master.party" :key="'rp'+v"><option x-text="v"></option></template>
+            </select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.bank">
+              <option value="">All banks</option>
+              <template x-for="v in master.bank" :key="'rb'+v"><option x-text="v"></option></template>
+            </select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.bowser">
+              <option value="">All bowsers</option>
+              <template x-for="v in master.bowser" :key="'rw'+v"><option x-text="v"></option></template>
+            </select>
+            <button type="button" class="btn-primary px-4 py-2 text-sm" @click="downloadReportPDF()">
+              <i class="fas fa-file-pdf mr-1"></i> Download PDF
+            </button>
+          </div>
+          <div class="table-scroll">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-[11px] text-slate-500 uppercase border-b">
+                  <template x-for="(h,hi) in reportHeaders()" :key="'h'+hi">
+                    <th class="px-3 py-2" x-text="h"></th>
+                  </template>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                <template x-for="(row,ri) in reportRows()" :key="'rr'+ri">
+                  <tr>
+                    <td class="px-3 py-2" x-text="row.c1"></td>
+                    <td class="px-3 py-2" x-text="row.c2"></td>
+                    <td class="px-3 py-2" x-text="row.c3"></td>
+                    <td class="px-3 py-2" x-text="row.c4"></td>
+                    <td class="px-3 py-2 font-medium" x-text="row.c5"></td>
+                    <td class="px-3 py-2" x-text="row.c6"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== SETTINGS ==================== -->
+      <section x-show="section === 'settings'" x-transition.opacity>
+        <div class="card p-5 rounded-2xl max-w-2xl">
+          <h2 class="font-bold mb-4">Settings</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Company name</label>
+              <input class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" x-model="settings.company">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Slogan</label>
+              <input class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" x-model="settings.slogan">
+            </div>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="settings.defaultWatermark"> Default PDF watermark</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="settings.defaultLetterhead"> Default letterhead on PDF</label>
+            <div class="flex flex-wrap gap-3 pt-2">
+              <button type="button" class="btn-primary px-4 py-2 text-sm" @click="exportBackup()">Export backup JSON</button>
+              <button type="button" class="px-4 py-2 text-sm rounded-lg border border-rose-200 text-rose-700" @click="resetAllData()">Reset local data</button>
+            </div>
+            <p class="text-xs text-slate-500">Data is saved in this browser. Export backup before reset.</p>
+          </div>
         </div>
       </section>
 
