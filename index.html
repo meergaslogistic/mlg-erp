@@ -747,7 +747,7 @@
                 <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">2. Unload / destinations — optional now</p>
                 <button type="button" @click="addPurchaseSplit()" class="text-xs font-semibold text-teal-700">+ Add destination</button>
               </div>
-              <p class="text-[11px] text-slate-500 mb-3">Unload blank chhod sakte ho. Same bowser + 2 or more load sources hon to origin field dikhegi.</p>
+              <p class="text-[11px] text-slate-500 mb-3">Purchase rate loading line par hai (kharid / cost). Unload sirf yeh batata hai gas kahan utri. Bechne ka rate Sale menu par aayega.</p>
               <div class="space-y-3">
                 <template x-for="(line, si) in purchaseForm.splits" :key="'ud'+si">
                   <div class="p-4 rounded-2xl border border-slate-200 bg-white space-y-3">
@@ -767,10 +767,6 @@
                       <div>
                         <label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty (Ton)</label>
                         <input type="number" step="0.001" x-model="line.qty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                      </div>
-                      <div>
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate (optional)</label>
-                        <input type="number" step="0.01" x-model="line.rate" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Later">
                       </div>
                       <div class="flex gap-2">
                         <div class="flex-1">
@@ -812,11 +808,22 @@
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Details</label>
               <input type="text" x-model="purchaseForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Party ledger note">
             </div>
+            <label class="flex items-start gap-2 text-sm p-3 rounded-xl border border-teal-100 bg-teal-50/60">
+              <input type="checkbox" class="mt-1" x-model="purchaseForm.alsoCreateSale">
+              <span><b>Isi party ki Sale bhi 1 click par banao</b><br>
+              <span class="text-xs text-slate-500">Tab use karo jab unload trading party par ho. Purchase trip save + Sale bill. Stock nahi kate ga. Party ledger Sale se ek dafa update hoga.</span></span>
+            </label>
+            <div class="grid md:grid-cols-2 gap-3" x-show="purchaseForm.alsoCreateSale">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sale rate (selling price)</label>
+                <input type="number" step="0.01" x-model="purchaseForm.saleRate" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Party se lene wala rate">
+              </div>
+            </div>
             <div class="flex flex-wrap items-center gap-3">
               <button type="submit" class="btn-primary px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Purchase
               </button>
-              <span class="text-xs text-slate-500">Unload empty ho to entry On Route save hogi.</span>
+              <span class="text-xs text-slate-500">Unload empty ho to entry On Route save hogi. Rate sirf loading line par hai.</span>
             </div>
           </form>
         </div>
@@ -896,152 +903,169 @@
 
       <!-- ==================== SALE ==================== -->
       <section x-show="section === 'sale'" x-transition.opacity>
-        <div class="card p-6 mb-5 rounded-2xl">
-          <h2 class="text-base font-bold mb-5">
-            <i class="fas fa-file-invoice-dollar text-emerald-600 mr-2"></i>LPG Sale Entry
-          </h2>
-          <form @submit.prevent="saveSale" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div class="md:col-span-2 lg:col-span-3 grid sm:grid-cols-2 gap-3">
-              <button type="button" @click="setSaleDeal('from_stock')"
-                      class="p-3 rounded-xl border text-left"
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+          <div class="card-vip accent-emerald p-5 pl-6">
+            <p class="vip-label">Total Sold</p>
+            <p class="vip-value mt-1" x-text="fmt(saleSummary().ton) + ' Ton'"></p>
+            <p class="vip-sub">All sale entries</p>
+          </div>
+          <div class="card-vip accent-teal p-5 pl-6">
+            <p class="vip-label">Sale Amount</p>
+            <p class="vip-value mt-1" x-text="fmtMoney(saleSummary().amount)"></p>
+            <p class="vip-sub">Rated invoices</p>
+          </div>
+          <div class="card-vip accent-sky p-5 pl-6">
+            <p class="vip-label">From Stock</p>
+            <p class="vip-value mt-1" x-text="saleSummary().fromStock"></p>
+            <p class="vip-sub">Inventory OUT</p>
+          </div>
+          <div class="card-vip accent-amber p-5 pl-6">
+            <p class="vip-label">Direct / Linked</p>
+            <p class="vip-value mt-1 text-amber-600" x-text="saleSummary().direct"></p>
+            <p class="vip-sub">No stock movement</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-base font-bold">LPG Sale</h2>
+            <p class="text-xs text-slate-500">Stock sale inventory kat-ti hai. Direct / linked sale sirf buyer bill banati hai.</p>
+          </div>
+          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="toggleSaleForm()">
+            <i class="fas fa-plus mr-1.5"></i>
+            <span x-text="saleForm.showForm ? 'Hide sale entry' : 'Sale Entry'"></span>
+          </button>
+        </div>
+
+        <div class="card p-6 mb-5 rounded-2xl" x-show="saleForm.showForm" x-transition>
+          <form @submit.prevent="saveSale" class="space-y-5">
+            <div class="grid sm:grid-cols-2 gap-3">
+              <button type="button" @click="setSaleDeal('from_stock')" class="p-3 rounded-xl border text-left"
                       :class="saleForm.dealType === 'from_stock' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'">
                 <p class="font-bold text-sm">Sell from company stock</p>
-                <p class="text-[11px] text-slate-500">Inventory OUT and buyer ledger debit.</p>
+                <p class="text-[11px] text-slate-500">Pehle purchase stock mein gaya. Ab inventory OUT + buyer debit.</p>
               </button>
-              <button type="button" @click="setSaleDeal('direct')"
-                      class="p-3 rounded-xl border text-left"
+              <button type="button" @click="setSaleDeal('direct')" class="p-3 rounded-xl border text-left"
                       :class="saleForm.dealType === 'direct' ? 'border-amber-500 bg-amber-50' : 'border-slate-200'">
-                <p class="font-bold text-sm">Direct sale (no stock)</p>
-                <p class="text-[11px] text-slate-500">Buyer ledger only. Inventory unchanged.</p>
+                <p class="font-bold text-sm">Direct sale / linked purchase</p>
+                <p class="text-[11px] text-slate-500">Party par pehle unload ho chuka. Stock nahi katna. Sirf sale bill.</p>
               </button>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sale Date *</label>
-              <input type="date" x-model="saleForm.date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser / Vehicle Number *</label>
-              <input list="bowserList" x-model="saleForm.bowser" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Party *</label>
-              <input list="partyList" x-model="saleForm.party" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label>
-              <input list="cityList" x-model="saleForm.city" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Filling Plant</label>
-              <input list="plantList" x-model="saleForm.plant" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
             </div>
 
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loaded From (Location)</label>
-              <input list="loadFromList" x-model="saleForm.source" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Stock / plant / border">
+            <div x-show="linkablePurchases().length">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">1-click: linked purchase trip</label>
+              <div class="flex flex-wrap gap-2">
+                <select class="flex-1 min-w-[240px] border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleForm.linkedPurchaseId" @change="applyLinkedPurchase()">
+                  <option value="">Select loaded trip to auto-fill</option>
+                  <template x-for="p in linkablePurchases()" :key="'lp'+p.id">
+                    <option :value="p.id" x-text="(p.date||'') + ' · ' + (p.bowser||'') + ' · ' + (p.party||'') + ' · ' + (p.qty||'') + 'T'"></option>
+                  </template>
+                </select>
+                <button type="button" class="btn-primary px-4 py-2 text-sm" @click="applyLinkedPurchase()">Fill from purchase</button>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1">Operator ko dobara date/bowser/party/qty type nahi karni. Sirf sale rate likho aur save.</p>
             </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type / Origin of Goods / Brand</label>
-              <input list="sourceList" x-model="saleForm.brand" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
-            </div>
-            <div class="md:col-span-2 lg:col-span-3">
-              <button type="button" @click="addLoadFrom('saleForm')" class="text-xs font-semibold text-teal-700">+ Add another Loaded From location</button>
-              <div class="mt-2 space-y-2" x-show="(saleForm.loadFroms || []).length">
-                <template x-for="(loc, li) in (saleForm.loadFroms || [])" :key="'s'+li">
-                  <div class="grid md:grid-cols-3 gap-3">
-                    <input list="loadFromList" x-model="loc.location" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Extra location">
-                    <input list="cityList" x-model="loc.city" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="City">
-                    <div class="flex gap-2">
-                      <input type="number" step="0.001" x-model="loc.qty" class="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Qty">
-                      <button type="button" class="text-rose-600" @click="removeLoadFrom('saleForm', li)">✕</button>
-                    </div>
-                  </div>
-                </template>
+
+            <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50/70">
+              <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sale Date *</label>
+                  <input type="date" x-model="saleForm.date" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" required>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser / Vehicle *</label>
+                  <input list="bowserList" x-model="saleForm.bowser" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" required>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Party *</label>
+                  <input list="partyList" x-model="saleForm.party" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" required>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label>
+                  <input list="cityList" x-model="saleForm.city" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Filling Plant</label>
+                  <input list="plantList" x-model="saleForm.plant" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">LPG/GAS Quality</label>
+                  <input list="sourceList" x-model="saleForm.brand" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty (Ton) *</label>
+                  <input type="number" step="0.001" x-model="saleForm.qty" @input="calcSale" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" required>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sale Rate *</label>
+                  <input type="number" step="0.01" x-model="saleForm.rate" @input="calcSale" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" placeholder="Selling price">
+                </div>
+              </div>
+              <div class="grid md:grid-cols-3 gap-2 mt-2">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount (auto)</label>
+                  <input type="text" x-model="saleForm.amount" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-slate-100 font-semibold" readonly>
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration</label>
+                  <input type="text" x-model="saleForm.remarks" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" placeholder="Invoice note">
+                </div>
               </div>
             </div>
-            <div class="md:col-span-2 lg:col-span-3 flex items-center justify-between">
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Destinations — load can split</p>
-              <button type="button" @click="addSaleSplit()" class="text-xs font-semibold text-teal-700">+ Add destination</button>
-            </div>
-            <div class="md:col-span-2 lg:col-span-3 space-y-3">
-              <template x-for="(line, si) in (saleForm.splits || [])" :key="'sd'+si">
-                <div class="grid md:grid-cols-4 gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/60">
-                  <input list="partyList" x-model="line.party" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Party">
-                  <input list="cityList" x-model="line.city" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="City">
-                  <input type="number" step="0.001" x-model="line.qty" class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Qty">
-                  <button type="button" class="text-rose-600 text-xs" x-show="saleForm.splits.length > 1" @click="removeSaleSplit(si)">✕</button>
-                </div>
-              </template>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty (Ton) *</label>
-              <input type="number" step="0.001" x-model="saleForm.qty" @input="calcSale" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate (optional)</label>
-              <input type="number" x-model="saleForm.rate" @input="calcSale" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Leave blank if unknown">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount (auto)</label>
-              <input type="text" x-model="saleForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50" readonly>
-            </div>
-            <div class="md:col-span-2 lg:col-span-3">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Details</label>
-              <input type="text" x-model="saleForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Direct load / stock sale / extra note">
-            </div>
-            <div class="md:col-span-2 lg:col-span-3 pt-2">
-              <button type="submit" class="btn-success px-6 py-2.5 text-sm">
-                <i class="fas fa-save mr-1.5"></i> Save Sale (Auto Ledger + Stock)
-              </button>
-              <p class="text-xs text-slate-500 mt-2">“Sell from stock” reduces RPG inventory automatically. Direct sale does not touch inventory.</p>
+            <div class="flex flex-wrap items-center gap-3">
+              <button type="submit" class="btn-primary px-6 py-2.5 text-sm"><i class="fas fa-save mr-1.5"></i> Save Sale</button>
+              <span class="text-xs text-slate-500">Linked / direct sale stock nahi karti. Stock sale RPG se qty kam karti hai.</span>
             </div>
           </form>
         </div>
 
-                <div class="card p-4 mb-4 rounded-2xl">
+        <div class="card p-4 mb-4 rounded-2xl">
+          <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-3">Filters</p>
           <div class="grid md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <input class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search sales..." x-model="saleFilter.q">
+            <input class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search any text..." x-model="saleFilter.q">
             <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.party"><option value="">All parties</option><template x-for="v in uniqueField(sales,'party')" :key="'sp'+v"><option x-text="v"></option></template></select>
             <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.bowser"><option value="">All bowsers</option><template x-for="v in uniqueField(sales,'bowser')" :key="'sb'+v"><option x-text="v"></option></template></select>
             <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.city"><option value="">All cities</option><template x-for="v in uniqueField(sales,'city')" :key="'sc'+v"><option x-text="v"></option></template></select>
             <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.plant"><option value="">All plants</option><template x-for="v in uniqueField(sales,'plant')" :key="'spt'+v"><option x-text="v"></option></template></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.brand"><option value="">All quality</option><template x-for="v in uniqueField(sales,'brand')" :key="'sg'+v"><option x-text="v"></option></template></select>
             <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.month"><option value="">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option></select>
+            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleFilter.dealType"><option value="">All types</option><option value="from_stock">From stock</option><option value="direct">Direct / linked</option></select>
+            <button type="button" class="border rounded-lg px-3 py-2 text-sm" @click="resetSaleFilters()">Clear filters</button>
           </div>
         </div>
-<div class="card overflow-hidden rounded-2xl">
-          <div class="px-5 py-3 border-b bg-slate-50/50 font-semibold text-sm">Sale Register</div>
+
+        <div class="card overflow-hidden rounded-2xl ring-1 ring-slate-200">
+          <div class="px-5 py-3 border-b bg-slate-50/80">
+            <h3 class="font-bold text-sm tracking-wide">LPG SALE</h3>
+            <p class="text-[11px] text-slate-500"><span x-text="filteredSaleRows().length"></span> rows</p>
+          </div>
           <div class="table-scroll">
-            <table class="w-full text-sm">
+            <table class="w-full text-sm sheet-table">
               <thead>
-                <tr class="text-left text-[11px] text-slate-500 uppercase">
-                  <th class="px-4 py-3">Date</th>
-                  <th class="px-4 py-3">Bowser</th>
-                  <th class="px-4 py-3">Party</th>
-                  <th class="px-4 py-3">Qty</th>
-                  <th class="px-4 py-3">Amount</th>
-                  <th class="px-4 py-3 text-right">Actions</th>
+                <tr>
+                  <th>No</th><th>Date</th><th>LPG/GAS Quality</th><th>Bowser No</th><th>Party</th>
+                  <th>City</th><th>Filling Plant</th><th>Unit</th><th>Qty</th><th>Rate</th><th>Amount (PKR)</th><th>Type</th><th class="text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
-                <template x-for="s in sales.slice(0, 15)" :key="s.id">
-                  <tr class="hover:bg-slate-50">
-                    <td class="px-4 py-2.5" x-text="s.date"></td>
-                    <td class="px-4 py-2.5 font-medium" x-text="s.bowser"></td>
-                    <td class="px-4 py-2.5" x-text="s.party"></td>
-                    <td class="px-4 py-2.5" x-text="s.qty"></td>
-                    <td class="px-4 py-2.5 font-semibold text-emerald-700">
-                      <span x-show="s.amount" x-text="s.amount"></span>
-                      <span x-show="!s.amount" class="text-amber-600 text-xs">Rate pending
-                        <button type="button" class="underline ml-1" @click="applyPendingRate('sale', s.id, prompt('Rate per Ton?'))">set rate</button>
-                      </span>
-                    </td>
-                    <td class="px-4 py-2.5 text-right whitespace-nowrap">
-                      <button type="button" @click.stop="editSale(s)" class="text-slate-600 text-xs mr-2">Edit</button>
-                      <button type="button" @click.stop="deleteSale(s)" class="text-rose-600 text-xs mr-2">Delete</button>
-                      <button type="button" @click.stop="openPdfOptions('sale', s)"
-                              class="text-rose-600 hover:text-rose-700 text-xs font-medium" title="Download PDF">
-                        <i class="fas fa-file-pdf"></i>
-                      </button>
+              <tbody>
+                <template x-for="(s, idx) in filteredSaleRows()" :key="s.id">
+                  <tr>
+                    <td x-text="idx+1"></td>
+                    <td x-text="sheetDate(s.date)"></td>
+                    <td x-text="s.brand || '—'"></td>
+                    <td class="font-medium" x-text="s.bowser"></td>
+                    <td x-text="s.party"></td>
+                    <td x-text="s.city || '—'"></td>
+                    <td x-text="s.plant || '—'"></td>
+                    <td>Ton</td>
+                    <td x-text="s.qty"></td>
+                    <td x-text="s.rate || ''"></td>
+                    <td class="font-semibold" x-text="s.amount || ''"></td>
+                    <td x-text="s.dealType === 'from_stock' ? 'From stock' : 'Direct'"></td>
+                    <td class="text-right whitespace-nowrap">
+                      <button type="button" class="text-slate-600 text-xs mr-2" @click="editSale(s)">Edit</button>
+                      <button type="button" class="text-rose-600 text-xs mr-2" @click="deleteSale(s)">Delete</button>
+                      <button type="button" class="text-rose-600 text-xs" @click="openPdfOptions('sale', s)"><i class="fas fa-file-pdf"></i></button>
                     </td>
                   </tr>
                 </template>
