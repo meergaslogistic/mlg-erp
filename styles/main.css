@@ -413,3 +413,12 @@ tr:hover td { background: #f8fafd; }
   .hero-right { justify-content: flex-start; }
   .urdu-tagline { white-space: normal; }
 }
+
+
+.sheet-table thead th {
+  font-weight: 800;
+  letter-spacing: .02em;
+  border-bottom: 2px solid #0c2a52;
+  white-space: nowrap;
+}
+.sheet-table td { vertical-align: middle; }
