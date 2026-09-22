@@ -105,18 +105,16 @@ function createApp() {
     // ========== Forms ==========
     purchaseForm: {
       showForm: false,
-      showDestinations: false,
+      addToStock: false,
       alsoCreateSale: false,
       saleRate: '',
-      dealType: 'stock',
-      loadingDate: '', bowser: '', party: 'RPG Plant - STOCK', city: '', plant: '',
+      dealType: 'purchase',
+      loadingDate: '', bowser: '', party: '', city: '', plant: '',
       qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '',
       tradingParty: 'MLG', remarks: '',
       loadFroms: [],
       sources: [{ date: '', bowser: '', location: '', loadedParty: '', brand: '', city: '', qty: '', rate: '' }],
-      splits: [
-        { destType: 'stock', party: 'RPG Plant - STOCK', city: '', plant: '', qty: '', rate: '', unloadDate: '', origin: '' }
-      ]
+      splits: []
     },
     saleForm: {
       showForm: false,
@@ -1013,37 +1011,22 @@ function createApp() {
     },
 
     editPurchase(row) {
-      const dealType = row.dealType || ((row.party || '').toUpperCase().includes('STOCK') ? 'stock' : 'direct');
-      const splits = (row.splits && row.splits.length)
-        ? row.splits.map(s => ({
-            destType: s.destType || 'party',
-            party: s.party || '',
-            city: s.city || '',
-            qty: s.qty || '',
-            unloadDate: s.unloadDate || ''
-          }))
-        : [{
-            destType: dealType === 'stock' ? 'stock' : 'party',
-            party: dealType === 'stock' ? 'RPG Plant - STOCK' : (row.party || ''),
-            city: row.city || '',
-            qty: row.qty || '',
-            unloadDate: row.unloadDate || ''
-          }];
       const sources = (row.sources && row.sources.length) ? row.sources.map(s => ({
         date: s.date || '', bowser: s.bowser || '', location: s.location || '',
-        loadedParty: s.loadedParty || row.loadedParty || '',
+        loadedParty: s.loadedParty || row.loadedParty || row.party || '',
         brand: s.brand || '', city: s.city || '', qty: s.qty || '', rate: s.rate || ''
       })) : [{
-        date: row.date || '', location: row.source || row.plant || '', loadedParty: row.loadedParty || '',
+        date: row.date || '', bowser: row.bowser || '', location: row.source || row.plant || '',
+        loadedParty: row.loadedParty || row.party || '',
         brand: row.brand || '', city: row.city || '', qty: row.loadQty || row.qty || '', rate: row.rate || ''
       }];
       this.purchaseForm = {
         showForm: true,
-        showDestinations: !!(row.splits && row.splits.length && row.splits.some(s => parseFloat(s.qty) > 0)),
-        dealType,
+        addToStock: !!(row.addToStock || row.dealType === 'stock'),
+        dealType: 'purchase',
         loadingDate: row.date || '',
         bowser: row.bowser || '',
-        party: row.party || '',
+        party: row.loadedParty || row.party || '',
         city: row.city || '',
         plant: row.plant || row.source || '',
         source: row.source || row.plant || '',
@@ -1051,11 +1034,10 @@ function createApp() {
         qty: row.loadQty || row.qty || '',
         rate: row.rate || '',
         amount: row.amount || '',
-        unloadDate: row.unloadDate || '',
         remarks: row.remarks || '',
         tradingParty: row.tradingParty || 'MLG',
         sources,
-        splits,
+        splits: [],
         editingId: row.id
       };
       this.go('purchase');
@@ -1261,36 +1243,15 @@ function createApp() {
       f.bowser = f.bowser || (sources[0] && sources[0].bowser) || '';
       f.loadingDate = f.loadingDate || (sources[0] && sources[0].date) || '';
       if (!f.loadingDate || !f.bowser || !loadQty) {
-        this.showToast('Loading date, bowser and at least one loaded quantity are required. Unload and rate can wait.');
+        this.showToast('Loading date, bowser aur qty zaroori hain.');
         return;
       }
       f.qty = loadQty;
-      f.source = sources[0] && sources[0].location || f.source;
+      f.source = (sources[0] && sources[0].location) || f.source;
       f.brand = sources.map(s => s.brand).filter(Boolean).join(' + ') || f.brand;
-
-      let splits = (f.splits || []).map(s => ({
-        destType: s.destType === 'stock' || String(s.party || '').toUpperCase().includes('STOCK') ? 'stock' : 'party',
-        party: s.destType === 'stock' ? 'RPG Plant - STOCK' : (s.party || '').trim(),
-        city: s.city || '',
-        qty: s.qty,
-        unloadDate: s.unloadDate || ''
-      })).filter(s => parseFloat(s.qty) > 0);
-
-      if (!splits.length) {
-        splits = [];
-      }
-
-      const missingParty = splits.find(s => s.destType === 'party' && !s.party);
-      if (missingParty) {
-        this.showToast('Each party destination needs a party name.');
-        return;
-      }
-
-      const splitTotal = splits.reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
-      if (splitTotal - loadQty > 0.001) {
-        this.showToast('Destination quantities cannot exceed loaded quantity.');
-        return;
-      }
+      const loadedPartyLabel = [...new Set(sources.map(s => (s.loadedParty || '').trim()).filter(Boolean))].join(' + ');
+      const rate = f.rate || (sources[0] && sources[0].rate) || '';
+      const addToStock = !!f.addToStock;
 
       if (f.editingId) {
         const old = this.purchases.find(x => x.id === f.editingId);
@@ -1301,62 +1262,40 @@ function createApp() {
         }
       }
 
-      splits = splits.map(s => {
-        if (s.destType === 'stock' && !s.unloadDate) s.unloadDate = f.loadingDate;
-        return s;
-      });
-
-      const hasStock = splits.some(s => s.destType === 'stock');
-      const hasParty = splits.some(s => s.destType === 'party');
-      const dealType = hasStock && hasParty ? 'split' : (hasStock ? 'stock' : 'direct');
-      const allDelivered = splits.length && splits.every(s => s.unloadDate || s.destType === 'stock');
-      const status = !splits.length ? 'On Route' : (allDelivered ? 'Delivered' : (splitTotal < loadQty ? 'Partial / On Route' : 'On Route'));
-      const destPartyLabel = !splits.length ? '' : (dealType === 'split'
-        ? splits.map(s => (s.destType === 'stock' ? 'STOCK' : s.party) + ' ' + s.qty + 'T').join(' + ')
-        : splits[0].party);
-      const loadedPartyLabel = [...new Set(sources.map(s => (s.loadedParty || '').trim()).filter(Boolean))].join(' + ');
-
-      const firstSplit = splits[0] || {};
-      const unloadQty = splits.reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
       const rec = {
         id: Date.now(),
         date: formatDateDisplay(f.loadingDate) || f.loadingDate,
         loadDate: formatDateDisplay(f.loadingDate) || f.loadingDate,
         bowser: f.bowser,
-        party: destPartyLabel || firstSplit.party || '',
+        party: loadedPartyLabel || '',
         loadedParty: loadedPartyLabel || '',
-        city: firstSplit.city || (sources[0] && sources[0].city) || f.city || '',
-        plant: firstSplit.plant || f.source || f.plant,
-        source: f.source || f.plant,
+        city: (sources[0] && sources[0].city) || f.city || '',
+        plant: f.source || '',
+        source: f.source || '',
         brand: f.brand || (sources[0] && sources[0].brand) || '',
-        remarks: f.remarks,
+        remarks: f.remarks || '',
         qty: loadQty,
         loadQty: loadQty,
-        unloadQty: unloadQty || '',
         unit: 'Ton',
-        baseRate: '',
-        rate: f.rate || (sources[0] && sources[0].rate) || '',
-        amount: f.rate ? calcAmount(loadQty, f.rate) : (f.amount || ''),
-        status,
-        unloadDate: splits.map(s => s.unloadDate).filter(Boolean).map(d => formatDateDisplay(d) || d).join(', '),
-        ratePending: !(f.rate || (sources[0] && sources[0].rate)),
-        dealType,
+        rate: rate,
+        amount: rate ? calcAmount(loadQty, rate) : (f.amount || ''),
+        status: 'Loaded',
+        ratePending: !rate,
+        dealType: addToStock ? 'stock' : 'purchase',
+        addToStock,
         tradingParty: f.tradingParty || 'MLG',
         sources,
-        splits
+        splits: []
       };
       this.purchases.unshift(rec);
-      if (f.alsoCreateSale && hasParty) {
-        this.createSaleFromPurchase(rec, f.saleRate || '');
-      }
 
-      /* Supplier (Loaded Party) → CREDIT (payable). Auto-creates party if new name. */
+      /* Loaded Party (supplier) → CREDIT only. Unload/sale = Sale menu. */
       let supplierPosted = 0;
       sources.forEach(src => {
         const partyName = (src.loadedParty || '').trim();
         if (!partyName) return;
         const q = parseFloat(src.qty) || 0;
-        const srcRate = src.rate || f.rate || '';
+        const srcRate = src.rate || rate || '';
         const lineAmt = srcRate ? calcAmount(q, srcRate) : '';
         this.postToLedger(
           partyName,
@@ -1382,38 +1321,32 @@ function createApp() {
         }
       });
 
-      /* Destinations: stock IN only. Destination party is NOT auto-debited (sale does that). */
-      splits.forEach(s => {
-        const q = parseFloat(s.qty) || 0;
-        if (s.destType === 'stock') {
-          this.applyStockMove(
-            'In',
-            q,
-            `${f.bowser} – ${s.qty}T to stock` + (f.source ? ` from ${f.source}` : ''),
-            formatDateDisplay(s.unloadDate || f.loadingDate),
-            rec.id
-          );
-        }
-      });
+      if (addToStock) {
+        this.applyStockMove(
+          'In',
+          loadQty,
+          `${f.bowser} – ${loadQty}T purchase to stock` + (f.source ? ` from ${f.source}` : ''),
+          formatDateDisplay(f.loadingDate),
+          rec.id
+        );
+      }
 
       this.showToast(
         supplierPosted
-          ? ('Purchase saved — ' + supplierPosted + ' supplier ledger credit' + (hasStock ? ' + stock IN' : ''))
-          : (dealType === 'stock' ? 'Purchase to stock (no Loaded Party — ledger skip)' : 'Purchase saved (set Loaded Party for supplier ledger)')
+          ? ('Purchase saved — supplier CREDIT' + (addToStock ? ' + stock IN' : ''))
+          : (addToStock ? 'Purchase + stock IN (Loaded Party set karein for ledger)' : 'Purchase saved (Loaded Party set karein for supplier ledger)')
       );
       this.purchaseForm = {
         showForm: true,
-        showDestinations: false,
+        addToStock: false,
         alsoCreateSale: false,
         saleRate: '',
-        dealType: dealType === 'direct' ? 'direct' : 'stock',
-        loadingDate: '', bowser: '', party: dealType === 'direct' ? '' : 'RPG Plant - STOCK', city: '', plant: '',
+        dealType: 'purchase',
+        loadingDate: '', bowser: '', party: '', city: '', plant: '',
         qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '', remarks: '', editingId: null,
         tradingParty: 'MLG',
         sources: [{ date: '', bowser: '', location: '', loadedParty: '', brand: '', city: '', qty: '', rate: '' }],
-        splits: dealType === 'direct'
-          ? [{ destType: 'party', party: '', city: '', plant: '', qty: '', rate: '', unloadDate: '', origin: '' }]
-          : [{ destType: 'stock', party: 'RPG Plant - STOCK', city: '', plant: '', qty: '', rate: '', unloadDate: '', origin: '' }]
+        splits: []
       };
       this.recalcTotals();
       this.saveToStorage();
