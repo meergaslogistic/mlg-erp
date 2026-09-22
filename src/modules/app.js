@@ -1407,21 +1407,23 @@ function createApp() {
 
     /** Excel-style: pehle Ton, baad mein rate — amount + ledger auto update */
     applyPendingRate(kind, id, newRate) {
-      const rate = parseFloat(newRate);
-      if (!rate) {
-        this.showToast('Valid rate daalein');
-        return;
-      }
+      const rateNum = parseFloat(newRate);
+      // Allow clearing rate (empty / 0) — amount becomes 0 and ledger amount resets
+      const clearing = newRate === '' || newRate === null || newRate === undefined || Number.isNaN(rateNum) || rateNum === 0;
+      const rate = clearing ? 0 : rateNum;
       const list = kind === 'sale' ? this.sales : this.purchases;
       const rec = list.find(x => x.id === id);
       if (!rec) return;
-      rec.rate = String(rate);
-      rec.amount = calcAmount(rec.qty, rate);
-      rec.ratePending = false;
-      const amt = parseAmount(rec.amount);
+
+      const rateDateStr = formatDateDisplay(new Date());
+      rec.rate = clearing ? '' : String(rate);
+      rec.amount = clearing ? '' : calcAmount(rec.qty, rate);
+      rec.ratePending = clearing || !rate;
+      rec.rateDate = clearing ? '' : rateDateStr;
+      const amt = clearing ? 0 : parseAmount(rec.amount);
 
       if (kind === 'purchase') {
-        /* Update CREDIT on each Loaded Party (supplier) for this purchase */
+        /* Update CREDIT on each Loaded Party (supplier) for this purchase — same line, keep loading date */
         const suppliers = [];
         if (rec.sources && rec.sources.length) {
           rec.sources.forEach(s => { if ((s.loadedParty || '').trim()) suppliers.push((s.loadedParty || '').trim()); });
@@ -1437,17 +1439,22 @@ function createApp() {
           ) || p.ledger.find(e =>
             String(e.bowser || '') === String(rec.bowser || '') &&
             String(e.qty || '') === String(rec.qty || '') &&
-            (Number(e.credit) >= 0) &&
-            (!e.rate || (e.narration && e.narration.includes('Rate pending')))
+            (Number(e.credit) >= 0)
           );
           if (row) {
             const oldCredit = Number(row.credit) || 0;
-            row.rate = String(rate);
+            row.rate = clearing ? '' : String(rate);
             row.credit = amt;
-            row.narration = String(row.narration || '').replace(/\s*•\s*Rate pending/g, '') + ' • Rate updated';
+            row.rateDate = clearing ? '' : rateDateStr;
+            let narr = String(row.narration || row.customerNarration || 'Purchase (Unko Dena)');
+            narr = narr.replace(/\s*•\s*Rate pending/gi, '').replace(/\s*•\s*Rate set on [^•]+/gi, '').replace(/\s*•\s*Rate updated/gi, '');
+            if (clearing) narr = narr + ' • Rate pending';
+            else narr = narr + ' • Rate set on ' + rateDateStr;
+            row.narration = narr;
+            row.customerNarration = narr;
             const diff = amt - oldCredit;
             p.balance = (Number(p.balance) || 0) - diff;
-            row.balance = (Number(row.balance) || 0) - diff;
+            this.rebuildPartyBalance(p);
           }
         });
       } else {
@@ -1455,22 +1462,30 @@ function createApp() {
         const p = this.parties.find(x => (x.name || '').toLowerCase() === String(partyName || '').toLowerCase());
         if (p && p.ledger) {
           const row = p.ledger.find(e =>
+            String(e.sourceType || '') === 'sale' &&
+            String(e.sourceId || '') === String(rec.id)
+          ) || p.ledger.find(e =>
             String(e.bowser || '') === String(rec.bowser || '') &&
-            String(e.qty || '') === String(rec.qty || '') &&
-            (!e.rate || e.narration && e.narration.includes('Rate pending'))
+            String(e.qty || '') === String(rec.qty || '')
           );
           if (row) {
             const oldDebit = Number(row.debit) || 0;
-            row.rate = String(rate);
+            row.rate = clearing ? '' : String(rate);
             row.debit = amt;
-            row.narration = String(row.narration || '').replace(/\s*•\s*Rate pending/g, '') + ' • Rate updated';
+            row.rateDate = clearing ? '' : rateDateStr;
+            let narr = String(row.narration || row.customerNarration || 'Sale (Unse Lena)');
+            narr = narr.replace(/\s*•\s*Rate pending/gi, '').replace(/\s*•\s*Rate set on [^•]+/gi, '').replace(/\s*•\s*Rate updated/gi, '');
+            if (clearing) narr = narr + ' • Rate pending';
+            else narr = narr + ' • Rate set on ' + rateDateStr;
+            row.narration = narr;
+            row.customerNarration = narr;
             const diff = amt - oldDebit;
             p.balance = (Number(p.balance) || 0) + diff;
-            row.balance = (Number(row.balance) || 0) + diff;
+            this.rebuildPartyBalance(p);
           }
         }
       }
-      this.showToast('Rate save • Amount ' + rec.amount);
+      this.showToast(clearing ? 'Rate cleared • Amount 0' : ('Rate save • Amount ' + rec.amount + ' • set on ' + rateDateStr));
       this.saveToStorage();
     },
 
