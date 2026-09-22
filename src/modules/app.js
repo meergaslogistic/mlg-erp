@@ -87,6 +87,10 @@ function createApp() {
     settings: {
       company: 'Meer Logistics & Gas Energy',
       slogan: 'Your Trust, Our Priority',
+      address: '',
+      phone: '',
+      email: '',
+      website: '',
       defaultWatermark: true,
       defaultLetterhead: true
     },
@@ -149,7 +153,9 @@ function createApp() {
       qty: '', unit: 'Metric Ton', rate: '', amount: '',
       validity: '7 days', delivery: 'As per agreed loading point',
       terms: 'Rate is exclusive of taxes unless stated. Quantity subject to weighbridge. Payment as per agreed terms.',
-      status: 'Draft'
+      status: 'Draft',
+      usePermanentContact: true,
+      address: '', phone: '', email: '', website: ''
     },
 
     masterSections: [
@@ -1757,7 +1763,11 @@ function createApp() {
         subject: f.subject, body: f.body, product: f.product,
         qty: f.qty, unit: f.unit, rate: f.rate, amount: f.amount,
         validity: f.validity, delivery: f.delivery, terms: f.terms,
-        status: f.status || 'Draft'
+        status: f.status || 'Draft',
+        address: f.usePermanentContact ? (this.settings.address||'') : (f.address||this.settings.address||''),
+        phone: f.usePermanentContact ? (this.settings.phone||'') : (f.phone||this.settings.phone||''),
+        email: f.usePermanentContact ? (this.settings.email||'') : (f.email||this.settings.email||''),
+        website: f.usePermanentContact ? (this.settings.website||'') : (f.website||this.settings.website||'')
       };
       if (f.editingId) {
         this.quotations = this.quotations.filter(x => x.id !== f.editingId);
@@ -1770,6 +1780,96 @@ function createApp() {
       this.saveToStorage();
     },
     openQuotation(q) { this.activeQuotation = q; },
+    quoteContact(q, key) {
+      if (!q) return this.settings[key] || '';
+      return (q[key] != null && q[key] !== '') ? q[key] : (this.settings[key] || '');
+    },
+    savePermanentContact() {
+      this.saveToStorage();
+      this.showToast('Company contact saved permanently');
+    },
+    async downloadQuotationPDF(q, mode) {
+      q = q || this.activeQuotation;
+      if (!q) { this.showToast('Select a quotation first'); return; }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:true });
+      const lh = await this.loadAssetImage('letterhead-a4.png');
+      if (lh) {
+        try { doc.addImage(lh, 'PNG', 0, 0, 210, 297, undefined, 'FAST'); }
+        catch(e) { console.warn(e); }
+      }
+      const addr = this.quoteContact(q,'address');
+      const phone = this.quoteContact(q,'phone');
+      const email = this.quoteContact(q,'email');
+      const web = this.quoteContact(q,'website');
+      doc.setTextColor(15, 40, 90);
+      doc.setFontSize(7.5);
+      let hy = 12;
+      const rx = 198;
+      if (addr) { doc.text(addr, rx, hy, { align:'right', maxWidth: 78 }); hy += 4.2; }
+      if (phone) { doc.text('Tel  ' + phone, rx, hy, { align:'right' }); hy += 3.8; }
+      if (email) { doc.text(email, rx, hy, { align:'right' }); hy += 3.8; }
+      if (web) { doc.text(web, rx, hy, { align:'right' }); }
+      // content starts at 42mm — never inside the 4cm header band
+      let y = 46;
+      doc.setTextColor(20, 30, 50);
+      doc.setFontSize(11);
+      doc.setFont(undefined, 'bold');
+      doc.text('QUOTATION', 105, y, { align:'center' });
+      y += 8;
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'bold');
+      doc.text(q.quotationNo || '', 18, y);
+      doc.setFont(undefined, 'normal');
+      doc.text(this.sheetDate(q.date), 192, y, { align:'right' });
+      y += 7;
+      doc.setFont(undefined, 'bold');
+      doc.text('To:', 18, y);
+      doc.setFont(undefined, 'normal');
+      doc.text((q.party||'') + (q.city ? ', ' + q.city : ''), 28, y);
+      y += 6;
+      if (q.referenceNo) {
+        doc.setFont(undefined, 'bold'); doc.text('Ref:', 18, y);
+        doc.setFont(undefined, 'normal'); doc.text(String(q.referenceNo), 28, y);
+        y += 6;
+      }
+      doc.setFont(undefined, 'bold'); doc.text('Subject:', 18, y);
+      doc.setFont(undefined, 'normal');
+      const sub = doc.splitTextToSize(q.subject || '', 160);
+      doc.text(sub, 36, y);
+      y += sub.length * 4.5 + 3;
+      const body = doc.splitTextToSize(q.body || 'We are pleased to submit our quotation for supply of LPG as under.', 174);
+      doc.text(body, 18, y);
+      y += body.length * 4.5 + 6;
+      doc.setFillColor(240, 246, 255);
+      doc.rect(18, y-4, 174, 8, 'F');
+      doc.setFont(undefined, 'bold');
+      doc.text('Product', 20, y);
+      doc.text('Qty', 95, y);
+      doc.text('Rate', 128, y);
+      doc.text('Amount', 170, y);
+      y += 8;
+      doc.setFont(undefined, 'normal');
+      doc.text(String(q.product||'LPG'), 20, y);
+      doc.text(String(q.qty||'') + ' ' + String(q.unit||''), 95, y);
+      doc.text(String(q.rate||''), 128, y);
+      doc.text(String(q.amount||''), 170, y);
+      y += 12;
+      doc.setFont(undefined, 'bold'); doc.text('Delivery:', 18, y);
+      doc.setFont(undefined, 'normal'); doc.text(String(q.delivery||''), 38, y, { maxWidth: 154 });
+      y += 7;
+      doc.setFont(undefined, 'bold'); doc.text('Validity:', 18, y);
+      doc.setFont(undefined, 'normal'); doc.text(String(q.validity||''), 38, y);
+      y += 8;
+      const terms = doc.splitTextToSize('Terms: ' + (q.terms||''), 174);
+      doc.text(terms, 18, y);
+      y = Math.min(y + terms.length * 4.5 + 16, 250);
+      doc.text('For Meer Logistics & Gas Energy', 192, y, { align:'right' });
+      y += 16;
+      doc.setFont(undefined, 'bold');
+      doc.text('Authorized Signatory', 192, y, { align:'right' });
+      this.deliverPdf(doc, (q.quotationNo||'quotation') + '.pdf', mode || 'download');
+    },
     filteredQuotations() {
       const f = this.quotationFilter || {};
       const q = (f.q||'').toLowerCase();
