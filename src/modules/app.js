@@ -1285,38 +1285,153 @@ function createApp() {
     },
 
     editPayment(row) {
+      // Inline edit in payment register table
+      if (!row || !row.id) return;
       const first = (row.lines && row.lines[0]) || {};
-      const amt = first.amount || row.amount || '';
-      const mode = (row.mode === 'Bank' || (row.tid && String(row.tid).trim())) ? 'Bank' : (row.mode || 'Cash');
-      this.paymentForm = {
-        showForm: true,
-        date: row.date || today(),
-        mode,
-        type: 'Transfer',
-        party: row.fromParty || row.party || '',
+      const draft = {
+        date: this.toInputDate(row.date) || row.date || today(),
+        mode: (row.mode === 'Bank' || (row.tid && String(row.tid).trim())) ? 'Bank' : (row.mode || 'Cash'),
         fromParty: row.fromParty || row.party || '',
         toParty: row.toParty || first.party || '',
-        slip: first.slip || row.slip || '',
-        tid: first.tid || row.tid || '',
-        bank: (first.bank && first.bank !== 'Cash') ? (first.bank || row.bank || '') : (row.bank && row.bank !== 'Cash' ? row.bank : ''),
         fromBank: row.fromBank || '',
-        amount: amt,
-        receiveAmount: amt,
-        remarks: row.remarks || '',
-        proofName: row.proofName || '',
-        proofData: row.proofData || '',
-        editingId: row.id,
-        lines: [{
-          party: first.party || row.toParty || row.party || '',
-          bank: first.bank || row.bank || '',
-          tid: first.tid || row.tid || '',
-          slip: first.slip || row.slip || '',
-          amount: amt,
-          note: first.note || ''
-        }]
+        bank: (first.bank && first.bank !== 'Cash') ? (first.bank || row.bank || '') : (row.bank && row.bank !== 'Cash' ? row.bank : ''),
+        tid: first.tid || row.tid || '',
+        slip: first.slip || row.slip || '',
+        amount: first.amount || row.amount || '',
+        remarks: row.remarks || ''
       };
-      this.go('payment');
-      this.showToast('Edit mode — save to replace this payment');
+      this.inlineEdit = { kind: 'payment', id: row.id, draft };
+      this.showToast('Payment row edit — Save to update ledgers');
+    },
+    saveInlinePayment() {
+      const d = this.inlineEdit.draft;
+      if (!d || this.inlineEdit.kind !== 'payment') return;
+      const id = this.inlineEdit.id;
+      const amount = parseFloat(String(d.amount || '').replace(/,/g, '')) || 0;
+      const fromParty = String(d.fromParty || '').trim();
+      const toParty = String(d.toParty || '').trim();
+      const mode = (d.mode === 'Bank') ? 'Bank' : 'Cash';
+      const fromBank = mode === 'Bank' ? String(d.fromBank || '').trim() : '';
+      const toBank = mode === 'Bank' ? String(d.bank || '').trim() : '';
+      const tid = mode === 'Bank' ? String(d.tid || '').trim() : '';
+      const slip = String(d.slip || '').trim();
+
+      if (!d.date) { this.showToast('Date required'); return; }
+      if (!(amount > 0)) { this.showToast('Amount required'); return; }
+      if (!fromParty || !toParty) { this.showToast('Sender aur Receiver zaroori hain'); return; }
+      if (fromParty === toParty) { this.showToast('Sender and receiver must differ'); return; }
+      if (mode === 'Bank' && (!fromBank || !tid)) {
+        this.showToast('Bank mode: sender bank + TID required');
+        return;
+      }
+      const dup = this.findDuplicatePaymentTid(tid, id);
+      if (tid && dup) {
+        this.showToast('TID ' + tid + ' already used');
+        return;
+      }
+
+      // Reverse old ledger links
+      this.removeLedgerBySource('payment', id);
+
+      const isMlg = (name) => {
+        const n = String(name || '').trim().toUpperCase();
+        return n === 'MLG' || n === 'MEER GAS' || n === 'MEER LOGISTICS' || n.startsWith('MLG') || n.startsWith('MEER');
+      };
+      let type = 'Transfer';
+      if (isMlg(toParty) && !isMlg(fromParty)) type = 'Received';
+      else if (isMlg(fromParty) && !isMlg(toParty)) type = 'Made';
+
+      const bankLabel = mode === 'Cash' ? 'Cash' : (toBank || fromBank || 'Bank');
+      const note = String(d.remarks || '').trim();
+
+      // Update existing payment record in place (keep id + proof)
+      const rec = this.payments.find(x => String(x.id) === String(id));
+      if (!rec) { this.cancelInlineEdit(); return; }
+      rec.date = d.date;
+      rec.mode = mode;
+      rec.type = type;
+      rec.party = fromParty + ' → ' + toParty;
+      rec.fromParty = fromParty;
+      rec.toParty = toParty;
+      rec.slip = slip;
+      rec.tid = tid;
+      rec.bank = bankLabel;
+      rec.fromBank = fromBank;
+      rec.amount = amount;
+      rec.remarks = note;
+      rec.lines = [{ party: toParty, bank: bankLabel, tid, slip, amount, note }];
+
+      const word = mode + ' Payment';
+      const extraBase = {
+        date: d.date, tid: tid || slip || '', voucher: tid || slip || '',
+        fromParty, toParty, sourceType: 'payment', sourceId: id, customerNarration: word
+      };
+      this.postToLedger(fromParty, word + ' → ' + toParty, 0, amount, extraBase);
+      this.postToLedger(toParty, word + ' ← ' + fromParty, amount, 0, extraBase);
+
+      const masterAccount = mode === 'Cash'
+        ? 'MLG • Cash'
+        : this.companyLedgerName(isMlg(fromParty) ? fromBank : (toBank || fromBank));
+      if (isMlg(toParty) && !isMlg(fromParty)) {
+        this.postToLedger(masterAccount, word + ' from ' + fromParty, amount, 0, { ...extraBase, isBank: true });
+      } else if (isMlg(fromParty) && !isMlg(toParty)) {
+        this.postToLedger(masterAccount, word + ' to ' + toParty, 0, amount, { ...extraBase, isBank: true });
+      }
+
+      this.saveToStorage();
+      this.cancelInlineEdit();
+      this.showToast('Payment updated • party + master ledgers refreshed');
+    },
+    editDiesel(row) {
+      if (!row || !row.id) return;
+      const draft = {
+        date: this.toInputDate(row.date) || row.date || '',
+        bowser: row.bowser || '',
+        type: row.type || 'Diesel',
+        description: row.description || row.type || '',
+        boarder: row.boarder || row.location || '',
+        unit: row.unit || 'Drum',
+        qty: row.qty || '',
+        rate: row.rate || '',
+        amount: row.amount || ''
+      };
+      this.inlineEdit = { kind: 'diesel', id: row.id, draft };
+      this.showToast('Diesel/Cash row edit — Save when done');
+    },
+    saveInlineDiesel() {
+      const d = this.inlineEdit.draft;
+      if (!d || this.inlineEdit.kind !== 'diesel') return;
+      const id = this.inlineEdit.id;
+      const rec = this.dieselEntries.find(x => String(x.id) === String(id));
+      if (!rec) { this.cancelInlineEdit(); return; }
+      if (!d.date) { this.showToast('Date required'); return; }
+
+      const qty = parseFloat(d.qty) || 0;
+      const rate = parseFloat(d.rate) || 0;
+      let amount = d.amount;
+      if (qty && rate) amount = String(Math.round(qty * rate));
+      else if (String(d.type).toLowerCase() === 'cash' && d.qty) amount = String(d.qty);
+
+      rec.date = d.date;
+      rec.bowser = d.bowser || '';
+      rec.type = d.type || 'Diesel';
+      rec.description = d.description || d.type || '';
+      rec.boarder = d.boarder || '';
+      rec.location = d.boarder || '';
+      rec.unit = d.unit || (String(d.type).toLowerCase() === 'cash' ? 'PKR' : 'Drum');
+      rec.qty = d.qty;
+      rec.rate = d.rate;
+      rec.amount = amount;
+
+      this.saveToStorage();
+      this.cancelInlineEdit();
+      this.showToast('Diesel / Cash entry updated');
+    },
+    deleteDiesel(row) {
+      if (!row || !this.confirmDelete('diesel/cash entry')) return;
+      this.dieselEntries = this.dieselEntries.filter(x => String(x.id) !== String(row.id));
+      this.saveToStorage();
+      this.showToast('Diesel / Cash entry deleted');
     },
 
     calcPurchase() {
@@ -1855,7 +1970,7 @@ function createApp() {
 
       const isMlg = (name) => {
         const n = String(name || '').trim().toUpperCase();
-        return n === 'MLG' || n === 'MEER GAS' || n.startsWith('MLG');
+        return n === 'MLG' || n === 'MEER GAS' || n === 'MEER LOGISTICS' || n.startsWith('MLG') || n.startsWith('MEER');
       };
 
       /* Auto type only for storage/filter compatibility — UI has no direction */
