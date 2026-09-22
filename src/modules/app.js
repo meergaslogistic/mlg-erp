@@ -112,6 +112,7 @@ function createApp() {
       loadingDate: '', bowser: '', party: '', city: '', plant: '',
       qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '',
       tradingParty: 'MLG', remarks: '',
+      narrOpts: { bowser: true, qty: true, loadedFrom: true, brand: false, city: false, rate: false, remarks: true },
       loadFroms: [],
       sources: [{ date: '', bowser: '', location: '', loadedParty: '', brand: '', city: '', qty: '', rate: '' }],
       splits: []
@@ -416,8 +417,9 @@ function createApp() {
       };
       this.sales.unshift(rec);
       if (saleRate) {
-        this.postToLedger(party, this.rebuildLedgerNarration('Sale', rec), parseAmount(rec.amount), 0, {
-          qty, rate: saleRate, bowser: p.bowser, date: rec.date, sourceType: 'sale', sourceId: rec.id
+        const n = this.rebuildLedgerNarration('Sale', rec, { bowser: true, qty: true, loadedFrom: false, brand: false, city: false, rate: false, remarks: true });
+        this.postToLedger(party, n, parseAmount(rec.amount), 0, {
+          qty, rate: saleRate, bowser: p.bowser, date: rec.date, sourceType: 'sale', sourceId: rec.id, customerNarration: n
         });
       }
       p.linkedSaleId = rec.id;
@@ -1165,28 +1167,21 @@ function createApp() {
 
     formatLedgerDesc(e) {
       if (!e) return '';
-      const parts = [];
-      const base = String(e.narration || '').replace(/\s+/g, ' ').trim();
-      if (base) parts.push(base);
-
-      const bowser = this.getBowser(e);
-      const qty = this.getQty(e);
-      const rate = this.getRate(e);
-      const tid = this.getTid(e);
-      const fromP = this.getFrom(e);
-      const toP = this.getTo(e);
-
-      const extra = [];
-      if (bowser && !base.toUpperCase().includes(String(bowser).toUpperCase())) extra.push('Bowser ' + bowser);
-      if (qty && !base.includes(String(qty))) extra.push('Qty ' + qty + ' MT');
-      if (rate) extra.push('Rate ' + this.fmtMoney(rate));
-      if (tid && !base.includes(String(tid))) extra.push('TID ' + tid);
-      if (fromP && toP) extra.push('From ' + fromP + ' To ' + toP);
-      else if (fromP && !base.toLowerCase().includes(fromP.toLowerCase())) extra.push('From ' + fromP);
-      else if (toP && !base.toLowerCase().includes(toP.toLowerCase())) extra.push('To ' + toP);
-
-      if (extra.length) parts.push(extra.join(' | '));
-      return parts.filter(Boolean).join('  •  ');
+      /* Prefer clean short narration — columns already show bowser/qty/rate */
+      if (e.customerNarration) return String(e.customerNarration).replace(/\s+/g, ' ').trim();
+      let base = String(e.narration || '').replace(/\s+/g, ' ').trim();
+      /* Strip duplicated field noise from old entries */
+      base = base
+        .replace(/\s*•\s*Bowser\s+[A-Z0-9\s\-]+/gi, '')
+        .replace(/\s*•\s*\d+(\.\d+)?\s*MT/gi, '')
+        .replace(/\s*•\s*Rate\s+[\d,\.]+/gi, '')
+        .replace(/\s*•\s*Rate pending/gi, '')
+        .replace(/\s*•\s*From\s+[•\s]*/gi, ' • ')
+        .replace(/\s*•\s*•+/g, ' • ')
+        .replace(/^\s*•\s*|\s*•\s*$/g, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+      return base || (e.sourceType === 'purchase' ? 'Purchase' : e.sourceType === 'sale' ? 'Sale' : 'Entry');
     },
 
     applyStockMove(type, qty, remarks, dateStr, sourceId) {
@@ -1210,17 +1205,26 @@ function createApp() {
       this.totals.stock = inv.qty;
     },
 
-    rebuildLedgerNarration(kind, f) {
+    rebuildLedgerNarration(kind, f, opts) {
+      const o = opts || f.narrOpts || {};
       const bits = [];
-      bits.push(kind);
-      if (f.bowser) bits.push('Bowser ' + f.bowser);
-      if (f.qty) bits.push(f.qty + ' MT');
-      if (f.plant) bits.push('Plant ' + f.plant);
-      if (f.source) bits.push('Source ' + f.source);
-      if (f.city) bits.push(f.city);
-      if (f.remarks) bits.push(f.remarks);
-      if (!f.rate) bits.push('Rate pending');
-      return bits.join(' • ');
+      /* Short label only — bowser/qty/rate live in their own columns */
+      if (kind && String(kind).toLowerCase().includes('purchase')) bits.push('Purchase');
+      else if (kind && String(kind).toLowerCase().includes('sale')) bits.push('Sale');
+      else if (kind) bits.push(kind);
+
+      if (o.bowser && f.bowser) bits.push('Bowser ' + f.bowser);
+      if (o.qty && f.qty) bits.push(f.qty + ' MT');
+      if (o.loadedFrom && (f.source || f.location || f.loadedFrom)) bits.push('From ' + (f.source || f.location || f.loadedFrom));
+      if (o.brand && f.brand) bits.push(f.brand);
+      if (o.city && f.city) bits.push(f.city);
+      if (o.rate && f.rate) bits.push('Rate ' + f.rate);
+      if (o.remarks && f.remarks) bits.push(f.remarks);
+      /* Default when no opts: keep description short */
+      if (!opts && !f.narrOpts) {
+        return bits.length ? bits.join(' • ') : (kind || 'Entry');
+      }
+      return bits.join(' • ') || (kind || 'Entry');
     },
 
     savePurchase() {
@@ -1290,6 +1294,7 @@ function createApp() {
       this.purchases.unshift(rec);
 
       /* Loaded Party (supplier) → CREDIT only. Unload/sale = Sale menu. */
+      const narrOpts = f.narrOpts || { bowser: true, qty: true, loadedFrom: true, brand: false, city: false, rate: false, remarks: true };
       let supplierPosted = 0;
       sources.forEach(src => {
         const partyName = (src.loadedParty || '').trim();
@@ -1297,21 +1302,26 @@ function createApp() {
         const q = parseFloat(src.qty) || 0;
         const srcRate = src.rate || rate || '';
         const lineAmt = srcRate ? calcAmount(q, srcRate) : '';
+        const narrPayload = {
+          bowser: src.bowser || f.bowser,
+          qty: src.qty,
+          source: src.location || f.source,
+          location: src.location || f.source,
+          brand: src.brand || f.brand,
+          city: src.city || f.city,
+          rate: srcRate,
+          remarks: f.remarks || ''
+        };
+        const narr = this.rebuildLedgerNarration('Purchase', narrPayload, narrOpts);
         this.postToLedger(
           partyName,
-          this.rebuildLedgerNarration('Purchase from supplier', {
-            ...f,
-            party: partyName,
-            qty: src.qty,
-            amount: lineAmt,
-            source: src.location || f.source,
-            remarks: (f.remarks || '') + (src.location ? ' • From ' + src.location : '')
-          }),
+          narr,
           0,
           parseAmount(lineAmt),
           {
             qty: src.qty, rate: srcRate, bowser: src.bowser || f.bowser, date: src.date || f.loadingDate,
-            sourceType: 'purchase', sourceId: rec.id
+            sourceType: 'purchase', sourceId: rec.id,
+            customerNarration: narr
           }
         );
         supplierPosted++;
@@ -1345,6 +1355,7 @@ function createApp() {
         loadingDate: '', bowser: '', party: '', city: '', plant: '',
         qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '', remarks: '', editingId: null,
         tradingParty: 'MLG',
+        narrOpts: { bowser: true, qty: true, loadedFrom: true, brand: false, city: false, rate: false, remarks: true },
         sources: [{ date: '', bowser: '', location: '', loadedParty: '', brand: '', city: '', qty: '', rate: '' }],
         splits: []
       };
@@ -1455,9 +1466,15 @@ function createApp() {
       };
       this.sales.unshift(rec);
 
-      this.postToLedger(f.party, this.rebuildLedgerNarration('Sale', f), parseAmount(rec.amount), 0, {
+      const saleNarr = this.rebuildLedgerNarration('Sale', {
+        bowser: f.bowser, qty: f.qty, source: f.plant || f.source, brand: f.brand,
+        city: f.city, rate: f.rate, remarks: f.remarks
+      }, { bowser: true, qty: true, loadedFrom: !!f.plant, brand: !!f.brand, city: !!f.city, rate: false, remarks: !!f.remarks });
+      /* Sale = customer DEBIT (they owe us) */
+      this.postToLedger(f.party, saleNarr, parseAmount(rec.amount), 0, {
         qty: f.qty, rate: f.rate, bowser: f.bowser, date: f.date,
-        sourceType: 'sale', sourceId: rec.id
+        sourceType: 'sale', sourceId: rec.id,
+        customerNarration: saleNarr
       });
 
       const fromStock = f.dealType === 'from_stock' || (f.plant || '').toUpperCase().includes('RPG') || (f.plant || '').toUpperCase().includes('STOCK');
