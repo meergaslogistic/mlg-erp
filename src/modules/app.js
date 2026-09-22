@@ -619,8 +619,10 @@ function createApp() {
           margin: { top: contentTop, left: 12, right: 12, bottom: bottomMargin },
           head: headers,
           body,
-          styles: { fontSize: 8, textColor:[15,23,42] },
-          headStyles: { fillColor:[15,39,68], textColor:255 },
+          theme: 'plain',
+          styles: { fontSize: 8, textColor:[15,23,42], fillColor: false, lineColor:[203,213,225], lineWidth:0.12, cellPadding:1.6 },
+          alternateRowStyles: { fillColor: false },
+          headStyles: { fillColor:[15,39,68], textColor:255, lineWidth:0 },
           willDrawPage: function() {
             if (opts.watermark !== false) self.drawWatermark(doc);
           },
@@ -2362,8 +2364,10 @@ function createApp() {
                 l.slip || '—',
                 this.fmtMoney(l.amount)
               ]),
-              styles: { fontSize: 8 },
-              headStyles: { fillColor: [15, 23, 42] },
+              theme: 'plain',
+              styles: { fontSize: 8, fillColor: false, textColor:[15,23,42], lineColor:[203,213,225], lineWidth:0.12 },
+              alternateRowStyles: { fillColor: false },
+              headStyles: { fillColor: [15, 23, 42], textColor:255 },
               margin: { left: 20, right: 20 }
             });
             y = doc.lastAutoTable.finalY;
