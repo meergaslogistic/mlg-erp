@@ -7,7 +7,7 @@
 
 function createApp() {
     const { fmt, fmtMoney, calcAmount, parseAmount, formatDateDisplay, today } = window.MLGHelpers;
-    const { initialMaster, initialInventories, samplePurchases, sampleSales, createInitialParties } = window.MLGStore;
+    const { initialMaster, initialInventories, samplePurchases, sampleSales, samplePayments, sampleDiesel, sampleQuotations, createInitialParties } = window.MLGStore;
 
   return {
     // ========== UI State ==========
@@ -67,9 +67,9 @@ function createApp() {
     parties: [],
     purchases: [...samplePurchases],
     sales: [...sampleSales],
-    payments: [],
-    dieselEntries: [],
-    quotations: [],
+    payments: [...(samplePayments||[])],
+    dieselEntries: [...(sampleDiesel||[])],
+    quotations: [...(sampleQuotations||[])],
     activeQuotation: null,
     quotationFilter: { q:'', party:'', month:'' },
     ledgerBank: 'ALL',
@@ -183,6 +183,7 @@ function createApp() {
       this.parties = createInitialParties(this.master.party);
       this.refreshDatalists();
       this.loadFromStorage();
+      this.seedLedgersFromBooks();
       this.recalcTotals();
       this.tickClock();
       this._clockTimer = setInterval(() => this.tickClock(), 1000);
@@ -602,7 +603,7 @@ function createApp() {
     },
     resetAllData() {
       if (!confirm('Delete all saved ERP data on this browser?')) return;
-      localStorage.removeItem('mlg_erp_v4');
+      localStorage.removeItem('mlg_erp_v6');
       location.reload();
     },
     filteredPurchaseRows() { return this.applyRowFilter(this.purchases || [], this.purchaseFilter || {}); },
@@ -750,13 +751,13 @@ function createApp() {
           master: this.master,
           totals: this.totals
         };
-        localStorage.setItem('mlg_erp_v4', JSON.stringify(payload));
+        localStorage.setItem('mlg_erp_v6', JSON.stringify(payload));
       } catch (e) { console.warn('Storage save failed', e); }
     },
 
     loadFromStorage() {
       try {
-        const raw = localStorage.getItem('mlg_erp_v4');
+        const raw = localStorage.getItem('mlg_erp_v6');
         if (!raw) return;
         const data = JSON.parse(raw);
         if (data.parties) this.parties = data.parties;
@@ -843,6 +844,7 @@ function createApp() {
         toParty: extra.toParty || '',
         qty: extra.qty != null && extra.qty !== '' ? String(extra.qty) : '',
         rate: extra.rate != null && extra.rate !== '' ? String(extra.rate) : '',
+        baseRate: extra.baseRate || '',
         debit: debitN,
         credit: creditN,
         balance: newBalance,
