@@ -1,11 +1,11 @@
 // store.js – June 2026 books from MLG PDFs
 const initialMaster = {
   bowser: ['TMQ 013','JU 3050','JQ 2432','TMQ 588','TLX 297','TLX 586','TMP 012','TLX 288','TAT 188','TMN 806','TMR 025','JQ 3148','TMP 200','TMU 062','TMP 010','TMP 100','TMQ 015','TMP 017','TLF 863','TMN 006','NLA 026','TLX 645','TLA 701','TLH 912','TLF 963','TLY 407','JQ 3217','EA 4337','TLA 026','JQ 2549','TMA 807','TLX 063'],
-  party: ['Bugti Plant','VTR Gas','Royal Gas','Zulfiqar LPG','Farhan Gas','Bhatti Associates','Aziz Plant','Dilshad Enterprises','Al Macca Gas','Al Macca','Jahanzaib Gas','NEW JAMALI','Arshad Gas','Lal Energy','Umar Energy','Hussain Gas','Sachal Gas','RPG Plant - STOCK','Heaven Gas','Salam LPG'],
-  city: ['Karachi','Jamshoro','Multan','Sukkur','Qazi Ahmed','Liyyah','Nawabshah','Kashmore','JACCOBABAD','Sadiqabad','Dogran'],
-  plant: ['Mand','BP 250','Allanaz - Karachi','Jamshoro - Bugti','RPG STOCK - Karachi','Hothi Nisar BP 250','Salam Gas','Gwadar','Turbat','Jadgal Plant'],
+  party: ['Bugti Plant','VTR Gas','Royal Gas','Zulfiqar LPG','Farhan Gas','Bhatti Associates','Aziz Plant','Dilshad Enterprises','Al Macca Gas','Al Macca','Jahanzaib Gas','NEW JAMALI','Arshad Gas','Lal Energy','Umar Energy','Hussain Gas','Sachal Gas','RPG Plant - STOCK','Heaven Gas','Salam LPG','Makran Gas','Makran','Mehman Bandar','Bandar Abbas'],
+  city: ['Karachi','Jamshoro','Multan','Sukkur','Qazi Ahmed','Liyyah','Nawabshah','Kashmore','JACCOBABAD','Sadiqabad','Dogran','Turbat','Gwadar','Makran'],
+  plant: ['Mand','BP 250','Allanaz - Karachi','Jamshoro - Bugti','RPG STOCK - Karachi','Hothi Nisar BP 250','Salam Gas','Gwadar','Turbat','Jadgal Plant','Makran'],
   bank: ['MLG HBL Account','MBL Pak Rice Commission Agent','HBL Wakeel Ahmed Enterprises','UBL Ibadat LPG PVT LTD.','ASK Bank Wakeel Ahmed Enterprises','ABL Pak Rice Commission Agent','BALH Ibadat Rice Mills','BALF Ibadat Rice Mills','MCB Shabeer Ahmed Enterprises','FB Saddam Enterprises','Meezan - Naik Muhammad Enterprises'],
-  source: ['Mehman bandar - Meer Gas','Bandar - Meer Gas','Aftab - Meer Gas','bandar Abbas - Meer Gas','Asloia Aftab - Meer Gas','Bandar Asloia - Meer Gas','Botan - Meer Gas','Jamshoro - Meer Gas','Allanaz - Karachi']
+  source: ['Mehman bandar - Meer Gas','Bandar - Meer Gas','Aftab - Meer Gas','bandar Abbas - Meer Gas','Asloia Aftab - Meer Gas','Bandar Asloia - Meer Gas','Botan - Meer Gas','Jamshoro - Meer Gas','Allanaz - Karachi','Makran','Mehman bandar']
 };
 const initialInventories = [{ id:'rpg', name:'RPG Plant – STOCK', type:'Stock', qty:312.0, qtyLabel:'~ 312.0', status:'Available', statusClass:'bg-emerald-50 text-emerald-700', typeClass:'bg-teal-50 text-teal-700', movements:[
   { date:'24-Jun-26', type:'In', qty:'52.320', remarks:'TMQ 013 Bandar Botan' },
