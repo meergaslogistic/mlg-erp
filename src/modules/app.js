@@ -27,7 +27,7 @@ function createApp() {
     clockDate: '',
     greeting: 'Welcome',
     greetIcon: '☀️',
-    pdfOptions: { show: false, header: false, footer: false, logo: false, watermark: true, type: null, data: null },
+    pdfOptions: { show: false, header: true, footer: true, logo: false, watermark: true, type: null, data: null },
 
     titles: {
       dashboard: 'Dashboard',
@@ -186,13 +186,15 @@ function createApp() {
 
     // ========== Lifecycle ==========
     init() {
-      this.parties = createInitialParties(this.master.party);
-      this.refreshDatalists();
-      this.loadFromStorage();
-      this.seedLedgersFromBooks();
-      this.recalcTotals();
       this.tickClock();
       this._clockTimer = setInterval(() => this.tickClock(), 1000);
+      this.parties = createInitialParties(this.master.party);
+      this.refreshDatalists();
+      try {
+        this.loadFromStorage();
+        this.seedLedgersFromBooks();
+        this.recalcTotals();
+      } catch (e) { console.warn('init data', e); }
       if (!this.paymentForm.date) this.paymentForm.date = today();
       if (!this.paymentForm.lines || !this.paymentForm.lines.length) {
         this.paymentForm.lines = [this.blankPaymentLine()];
@@ -201,7 +203,10 @@ function createApp() {
 
     tickClock() {
       const now = new Date();
-      this.clockNow = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const hh = String(now.getHours()).padStart(2,'0');
+      const mm = String(now.getMinutes()).padStart(2,'0');
+      const ss = String(now.getSeconds()).padStart(2,'0');
+      this.clockNow = hh + ':' + mm + ':' + ss;
       this.clockDate = now.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
       const h = now.getHours();
       if (h < 12) { this.greeting = 'Good Morning'; this.greetIcon = '☀️'; }
@@ -1793,11 +1798,10 @@ function createApp() {
       if (!q) { this.showToast('Select a quotation first'); return; }
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4', compress:true });
-      const lh = await this.loadAssetImage('letterhead-a4.png');
-      if (lh) {
-        try { doc.addImage(lh, 'PNG', 0, 0, 210, 297, undefined, 'FAST'); }
-        catch(e) { console.warn(e); }
-      }
+      await this.loadAssetImage('watermark.png');
+      await this.loadAssetImage('header.png');
+      await this.loadAssetImage('footer.png');
+      const chrome = await this.applyPageChrome(doc, { header:true, footer:true, logo:false, watermark:true }, 1, 'all');
       const addr = this.quoteContact(q,'address');
       const phone = this.quoteContact(q,'phone');
       const email = this.quoteContact(q,'email');
@@ -1811,7 +1815,7 @@ function createApp() {
       if (email) { doc.text(email, rx, hy, { align:'right' }); hy += 3.8; }
       if (web) { doc.text(web, rx, hy, { align:'right' }); }
       // content starts at 42mm — never inside the 4cm header band
-      let y = 98;
+      let y = Math.max(chrome && chrome.contentTop ? chrome.contentTop + 8 : 48, 48);
       doc.setTextColor(20, 30, 50);
       doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
@@ -1942,8 +1946,8 @@ function createApp() {
     openPdfOptions(type, data) {
       this.pdfOptions = {
         show: true,
-        header: false,
-        footer: false,
+        header: true,
+        footer: true,
         logo: false,
         watermark: true,
         type: type,
@@ -1998,14 +2002,22 @@ function createApp() {
       }
     },
 
-    drawWatermark(doc) {
+    drawWatermark(doc, box) {
       const pageW = 210;
       const pageH = 297;
       const wm = this._imgCache && this._imgCache['watermark.png'];
       if (!wm) return;
-      const wmW = 198;
-      const wmH = wmW * (916 / 1716);
-      doc.addImage(wm, 'PNG', (pageW - wmW) / 2, (pageH - wmH) / 2, wmW, wmH, undefined, 'FAST');
+      const headerH = box && box.headerH != null ? box.headerH : 37.1;
+      const footerH = box && box.footerH != null ? box.footerH : 19.4;
+      const maxW = 132;
+      const maxH = Math.max(80, pageH - headerH - footerH - 16);
+      const nat = 1353 / 1447;
+      let wmW = maxW;
+      let wmH = wmW * nat;
+      if (wmH > maxH) { wmH = maxH; wmW = wmH / nat; }
+      const x = (pageW - wmW) / 2;
+      const y = headerH + ((pageH - headerH - footerH) - wmH) / 2;
+      doc.addImage(wm, 'PNG', x, y, wmW, wmH, undefined, 'FAST');
     },
 
     async applyPageChrome(doc, opts, pageNumber, layer) {
@@ -2014,9 +2026,9 @@ function createApp() {
       const STD_MARGIN = 14;
       const layerMode = layer || 'all';
 
-      const HEADER_H = pageW * (547 / 2172);
-      const FOOTER_H = pageW * (725 / 2170);
-      const FOOTER_SHIFT = 14;
+      const HEADER_H = pageW * (438 / 2480);
+      const FOOTER_H = pageW * (229 / 2480);
+      const FOOTER_SHIFT = 0;
       const HEADER_LOGO = { x: 6.67, y: 7.44, size: 43.9 };
 
       const useHeader = !!(opts && opts.header);
@@ -2051,7 +2063,7 @@ function createApp() {
 
       if ((layerMode === 'all' || layerMode === 'under') && useWatermark) {
         await this.loadAssetImage('watermark.png');
-        this.drawWatermark(doc);
+        this.drawWatermark(doc, { headerH: HEADER_H, footerH: FOOTER_H });
       }
 
       if (layerMode === 'under') {
@@ -2076,19 +2088,11 @@ function createApp() {
         }
       }
 
-      if (useLogo) {
+      // Extra circular logo removed — header already contains the mark.
+      if (useLogo && !useHeader) {
         const logoImg = await this.loadAssetImage('logo.png');
         if (logoImg) {
-          doc.addImage(
-            logoImg,
-            'PNG',
-            HEADER_LOGO.x,
-            HEADER_LOGO.y,
-            HEADER_LOGO.size,
-            HEADER_LOGO.size,
-            undefined,
-            'FAST'
-          );
+          doc.addImage(logoImg, 'PNG', 8, 8, 22, 22, undefined, 'FAST');
         }
       }
 
