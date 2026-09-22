@@ -188,6 +188,9 @@ function createApp() {
     init() {
       this.tickClock();
       this._clockTimer = setInterval(() => this.tickClock(), 1000);
+      this.loadAssetImage('watermark.png');
+      this.loadAssetImage('header.png');
+      this.loadAssetImage('footer.png');
       this.parties = createInitialParties(this.master.party);
       this.refreshDatalists();
       try {
@@ -525,11 +528,11 @@ function createApp() {
       const matchBank = (b) => !r.bank || String(b||'') === r.bank;
       const type = r.type || 'summary';
       if (type === 'purchases') {
-        return this.purchases.filter(x => inRange(x.date) && matchParty(x.party) && matchBowser(x.bowser))
+        return (this.filteredPurchaseRows ? this.filteredPurchaseRows() : this.purchases).filter(x => inRange(x.date) && matchParty(x.party) && matchBowser(x.bowser))
           .map(x => ({ c1:x.date, c2:x.bowser, c3:x.party, c4:x.qty, c5:x.amount, c6:x.source||x.brand||'' }));
       }
       if (type === 'sales') {
-        return this.sales.filter(x => inRange(x.date) && matchParty(x.party) && matchBowser(x.bowser))
+        return (this.filteredSaleRows ? this.filteredSaleRows() : this.sales).filter(x => inRange(x.date) && matchParty(x.party) && matchBowser(x.bowser))
           .map(x => ({ c1:x.date, c2:x.bowser, c3:x.party, c4:x.qty, c5:x.amount, c6:x.plant||'' }));
       }
       if (type === 'pnl') {
@@ -537,11 +540,13 @@ function createApp() {
           .map(x => ({ c1:x.date, c2:x.bowser, c3:x.party, c4:x.qty, c5:x.amount, c6: this.saleProfitLabel(x) }));
       }
       if (type === 'payments') {
-        return this.payments.filter(x => inRange(x.date) && matchParty(x.party||x.fromParty||x.toParty) && matchBank(x.bank))
+        const rows = this.filteredPaymentRows ? this.filteredPaymentRows() : this.payments;
+        return (rows||[]).filter(x => inRange(x.date) && matchParty(x.party||x.fromParty||x.toParty) && matchBank(x.bank))
           .map(x => ({ c1:x.date, c2:x.type, c3:x.party||x.fromParty||x.toParty||'', c4:x.bank||'', c5:x.tid||x.slip||'', c6:x.amount }));
       }
       if (type === 'diesel') {
-        return (this.dieselEntries||[]).filter(x => inRange(x.date) && matchBowser(x.bowser))
+        const rows = this.filteredDieselRows ? this.filteredDieselRows() : (this.dieselEntries||[]);
+        return (rows||[]).filter(x => inRange(x.date) && matchBowser(x.bowser))
           .map(x => ({ c1:x.date, c2:x.type, c3:x.bowser, c4:x.location||'', c5:x.qty||'', c6:x.amount }));
       }
       if (type === 'outstanding') {
@@ -601,37 +606,29 @@ function createApp() {
         await this.loadAssetImage('watermark.png');
         await this.loadAssetImage('header.png');
         await this.loadAssetImage('footer.png');
-        const chrome = await this.applyPageChrome(doc, opts, 1, 'all');
+        const HEADER_H = opts.header ? 210 * (438 / 2480) : 0;
+        const FOOTER_H = opts.footer ? 210 * (229 / 2480) : 0;
+        const contentTop = (HEADER_H || 14) + 6;
+        const bottomMargin = (FOOTER_H || 14) + 4;
         const title = 'MLG Report — ' + ((this.report && this.report.type) || 'summary');
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.setTextColor(15,23,42);
-        doc.text(this.settings.company || 'Meer Logistics & Gas Energy', 14, chrome.contentTop + 2);
-        doc.setFontSize(10);
-        doc.text(title, 14, chrome.contentTop + 8);
         const headers = [this.reportHeaders()];
         const body = (this.reportRows() || []).map(r => [r.c1,r.c2,r.c3,r.c4,r.c5,r.c6].map(v => v==null?'':String(v)));
-        const bottomMargin = Math.max(14, 297 - chrome.contentBottom);
+        const self = this;
         doc.autoTable({
-          startY: chrome.contentTop + 12,
-          margin: { top: chrome.contentTop + 4, left: 12, right: 12, bottom: bottomMargin },
+          startY: contentTop + 10,
+          margin: { top: contentTop, left: 12, right: 12, bottom: bottomMargin },
           head: headers,
           body,
           styles: { fontSize: 8, textColor:[15,23,42] },
           headStyles: { fillColor:[15,39,68], textColor:255 },
-          didDrawPage: (data) => {
-            if (data.pageNumber > 1) {
-              this.drawWatermark(doc);
-              const pageW = 210, pageH = 297;
-              const HEADER_H = pageW * (438 / 2480);
-              const FOOTER_H = pageW * (229 / 2480);
-              if (opts.footer && this._imgCache['footer.png']) {
-                doc.addImage(this._imgCache['footer.png'], 'PNG', 0, pageH - FOOTER_H, pageW, FOOTER_H, undefined, 'FAST');
-              }
-              if (opts.header && this._imgCache['header.png']) {
-                doc.addImage(this._imgCache['header.png'], 'PNG', 0, 0, pageW, HEADER_H, undefined, 'FAST');
-              }
-            }
+          didDrawPage: function() {
+            self.stampLetterhead(doc, opts);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11);
+            doc.setTextColor(15,23,42);
+            doc.text(self.settings.company || 'Meer Logistics & Gas Energy', 14, contentTop - 2);
+            doc.setFontSize(9);
+            doc.text(title, 14, contentTop + 4);
           }
         });
         this.deliverPdf(doc, 'MLG-Report.pdf', mode || 'download');
@@ -1926,20 +1923,34 @@ function createApp() {
 
     async loadAssetImage(name) {
       if (this._imgCache[name]) return this._imgCache[name];
-      try {
-        const res = await fetch('./assets/' + name);
-        const blob = await res.blob();
-        const dataUrl = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(blob);
-        });
-        this._imgCache[name] = dataUrl;
-        return dataUrl;
-      } catch (e) {
-        console.warn('Asset load failed:', name, e);
-        return null;
+      const dataUrl = await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const c = document.createElement('canvas');
+            c.width = img.naturalWidth || img.width;
+            c.height = img.naturalHeight || img.height;
+            c.getContext('2d').drawImage(img, 0, 0);
+            resolve(c.toDataURL('image/png'));
+          } catch (e) { resolve(null); }
+        };
+        img.onerror = () => resolve(null);
+        img.src = './assets/' + name + '?v=letterhead2';
+      });
+      if (dataUrl) this._imgCache[name] = dataUrl;
+      return dataUrl;
+    },
+    stampLetterhead(doc, opts) {
+      opts = opts || {};
+      const pageW = 210, pageH = 297;
+      const HEADER_H = pageW * (438 / 2480);
+      const FOOTER_H = pageW * (229 / 2480);
+      if (opts.watermark !== false) this.drawWatermark(doc);
+      if (opts.footer && this._imgCache['footer.png']) {
+        try { doc.addImage(this._imgCache['footer.png'], 'PNG', 0, pageH - FOOTER_H, pageW, FOOTER_H, undefined, 'FAST'); } catch (e) {}
+      }
+      if (opts.header && this._imgCache['header.png']) {
+        try { doc.addImage(this._imgCache['header.png'], 'PNG', 0, 0, pageW, HEADER_H, undefined, 'FAST'); } catch (e) {}
       }
     },
 
