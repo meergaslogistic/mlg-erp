@@ -480,9 +480,9 @@
                   <thead class="bg-slate-50">
                     <tr class="text-left text-[11px] text-white uppercase bg-slate-900">
                       <th class="px-3 py-2.5">S#</th>
-                      <th class="px-3 py-2.5">Slip / Voucher</th>
                       <th class="px-3 py-2.5">Date</th>
-                      <th class="px-3 py-2.5 min-w-[180px]">Narration</th>
+                      <th class="px-3 py-2.5">Voucher</th>
+                      <th class="px-3 py-2.5 min-w-[160px] max-w-[320px]">Narration</th>
                       <th class="px-3 py-2.5">Bowser</th>
                       <th class="px-3 py-2.5">Qty (MT)</th>
                       <th class="px-3 py-2.5">Rate</th>
@@ -495,9 +495,9 @@
                     <template x-for="(e, i) in (activeParty?.ledger || [])" :key="i">
                       <tr>
                         <td class="px-3 py-2 text-xs text-slate-400" x-text="(activeParty.ledger.length - i)"></td>
-                        <td class="px-3 py-2 text-xs whitespace-nowrap" x-text="e.voucher || e.tid || e.slip || '—'"></td>
                         <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap" x-text="e.date"></td>
-                        <td class="px-3 py-2 text-sm text-slate-800 max-w-[280px] break-words leading-snug" x-text="customerLedgerNarration(e)"></td>
+                        <td class="px-3 py-2 text-xs whitespace-nowrap" x-text="ledgerVoucher(e)"></td>
+                        <td class="px-3 py-2 text-sm text-slate-800 max-w-[320px] break-words leading-snug" style="word-break:break-word;overflow-wrap:anywhere;" x-text="customerLedgerNarration(e)"></td>
                         <td class="px-3 py-2 text-xs whitespace-nowrap" x-text="e.bowser || '—'"></td>
                         <td class="px-3 py-2 text-xs whitespace-nowrap" x-text="e.qty || '—'"></td>
                         <td class="px-3 py-2 text-xs whitespace-nowrap" x-text="e.rate || '—'"></td>
