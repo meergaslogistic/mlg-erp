@@ -112,7 +112,7 @@
       </div>
 
       <!-- ==================== DASHBOARD ==================== -->
-      <section x-show="section === 'dashboard'" x-transition.opacity>
+      <section x-show="section === 'dashboard'">
         <div class="card p-5 mb-5 rounded-2xl bg-slate-50 border border-slate-100">
           <p class="text-xs font-semibold text-slate-500 uppercase mb-3">Start with the transaction type</p>
           <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -198,7 +198,7 @@
         </div>
       </section>
 
-      <section x-show="section === 'guide'" x-transition.opacity>
+      <section x-show="section === 'guide'">
         <div class="mb-5">
           <p class="text-[11px] font-semibold tracking-widest text-teal-700 uppercase">Meer Logistics &amp; Gas Energy</p>
           <h2 class="text-2xl font-extrabold text-slate-900 mt-1">End-to-end data flow</h2>
@@ -376,7 +376,7 @@
       </section>
 
       <!-- ==================== PARTIES ==================== -->
-      <section x-show="section === 'parties'" x-transition.opacity>
+      <section x-show="section === 'parties'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div class="card-vip accent-indigo p-4 pl-5">
             <p class="vip-label">Total Parties</p>
@@ -444,7 +444,7 @@
         </div>
 
         <!-- Party Ledger Panel -->
-        <div x-show="activeParty" x-transition class="fixed inset-0 z-50 flex justify-end">
+        <div x-show="activeParty" class="fixed inset-0 z-50 flex justify-end">
           <div class="absolute inset-0 bg-black/30" @click="activeParty = null"></div>
           <div class="relative w-full max-w-6xl bg-white h-full shadow-2xl flex flex-col" @click.stop>
             <div class="p-5 border-b flex items-center justify-between shrink-0 gap-3">
@@ -480,8 +480,13 @@
                   <thead class="bg-slate-50">
                     <tr class="text-left text-[11px] text-white uppercase bg-slate-900">
                       <th class="px-3 py-2.5">S#</th>
-                      <th class="px-3 py-2.5">Date / Voucher</th>
-                      <th class="px-3 py-2.5">Narration / Description</th>
+                      <th class="px-3 py-2.5">Slip / Voucher</th>
+                      <th class="px-3 py-2.5">Date</th>
+                      <th class="px-3 py-2.5">Narration</th>
+                      <th class="px-3 py-2.5">Bowser</th>
+                      <th class="px-3 py-2.5">Unload Wt</th>
+                      <th class="px-3 py-2.5">Base Rate</th>
+                      <th class="px-3 py-2.5">Rate</th>
                       <th class="px-3 py-2.5 text-right">Debit</th>
                       <th class="px-3 py-2.5 text-right">Credit</th>
                       <th class="px-3 py-2.5 text-right">Balance</th>
@@ -491,8 +496,13 @@
                     <template x-for="(e, i) in (activeParty?.ledger || [])" :key="i">
                       <tr>
                         <td class="px-3 py-2 text-xs text-slate-400" x-text="(activeParty.ledger.length - i)"></td>
+                        <td class="px-3 py-2 text-xs" x-text="e.voucher || e.tid || e.slip || '—'"></td>
                         <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap" x-text="e.date"></td>
                         <td class="px-3 py-2 text-sm text-slate-800" x-text="customerLedgerNarration(e)"></td>
+                        <td class="px-3 py-2 text-xs" x-text="e.bowser || '—'"></td>
+                        <td class="px-3 py-2 text-xs" x-text="e.qty || '—'"></td>
+                        <td class="px-3 py-2 text-xs" x-text="e.baseRate || '—'"></td>
+                        <td class="px-3 py-2 text-xs" x-text="e.rate || '—'"></td>
                         <td class="px-3 py-2 text-right text-rose-600" x-text="e.debit ? fmtMoney(e.debit) : ''"></td>
                         <td class="px-3 py-2 text-right text-emerald-600" x-text="e.credit ? fmtMoney(e.credit) : ''"></td>
                         <td class="px-3 py-2 text-right font-medium" x-text="fmtMoney(e.balance)"></td>
@@ -510,7 +520,7 @@
       </section>
 
       <!-- ==================== INVENTORY ==================== -->
-      <section x-show="section === 'inventory'" x-transition.opacity>
+      <section x-show="section === 'inventory'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Total Purchased</p><p class="vip-value mt-1" x-text="fmt(totals.purchased)+' Ton'"></p></div>
           <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">Total Sold</p><p class="vip-value mt-1" x-text="fmt(totals.sold)+' Ton'"></p></div>
@@ -569,7 +579,7 @@
             </table>
           </div>
 
-          <div class="card p-5 rounded-2xl" x-show="stockForm.showForm" x-transition>
+          <div class="card p-5 rounded-2xl" x-show="stockForm.showForm">
             <h3 class="font-bold text-sm mb-1">Exception adjustment only</h3>
             <p class="text-[11px] text-slate-500 mb-4">Daily stock should move from Purchase (IN) and Sale from stock (OUT). Use this panel only for a physical-count variance.</p>
             <form @submit.prevent="adjustStock" class="space-y-3">
@@ -636,7 +646,7 @@
       </section>
 
       <!-- ==================== PURCHASE ==================== -->
-      <section x-show="section === 'purchase'" x-transition.opacity>
+      <section x-show="section === 'purchase'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div class="card-vip accent-teal p-5 pl-6">
             <p class="vip-label">Total Purchased</p>
@@ -663,7 +673,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
             <h2 class="text-base font-bold">LPG Purchase / Loading</h2>
-            <p class="text-xs text-slate-500">Load save ho sakti hai even if unload later ho. Rate optional hai.</p>
+            <p class="text-xs text-slate-500">Trip ya month-end adjustment. Rate loading line par.</p>
           </div>
           <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="togglePurchaseForm()">
             <i class="fas fa-plus mr-1.5"></i>
@@ -671,7 +681,7 @@
           </button>
         </div>
 
-        <div class="card p-6 mb-5 rounded-2xl" x-show="purchaseForm.showForm" x-transition>
+        <div class="card p-6 mb-5 rounded-2xl" x-show="purchaseForm.showForm">
           <form @submit.prevent="savePurchase" class="space-y-5">
             <div class="grid sm:grid-cols-2 gap-3">
               <button type="button" @click="setPurchaseDeal('stock')" class="p-3 rounded-xl border text-left"
@@ -905,7 +915,7 @@
       </section>
 
       <!-- ==================== SALE ==================== -->
-      <section x-show="section === 'sale'" x-transition.opacity>
+      <section x-show="section === 'sale'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div class="card-vip accent-emerald p-5 pl-6">
             <p class="vip-label">Total Sold</p>
@@ -940,7 +950,7 @@
           </button>
         </div>
 
-        <div class="card p-6 mb-5 rounded-2xl" x-show="saleForm.showForm" x-transition>
+        <div class="card p-6 mb-5 rounded-2xl" x-show="saleForm.showForm">
           <form @submit.prevent="saveSale" class="space-y-5">
             <div class="grid sm:grid-cols-2 gap-3">
               <button type="button" @click="setSaleDeal('from_stock')" class="p-3 rounded-xl border text-left"
@@ -1100,7 +1110,7 @@
       </section>
 
       <!-- ==================== PAYMENT ==================== -->
-      <section x-show="section === 'payment'" x-transition.opacity>
+      <section x-show="section === 'payment'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div class="card-vip accent-emerald p-5 pl-6">
             <p class="vip-label">Received</p>
@@ -1133,7 +1143,7 @@
             <span x-text="paymentForm.showForm ? 'Hide payment entry' : 'Payment Entry'"></span>
           </button>
         </div>
-        <div class="card p-6 mb-5 rounded-2xl" x-show="paymentForm.showForm" x-transition>
+        <div class="card p-6 mb-5 rounded-2xl" x-show="paymentForm.showForm">
           <form @submit.prevent="savePayment" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label class="block text-[11px] font-semibold text-slate-500 mb-1">Date *</label>
@@ -1337,7 +1347,7 @@
 
 
       <!-- ==================== MASTER LEDGER ==================== -->
-      <section x-show="section === 'masterLedger'" x-transition.opacity>
+      <section x-show="section === 'masterLedger'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Lines</p><p class="vip-value mt-1" x-text="filteredMasterLedgerRows().length"></p></div>
           <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">In</p><p class="vip-value mt-1" x-text="fmtMoney(masterLedgerTotals().inn)"></p></div>
@@ -1395,7 +1405,7 @@
       </section>
 
       <!-- ==================== DIESEL ==================== -->
-      <section x-show="section === 'diesel'" x-transition.opacity>
+      <section x-show="section === 'diesel'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">Entries</p><p class="vip-value mt-1" x-text="dieselEntries.length"></p></div>
           <div class="card-vip accent-orange p-5 pl-6"><p class="vip-label">Diesel + Cash</p><p class="vip-value mt-1" x-text="fmtMoney(dieselGross(dieselEntries))"></p></div>
@@ -1409,7 +1419,7 @@
           </div>
           <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="dieselForm.showForm = !dieselForm.showForm">Diesel / Cash Entry</button>
         </div>
-        <div class="card p-6 mb-5 rounded-2xl" x-show="dieselForm.showForm" x-transition>
+        <div class="card p-6 mb-5 rounded-2xl" x-show="dieselForm.showForm">
           <form @submit.prevent="saveDiesel" class="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Loading Date *</label><input type="date" x-model="dieselForm.date" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
             <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser No</label><input list="bowserList" x-model="dieselForm.bowser" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
@@ -1464,7 +1474,7 @@
         </div>
       </section>
 
-      <section x-show="section === 'quotation'" x-transition.opacity>
+      <section x-show="section === 'quotation'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Quotations</p><p class="vip-value mt-1" x-text="quotations.length"></p></div>
           <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">Draft</p><p class="vip-value mt-1" x-text="quotations.filter(q=>q.status==='Draft').length"></p></div>
@@ -1478,7 +1488,7 @@
           </div>
           <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="quotationForm.showForm=!quotationForm.showForm; if(!quotationForm.quotationNo) quotationForm.quotationNo=nextQuotationNo()">Quotation Entry</button>
         </div>
-        <div class="card p-6 mb-5 rounded-2xl" x-show="quotationForm.showForm" x-transition>
+        <div class="card p-6 mb-5 rounded-2xl" x-show="quotationForm.showForm">
           <form @submit.prevent="saveQuotation" class="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
             <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Quotation No *</label><input x-model="quotationForm.quotationNo" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
             <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Reference No</label><input x-model="quotationForm.referenceNo" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Party letter / inquiry no"></div>
@@ -1574,7 +1584,7 @@
       </section>
 
       <!-- ==================== REPORTS ==================== -->
-      <section x-show="section === 'reports'" x-transition.opacity>
+      <section x-show="section === 'reports'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Purchased</p><p class="vip-value mt-1" x-text="fmt(totals.purchased)+' T'"></p></div>
           <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">Sold</p><p class="vip-value mt-1" x-text="fmt(totals.sold)+' T'"></p></div>
@@ -1639,7 +1649,7 @@
       </section>
 
       <!-- ==================== SETTINGS ==================== -->
-      <section x-show="section === 'settings'" x-transition.opacity>
+      <section x-show="section === 'settings'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Company</p><p class="vip-value mt-1 text-lg" x-text="settings.company || 'MLG'"></p></div>
           <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">PDF watermark</p><p class="vip-value mt-1 text-lg" x-text="settings.defaultWatermark ? 'On' : 'Off'"></p></div>
@@ -1672,7 +1682,7 @@
       </section>
 
       <!-- ==================== MASTER ==================== -->
-      <section x-show="section === 'master'" x-transition.opacity>
+      <section x-show="section === 'master'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Parties</p><p class="vip-value mt-1" x-text="(master.party||[]).length"></p></div>
           <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">Bowsers</p><p class="vip-value mt-1" x-text="(master.bowser||[]).length"></p></div>
@@ -1714,13 +1724,13 @@
   </div><!-- /.app-frame -->
 
   <!-- Toast -->
-  <div x-show="toast.show" x-transition class="toast">
+  <div x-show="toast.show" class="toast">
     <i class="fas fa-check-circle text-emerald-400"></i>
     <span x-text="toast.msg"></span>
   </div>
 
   <!-- Add Party Modal -->
-  <div x-show="showAddParty" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition.opacity>
+  <div x-show="showAddParty" class="fixed inset-0 z-50 flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/40" @click="showAddParty = false"></div>
     <div class="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl" @click.stop>
       <h3 class="font-bold text-lg mb-4">Add New Party</h3>
@@ -1738,7 +1748,7 @@
 
 
   <!-- PDF Download Options Modal -->
-  <div x-show="pdfOptions.show" x-transition class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+  <div x-show="pdfOptions.show" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/40" @click="pdfOptions.show = false"></div>
     <div class="relative bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" @click.stop>
       <h3 class="font-bold text-lg mb-1">Download PDF</h3>
