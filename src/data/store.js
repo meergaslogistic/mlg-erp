@@ -92,7 +92,14 @@ const sampleSales = [
 { id:28, date:'21-Jun-26', bowser:'JQ 2432', party:'Royal Gas', city:'Sukkur', plant:'Mand', qty:'47.865', baseRate:'', rate:'383000', amount:'18,332,295', unit:'Ton', rowType:'trip' },
 { id:29, date:'21-Jun-26', bowser:'TMP 200', party:'Bugti Plant', city:'Jamshoro', plant:'BP 250', qty:'43.160', baseRate:'', rate:'380977', amount:'16,442,967', unit:'Ton', rowType:'trip' },
 { id:30, date:'23-Jun-26', bowser:'TMN 806', party:'Al Macca Gas', city:'Multan', plant:'Mand', qty:'45.855', baseRate:'4950', rate:'419492', amount:'19,235,784', unit:'Ton', rowType:'trip' },
-{ id:99, date:'30-Jun-26', bowser:'', party:'Month of June LPG and RENT sale', city:'', plant:'', qty:'121.215', baseRate:'', rate:'325906', amount:'39,504,696', unit:'Ton', rowType:'adjustment' }
+{ id:99, date:'30-Jun-26', bowser:'', party:'Month of June LPG and RENT sale', city:'', plant:'', qty:'121.215', baseRate:'', rate:'325906', amount:'39,504,696', unit:'Ton', rowType:'adjustment' },
+  { id:31, date:'25-Jun-26', bowser:'TLH 912', party:'Salam LPG', city:'', plant:'Bhatti Associate', qty:'51.335', baseRate:'', rate:'342000', amount:'17,556,570', unit:'Ton', rowType:'trip' },
+  { id:32, date:'25-Jun-26', bowser:'TLX 297', party:'Bugti Plant', city:'Jamshoro', plant:'Mand', qty:'46.175', baseRate:'', rate:'352330', amount:'16,268,838', unit:'Ton', rowType:'trip' },
+  { id:33, date:'29-Jun-26', bowser:'NLA 026', party:'Aziz Plant', city:'Sadiqabad', plant:'Jamshoro - Bugti', qty:'25.795', baseRate:'4365', rate:'369915', amount:'9,541,964', unit:'Ton', rowType:'trip' },
+  { id:34, date:'30-Jun-26', bowser:'TLX 645', party:'Umar Energy', city:'Dogran', plant:'Jamshoro - Bugti', qty:'25.890', baseRate:'4400', rate:'372881', amount:'9,653,898', unit:'Ton', rowType:'trip' },
+  { id:35, date:'2-Jul-26', bowser:'TAT 188', party:'Lal Energy', city:'Kashmore', plant:'Mand', qty:'41.685', baseRate:'4365', rate:'369915', amount:'15,419,917', unit:'Ton', rowType:'trip' },
+  { id:36, date:'7-Jul-26', bowser:'TMQ 588', party:'Arshad Gas', city:'Karachi', plant:'BP 250', qty:'50.600', baseRate:'', rate:'258000', amount:'13,054,800', unit:'Ton', rowType:'trip' }
+
 ];
 const samplePayments = [
 { id:1, date:'1-Jun-26', type:'Received', party:'Bhatti Associates', bank:'MBL Pak Rice Commission Agent', tid:'229537', slip:'229537', amount:312410, remarks:'MBL Pak Rice Commission Agent' },
@@ -121,7 +128,16 @@ const samplePayments = [
 { id:24, date:'18-Jun-26', type:'Received', party:'Sachal Gas', bank:'BOP Rabbani Rice Traders', tid:'95933077', slip:'95933077', amount:1700000, remarks:'BOP Rabbani Rice Traders' },
 { id:25, date:'22-Jun-26', type:'Received', party:'Umar Energy', bank:'BALH Ibadat Rice Mills', tid:'6390575', slip:'6390575', amount:3198602, remarks:'BALH Ibadat Rice Mills' },
 { id:26, date:'22-Jun-26', type:'Received', party:'Heaven Gas', bank:'BALF Ibadat Rice Mills', tid:'261730', slip:'261730', amount:282500, remarks:'BALF Ibadat Rice Mills' },
-{ id:27, date:'19-Jun-26', type:'Received', party:'Jahanzaib Gas', bank:'ABL Pak Rice Commission Agent', tid:'4217391', slip:'4217391', amount:270000, remarks:'ABL Pak Rice Commission Agent' }
+{ id:27, date:'19-Jun-26', type:'Received', party:'Jahanzaib Gas', bank:'ABL Pak Rice Commission Agent', tid:'4217391', slip:'4217391', amount:270000, remarks:'ABL Pak Rice Commission Agent' },
+  { id:28, date:'2-Jul-26', type:'Received', party:'Aziz Plant', bank:'US Gas', tid:'9670559', slip:'9670559', amount:4541963, remarks:'US Gas' },
+  { id:29, date:'2-Jul-26', type:'Received', party:'Aziz Plant', bank:'US Gas', tid:'9670560', slip:'9670560', amount:5000000, remarks:'US Gas' },
+  { id:30, date:'16-Jul-26', type:'Received', party:'Aziz Plant', bank:'CASH', tid:'CASH', slip:'CASH', amount:30000, remarks:'CASH NLA 026' },
+  { id:31, date:'24-Jun-26', type:'Received', party:'Al Macca Gas', bank:'MBL Pak Rice Commission Agent', tid:'8536212', slip:'8536212', amount:2700000, remarks:'MBL Pak Rice' },
+  { id:32, date:'24-Jun-26', type:'Received', party:'Royal Gas', bank:'ABL Pak Rice Commission Agent', tid:'680911', slip:'680911', amount:530000, remarks:'ABL Pak Rice' },
+  { id:33, date:'29-Jun-26', type:'Received', party:'Royal Gas', bank:'ASK Bank Wakeel Ahmed Enterprises', tid:'1904384', slip:'1904384', amount:3644100, remarks:'Askari' },
+  { id:34, date:'29-Jun-26', type:'Received', party:'Dilshad Enterprises', bank:'MBL Pak Rice Commission Agent', tid:'4065408', slip:'4065408', amount:4950000, remarks:'MBL Pak Rice' },
+  { id:35, date:'29-Jun-26', type:'Received', party:'Lal Energy', bank:'BALH Ibadat Rice Mills', tid:'2880385', slip:'2880385', amount:4569000, remarks:'BALH Ibadat' }
+
 ];
 const sampleDiesel = [
 { id:1, date:'1-Jun-26', bowser:'TMQ 013', type:'Cash', description:'Cash', boarder:'Mand', location:'Mand', unit:'PKR', qty:'72000', rate:'', amount:'72000' },
