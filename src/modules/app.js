@@ -27,7 +27,7 @@ function createApp() {
     clockDate: '',
     greeting: 'Welcome',
     greetIcon: '☀️',
-    pdfOptions: { show: false, header: true, footer: true, logo: false, watermark: true, type: null, data: null },
+    pdfOptions: { show: false, header: false, footer: false, watermark: true, type: null, data: null },
 
     titles: {
       dashboard: 'Dashboard',
@@ -592,18 +592,53 @@ function createApp() {
       };
       return map[t] || map.summary;
     },
-    downloadReportPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({ unit:'pt', format:'a4' });
-      const title = 'MLG Report — ' + ((this.report && this.report.type) || 'summary');
-      doc.setFontSize(14);
-      doc.text(this.settings.company || 'Meer Logistics & Gas Energy', 40, 40);
-      doc.setFontSize(11);
-      doc.text(title, 40, 60);
-      const headers = [this.reportHeaders()];
-      const body = this.reportRows().map(r => [r.c1,r.c2,r.c3,r.c4,r.c5,r.c6].map(v => v==null?'':String(v)));
-      doc.autoTable({ startY: 80, head: headers, body, styles:{ fontSize:8 }, headStyles:{ fillColor:[15,39,68] } });
-      this.deliverPdf(doc, 'MLG-Report.pdf', 'download');
+    async downloadReportPDF(opts, mode) {
+      opts = opts || this.pdfOptions || { header:false, footer:false, watermark:true };
+      this.showToast('Generating PDF...');
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+        await this.loadAssetImage('watermark.png');
+        await this.loadAssetImage('header.png');
+        await this.loadAssetImage('footer.png');
+        const chrome = await this.applyPageChrome(doc, opts, 1, 'all');
+        const title = 'MLG Report — ' + ((this.report && this.report.type) || 'summary');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.setTextColor(15,23,42);
+        doc.text(this.settings.company || 'Meer Logistics & Gas Energy', 14, chrome.contentTop + 2);
+        doc.setFontSize(10);
+        doc.text(title, 14, chrome.contentTop + 8);
+        const headers = [this.reportHeaders()];
+        const body = (this.reportRows() || []).map(r => [r.c1,r.c2,r.c3,r.c4,r.c5,r.c6].map(v => v==null?'':String(v)));
+        const bottomMargin = Math.max(14, 297 - chrome.contentBottom);
+        doc.autoTable({
+          startY: chrome.contentTop + 12,
+          margin: { top: chrome.contentTop + 4, left: 12, right: 12, bottom: bottomMargin },
+          head: headers,
+          body,
+          styles: { fontSize: 8, textColor:[15,23,42] },
+          headStyles: { fillColor:[15,39,68], textColor:255 },
+          didDrawPage: (data) => {
+            if (data.pageNumber > 1) {
+              this.drawWatermark(doc);
+              const pageW = 210, pageH = 297;
+              const HEADER_H = pageW * (438 / 2480);
+              const FOOTER_H = pageW * (229 / 2480);
+              if (opts.footer && this._imgCache['footer.png']) {
+                doc.addImage(this._imgCache['footer.png'], 'PNG', 0, pageH - FOOTER_H, pageW, FOOTER_H, undefined, 'FAST');
+              }
+              if (opts.header && this._imgCache['header.png']) {
+                doc.addImage(this._imgCache['header.png'], 'PNG', 0, 0, pageW, HEADER_H, undefined, 'FAST');
+              }
+            }
+          }
+        });
+        this.deliverPdf(doc, 'MLG-Report.pdf', mode || 'download');
+      } catch (e) {
+        console.warn(e);
+        this.showToast('PDF generation failed');
+      }
     },
     exportBackup() {
       const payload = { parties:this.parties, purchases:this.purchases, sales:this.sales, payments:this.payments, inventories:this.inventories, master:this.master, dieselEntries:this.dieselEntries, quotations:this.quotations, settings:this.settings };
@@ -1793,7 +1828,7 @@ function createApp() {
       this.saveToStorage();
       this.showToast('Company contact saved permanently');
     },
-    async downloadQuotationPDF(q, mode) {
+    async downloadQuotationPDF(q, mode, opts) {
       q = q || this.activeQuotation;
       if (!q) { this.showToast('Select a quotation first'); return; }
       const { jsPDF } = window.jspdf;
@@ -1801,7 +1836,7 @@ function createApp() {
       await this.loadAssetImage('watermark.png');
       await this.loadAssetImage('header.png');
       await this.loadAssetImage('footer.png');
-      const chrome = await this.applyPageChrome(doc, { header:true, footer:true, logo:false, watermark:true }, 1, 'all');
+      const chrome = await this.applyPageChrome(doc, opts || { header:false, footer:false, watermark:true }, 1, 'all');
       const addr = this.quoteContact(q,'address');
       const phone = this.quoteContact(q,'phone');
       const email = this.quoteContact(q,'email');
@@ -1946,9 +1981,8 @@ function createApp() {
     openPdfOptions(type, data) {
       this.pdfOptions = {
         show: true,
-        header: true,
-        footer: true,
-        logo: false,
+        header: false,
+        footer: false,
         watermark: true,
         type: type,
         data: data
@@ -1963,12 +1997,14 @@ function createApp() {
       if (opts.type === 'ledger') {
         this.downloadPartyLedgerPDF(opts.data, opts, mode);
       } else if (opts.type === 'quotation') {
-        this.downloadQuotationPDF(opts.data, mode);
+        this.downloadQuotationPDF(opts.data, mode, opts);
       } else if (opts.type === 'register') {
         if (opts.data) this.report.type = opts.data;
-        this.downloadReportPDF();
+        this.downloadReportPDF(opts, mode);
       } else if (opts.type === 'sale' || opts.type === 'purchase' || opts.type === 'payment') {
         this.downloadSingleEntryPDF(opts.type, opts.data, opts, mode);
+      } else {
+        this.downloadReportPDF(opts, mode);
       }
     },
 
@@ -2002,21 +2038,17 @@ function createApp() {
       }
     },
 
-    drawWatermark(doc, box) {
+    drawWatermark(doc) {
       const pageW = 210;
       const pageH = 297;
       const wm = this._imgCache && this._imgCache['watermark.png'];
       if (!wm) return;
-      const headerH = box && box.headerH != null ? box.headerH : 37.1;
-      const footerH = box && box.footerH != null ? box.footerH : 19.4;
-      const maxW = 132;
-      const maxH = Math.max(80, pageH - headerH - footerH - 16);
       const nat = 1353 / 1447;
-      let wmW = maxW;
+      let wmW = 190;
       let wmH = wmW * nat;
-      if (wmH > maxH) { wmH = maxH; wmW = wmH / nat; }
+      if (wmH > pageH) { wmH = pageH; wmW = wmH / nat; }
       const x = (pageW - wmW) / 2;
-      const y = headerH + ((pageH - headerH - footerH) - wmH) / 2;
+      const y = (pageH - wmH) / 2;
       doc.addImage(wm, 'PNG', x, y, wmW, wmH, undefined, 'FAST');
     },
 
@@ -2063,7 +2095,7 @@ function createApp() {
 
       if ((layerMode === 'all' || layerMode === 'under') && useWatermark) {
         await this.loadAssetImage('watermark.png');
-        this.drawWatermark(doc, { headerH: HEADER_H, footerH: FOOTER_H });
+        this.drawWatermark(doc);
       }
 
       if (layerMode === 'under') {
@@ -2088,13 +2120,7 @@ function createApp() {
         }
       }
 
-      // Extra circular logo removed — header already contains the mark.
-      if (useLogo && !useHeader) {
-        const logoImg = await this.loadAssetImage('logo.png');
-        if (logoImg) {
-          doc.addImage(logoImg, 'PNG', 8, 8, 22, 22, undefined, 'FAST');
-        }
-      }
+      // Logo option removed from PDFs. Header already carries the mark when checked.
 
       let contentTop = STD_MARGIN + 4;
       let contentBottom = pageH - STD_MARGIN;
