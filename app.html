@@ -1084,72 +1084,47 @@
           </button>
         </div>
         <div class="card p-6 mb-5 rounded-2xl" x-show="paymentForm.showForm">
-          <form @submit.prevent="savePayment" class="space-y-4">
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Date *</label>
-                <input type="date" x-model="paymentForm.date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
-                <select x-model="paymentForm.type" @change="onPaymentTypeChange()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                  <option value="Received">Received from party</option>
-                  <option value="Made">Paid to party</option>
-                  <option value="Transfer">Party paid another party</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">TID</label>
-                <input type="text" x-model="paymentForm.tid" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Transaction ID">
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Note</label>
-                <input type="text" x-model="paymentForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Optional short note">
-              </div>
+          <form @submit.prevent="savePayment" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Date *</label>
+              <input type="date" x-model="paymentForm.date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
             </div>
-
-            <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-              <p class="text-sm font-semibold text-slate-800 mb-3">Payment details</p>
-              <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sender Party *</label>
-                  <input list="partyList" x-model="paymentForm.senderParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Who is sending money" required>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sender Bank / Title</label>
-                  <input list="bankList" x-model="paymentForm.senderBank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Sender bank or account title">
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount Sending *</label>
-                  <input type="number" step="any" x-model="paymentForm.amount" @input="paymentForm.amountReceiving = paymentForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="0" required>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Receiver *</label>
-                  <input list="partyList" x-model="paymentForm.receiver" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" :placeholder="paymentForm.type === 'Received' ? 'Our company / bank name' : 'Who receives money'" required>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Receiver Bank / Title</label>
-                  <input list="bankList" x-model="paymentForm.receiverBank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Receiver bank or account title">
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount Receiving</label>
-                  <input type="number" step="any" x-model="paymentForm.amountReceiving" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-100" placeholder="Auto from sending" readonly>
-                </div>
-              </div>
-              <p class="text-[11px] text-slate-500 mt-3">Amount Receiving auto-fills from Amount Sending. Save updates Party Ledger + Master Ledger (Debit / Credit).</p>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type *</label>
+              <select x-model="paymentForm.type" @change="onPaymentTypeChange()" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                <option value="Received">Received from party</option>
+                <option value="Made">Paid to party</option>
+                <option value="Transfer">Party to party transfer</option>
+              </select>
             </div>
-
-            <div class="flex flex-wrap items-center gap-3">
-              <div class="flex-1 min-w-[200px]">
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Photo / slip (optional)</label>
-                <input type="file" accept="image/*,.pdf" @change="onProofFile($event)" class="text-xs">
-                <span class="text-xs text-teal-700 ml-2" x-show="paymentForm.proofName" x-text="paymentForm.proofName"></span>
-                <button type="button" class="text-xs text-rose-600 ml-2" x-show="paymentForm.proofData" @click="clearProof()">Remove</button>
-              </div>
-              <img x-show="paymentForm.proofData" :src="paymentForm.proofData" alt="Proof" class="max-h-16 rounded border border-slate-200">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount *</label>
+              <input type="number" step="any" x-model="paymentForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="0" required>
             </div>
-
-            <div class="pt-1">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sender party *</label>
+              <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Who is sending money" required>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Receiver party *</label>
+              <input list="partyList" x-model="paymentForm.toParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Who receives money" required>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sender bank / details</label>
+              <input list="bankList" x-model="paymentForm.fromBank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Sender bank or account title">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">TID</label>
+              <input type="text" x-model="paymentForm.tid" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Transaction ID">
+            </div>
+            <div class="md:col-span-2 lg:col-span-2">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Note (optional)</label>
+              <input type="text" x-model="paymentForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Short note">
+            </div>
+            <div class="md:col-span-2 lg:col-span-3 pt-1">
+              <p class="text-xs text-slate-500 mb-3">
+                Save par Party Ledger + Master Ledger dono auto update hote hain (Debit / Credit).
+              </p>
               <button type="submit" class="btn-info px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Payment
               </button>
