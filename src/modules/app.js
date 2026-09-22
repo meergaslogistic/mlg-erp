@@ -1167,21 +1167,36 @@ function createApp() {
 
     formatLedgerDesc(e) {
       if (!e) return '';
-      /* Prefer clean short narration — columns already show bowser/qty/rate */
-      if (e.customerNarration) return String(e.customerNarration).replace(/\s+/g, ' ').trim();
-      let base = String(e.narration || '').replace(/\s+/g, ' ').trim();
-      /* Strip duplicated field noise from old entries */
+      let base = String(e.customerNarration || e.narration || '').replace(/\s+/g, ' ').trim();
+      /* Aggressive clean: drop fields that belong in other columns (bowser/qty/rate) + duplicate noise */
       base = base
-        .replace(/\s*•\s*Bowser\s+[A-Z0-9\s\-]+/gi, '')
-        .replace(/\s*•\s*\d+(\.\d+)?\s*MT/gi, '')
-        .replace(/\s*•\s*Rate\s+[\d,\.]+/gi, '')
-        .replace(/\s*•\s*Rate pending/gi, '')
-        .replace(/\s*•\s*From\s+[•\s]*/gi, ' • ')
-        .replace(/\s*•\s*•+/g, ' • ')
-        .replace(/^\s*•\s*|\s*•\s*$/g, '')
+        .replace(/Purchase\s+from\s+supplier/gi, 'Purchase')
+        .replace(/\bBowser\s+[A-Za-z0-9\-]+/gi, '')
+        .replace(/\b\d+(\.\d+)?\s*MT\b/gi, '')
+        .replace(/\bRate\s+pending\b/gi, '')
+        .replace(/\bRate\s+[\d,]+\.?\d*/gi, '')
+        .replace(/\bSource\s+/gi, 'From ')
+        .replace(/\bPlant\s+/gi, '')
+        .replace(/(\s*•\s*)+/g, ' • ')
+        .replace(/(•\s*){2,}/g, '• ')
+        .replace(/\s*•\s*$/g, '')
+        .replace(/^\s*•\s*/g, '')
         .replace(/\s{2,}/g, ' ')
         .trim();
-      return base || (e.sourceType === 'purchase' ? 'Purchase' : e.sourceType === 'sale' ? 'Sale' : 'Entry');
+      /* Remove repeated "From X • From X" / trailing lone dots */
+      base = base.replace(/(From\s+[^•]+)\s*•\s*\1/gi, '$1');
+      base = base.replace(/\s*•\s*•+/g, ' • ').replace(/\s{2,}/g, ' ').trim();
+      if (!base || base === '•') {
+        if (e.sourceType === 'purchase') return 'Purchase';
+        if (e.sourceType === 'sale') return 'Sale';
+        return 'Entry';
+      }
+      return base;
+    },
+
+    ledgerVoucher(e) {
+      if (!e) return '—';
+      return e.voucher || e.tid || e.slip || '—';
     },
 
     applyStockMove(type, qty, remarks, dateStr, sourceId) {
@@ -2226,27 +2241,39 @@ function createApp() {
         doc.text('Generated: ' + new Date().toLocaleString('en-GB'), chrome.pageW - 8, y, { align: 'right' });
 
         const ledgerChrono = [...(party.ledger || [])].reverse();
-        const rows = ledgerChrono.map((e, i) => [
-          String(i + 1),
-          e.date || '',
-          this.formatLedgerDesc(e),
-          e.debit ? this.fmtMoney(e.debit) : '',
-          e.credit ? this.fmtMoney(e.credit) : '',
-          this.fmtMoney(e.balance)
-        ]);
+        const rows = ledgerChrono.map((e, i) => {
+          const desc = this.formatLedgerDesc(e);
+          /* Append bowser/qty only if not already in short desc — keep one clean line */
+          const extra = [];
+          if (e.bowser && !desc.toUpperCase().includes(String(e.bowser).toUpperCase())) extra.push(String(e.bowser));
+          if (e.qty && !desc.includes(String(e.qty))) extra.push(String(e.qty) + ' MT');
+          const fullDesc = extra.length ? (desc + ' • ' + extra.join(' • ')) : desc;
+          return [
+            String(i + 1),
+            e.date || '',
+            this.ledgerVoucher(e),
+            fullDesc,
+            e.debit ? this.fmtMoney(e.debit) : '',
+            e.credit ? this.fmtMoney(e.credit) : '',
+            this.fmtMoney(e.balance)
+          ];
+        });
 
         const bottomMargin = chrome.pageH - chrome.contentBottom;
         const self = this;
-
+        /* A4 usable width ~194mm with 8mm margins */
         doc.autoTable({
           startY: y + 6,
-          head: [['S#', 'Date', 'Description', 'Debit', 'Credit', 'Balance']],
-          body: rows.length ? rows : [['—', '—', 'No entries yet', '', '', '']],
+          head: [['S#', 'Date', 'Voucher', 'Description', 'Debit', 'Credit', 'Balance']],
+          body: rows.length ? rows : [['—', '—', '—', 'No entries yet', '', '', '']],
           theme: 'plain',
           styles: {
-            fontSize: 8,
-            cellPadding: 2.0,
+            font: 'helvetica',
+            fontSize: 7.5,
+            cellPadding: { top: 2, bottom: 2, left: 1.5, right: 1.5 },
             overflow: 'linebreak',
+            cellWidth: 'wrap',
+            valign: 'top',
             textColor: [30, 41, 59],
             lineColor: [200, 210, 220],
             lineWidth: 0.15,
@@ -2254,10 +2281,10 @@ function createApp() {
           },
           didParseCell: function (data) {
             if (data.section === 'body') {
-              if (data.column.index === 3 && data.cell.raw) {
+              if (data.column.index === 4 && data.cell.raw) {
                 data.cell.styles.textColor = [220, 38, 38];
               }
-              if (data.column.index === 4 && data.cell.raw) {
+              if (data.column.index === 5 && data.cell.raw) {
                 data.cell.styles.textColor = [5, 150, 105];
               }
             }
@@ -2266,19 +2293,22 @@ function createApp() {
             fillColor: [15, 23, 42],
             textColor: [255, 255, 255],
             fontStyle: 'bold',
-            fontSize: 8,
-            lineWidth: 0
+            fontSize: 7.5,
+            lineWidth: 0,
+            overflow: 'linebreak',
+            valign: 'middle'
           },
           alternateRowStyles: {
             fillColor: false
           },
           columnStyles: {
-            0: { cellWidth: 10, halign: 'center' },
-            1: { cellWidth: 20 },
-            2: { cellWidth: 84 },
-            3: { cellWidth: 24, halign: 'right' },
-            4: { cellWidth: 24, halign: 'right' },
-            5: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }
+            0: { cellWidth: 8, halign: 'center' },
+            1: { cellWidth: 18, overflow: 'linebreak' },
+            2: { cellWidth: 18, overflow: 'linebreak' },
+            3: { cellWidth: 78, overflow: 'linebreak' },
+            4: { cellWidth: 22, halign: 'right', overflow: 'linebreak' },
+            5: { cellWidth: 22, halign: 'right', overflow: 'linebreak' },
+            6: { cellWidth: 24, halign: 'right', fontStyle: 'bold', overflow: 'linebreak' }
           },
           margin: { left: 8, right: 8, top: chrome.contentTop, bottom: Math.max(bottomMargin, 14) },
           willDrawPage: function (data) {
