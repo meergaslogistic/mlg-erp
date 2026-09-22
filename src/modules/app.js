@@ -714,7 +714,7 @@ function createApp() {
       const q = (this.ledgerFilter && this.ledgerFilter.q || '').toLowerCase();
       const month = this.ledgerFilter && this.ledgerFilter.month;
       if (month) rows = rows.filter(r => String(r.date||'').toLowerCase().includes(month.toLowerCase().slice(0,3)));
-      if (q) rows = rows.filter(r => [r.bank,r.tid,r.sender,r.receiver,r.description].join(' ').toLowerCase().includes(q));
+      if (q) rows = rows.filter(r => [r.bank,r.tid,r.sender,r.senderBank,r.receiver,r.receiverBank,r.description].join(' ').toLowerCase().includes(q));
       return rows;
     },
     masterLedgerTotals() {
@@ -766,45 +766,40 @@ function createApp() {
       const rows = [];
       const isMlg = (name) => {
         const n = String(name || '').trim().toUpperCase();
-        return n === 'MLG' || n === 'MEER GAS' || n.startsWith('MLG');
+        return n === 'MLG' || n === 'MEER GAS' || n === 'MEER LOGISTICS' || n.startsWith('MLG');
       };
       (this.payments || []).forEach(p => {
         const mode = p.mode || ((p.tid && String(p.tid).trim()) ? 'Bank' : 'Cash');
-        const lines = (p.lines && p.lines.length) ? p.lines : [{
-          party: p.toParty || p.party || '', bank: p.bank || '', tid: p.tid || '', amount: p.amount, note: p.remarks || ''
-        }];
-        lines.forEach(l => {
-          const amt = parseFloat(l.amount || p.amount) || 0;
-          const sender = p.fromParty || '';
-          const receiver = p.toParty || l.party || p.party || '';
-          let ourBank;
-          if (mode === 'Cash') {
-            ourBank = 'Cash';
-          } else {
-            ourBank = p.fromBank || l.bank || p.bank || 'Bank';
-          }
-          if (bank !== 'ALL' && ourBank !== bank && !(bank === 'Cash' && mode === 'Cash')) return;
+        const amt = parseFloat(p.amount) || 0;
+        const sender = p.fromParty || '';
+        const receiver = p.toParty || p.party || '';
+        const senderBank = p.fromBank || '';
+        const receiverBank = (p.bank && p.bank !== 'Cash' && p.bank !== 'Bank') ? p.bank : '';
+        const tid = p.tid || p.slip || '';
 
-          /* amountIn when MLG receives, amountOut when MLG sends; pure party-party still listed as memo */
-          let amountIn = 0, amountOut = 0;
-          if (isMlg(receiver) && !isMlg(sender)) amountIn = amt;
-          else if (isMlg(sender) && !isMlg(receiver)) amountOut = amt;
-          else if (isMlg(sender) && isMlg(receiver)) {
-            /* internal MLG move — neutral */
-          } else {
-            /* external party to party: show under bank book without affecting MLG balance */
-          }
-          const desc = mode + ' Payment';
-          rows.push({
-            date: p.date,
-            description: desc,
-            bank: ourBank,
-            tid: l.tid || p.tid || p.slip || '',
-            sender: sender || '—',
-            receiver: receiver || '—',
-            amountIn,
-            amountOut
-          });
+        /* bank filter: match sender or receiver bank title, or Cash */
+        let ourBank = mode === 'Cash' ? 'Cash' : (senderBank || receiverBank || p.bank || 'Bank');
+        if (bank !== 'ALL' && ourBank !== bank && !(bank === 'Cash' && mode === 'Cash')) {
+          /* also allow match if filter equals either bank string */
+          if (senderBank !== bank && receiverBank !== bank && String(p.bank||'') !== bank) return;
+        }
+
+        /* MLG balance: + when MLG receives, - when MLG sends */
+        let amountIn = 0, amountOut = 0;
+        if (isMlg(receiver) && !isMlg(sender)) amountIn = amt;
+        else if (isMlg(sender) && !isMlg(receiver)) amountOut = amt;
+
+        rows.push({
+          date: p.date,
+          description: (mode || 'Cash') + ' Payment',
+          bank: ourBank,
+          tid: tid || '',
+          sender: sender || '—',
+          senderBank: senderBank || (mode === 'Cash' ? 'Cash' : ''),
+          receiver: receiver || '—',
+          receiverBank: receiverBank || (mode === 'Cash' && isMlg(receiver) ? 'Cash' : ''),
+          amountIn,
+          amountOut
         });
       });
       let bal = 0;
@@ -1651,7 +1646,7 @@ function createApp() {
       }
       if (mode === 'Bank') {
         if (!fromBank) {
-          this.showToast('Sender bank / title is required for bank payment');
+          this.showToast('Sender bank account with title is required for bank payment');
           return;
         }
         if (!tid) {
