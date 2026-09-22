@@ -528,7 +528,7 @@
           <div class="card-vip accent-rose p-5 pl-6"><p class="vip-label">Movements</p><p class="vip-value mt-1" x-text="(currentInv?.movements||[]).length"></p></div>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div><h2 class="text-base font-bold">Inventory</h2><p class="text-xs text-slate-500">IN from purchase-to-stock. OUT from sale-from-stock.</p></div>
+          <div><button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','inventory')"><i class="fas fa-file-pdf"></i> Download PDF</button><h2 class="text-base font-bold">Inventory</h2><p class="text-xs text-slate-500">IN from purchase-to-stock. OUT from sale-from-stock.</p></div>
           <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="stockForm.showForm = !stockForm.showForm">Adjustment Entry</button>
         </div>
 
@@ -672,6 +672,7 @@
 
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
+            <button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','purchases')"><i class="fas fa-file-pdf"></i> Download PDF</button>
             <h2 class="text-base font-bold">LPG Purchase / Loading</h2>
             <p class="text-xs text-slate-500">Trip ya month-end adjustment. Rate loading line par.</p>
           </div>
@@ -941,6 +942,7 @@
 
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
+            <button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','sales')"><i class="fas fa-file-pdf"></i> Download PDF</button>
             <h2 class="text-base font-bold">LPG Sale</h2>
             <p class="text-xs text-slate-500">Stock sale inventory kat-ti hai. Direct / linked sale sirf buyer bill banati hai.</p>
           </div>
@@ -1135,6 +1137,7 @@
         </div>
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
+            <button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','payments')"><i class="fas fa-file-pdf"></i> Download PDF</button>
             <h2 class="text-base font-bold">Payments</h2>
             <p class="text-xs text-slate-500">Received / Paid / Transfer. Save par party ledger + master ledger dono update hote hain.</p>
           </div>
@@ -1356,6 +1359,7 @@
         </div>
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
+            <button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','ledger')"><i class="fas fa-file-pdf"></i> Download PDF</button>
             <h2 class="text-base font-bold">Master Ledger — Meer Gas</h2>
             <p class="text-xs text-slate-500">Payments se auto. Month-wise ya bank-wise dekho. Extra entry yahan nahi.</p>
           </div>
@@ -1414,6 +1418,7 @@
         </div>
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
+            <button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','diesel')"><i class="fas fa-file-pdf"></i> Download PDF</button>
             <h2 class="text-base font-bold">Diesel & Cash</h2>
             <p class="text-xs text-slate-500">Trip kharch: diesel drums/ltr + driver cash + boarder (Mand / BP 250 / Gwadar / Turbat).</p>
           </div>
@@ -1483,6 +1488,7 @@
         </div>
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
+            <button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','quotations')"><i class="fas fa-file-pdf"></i> Download PDF</button>
             <h2 class="text-base font-bold">Quotations</h2>
             <p class="text-xs text-slate-500">Subject, reference, rates. Generate letter with header / footer / watermark.</p>
           </div>
@@ -1560,11 +1566,11 @@
           <div class="lg:col-span-2">
             <div class="flex justify-end gap-2 mb-2" x-show="activeQuotation">
               <button type="button" class="px-3 py-1.5 text-xs border rounded-lg" @click="downloadQuotationPDF(activeQuotation,'print')">Print</button>
-              <button type="button" class="btn-primary px-3 py-1.5 text-xs" @click="downloadQuotationPDF(activeQuotation,'download')">Download PDF</button>
+              <button type="button" class="btn-primary px-3 py-1.5 text-xs" @click="openPdfOptions('quotation', activeQuotation)">Download PDF</button>
             </div>
             <div class="a4-sheet relative overflow-hidden rounded-sm shadow-xl ring-1 ring-slate-300 bg-white mx-auto">
               <img src="./assets/letterhead-a4.png" alt="" class="absolute inset-0 w-full h-full object-cover pointer-events-none select-none">
-              <div class="relative a4-inner text-[10px] leading-snug text-slate-800" x-show="activeQuotation">
+              <div class="relative a4-inner text-[11px] leading-relaxed text-slate-800" x-show="activeQuotation">
                 <div class="a4-headerband flex justify-end">
                   <div class="text-right text-[8px] text-[#0f285a] space-y-0.5 max-w-[46%]">
                     <p x-show="quoteContact(activeQuotation,'address')" class="flex items-start justify-end gap-1"><i class="fas fa-location-dot mt-0.5"></i><span x-text="quoteContact(activeQuotation,'address')"></span></p>
@@ -1574,7 +1580,7 @@
                   </div>
                 </div>
                 <div class="a4-body">
-                  <p class="text-center font-extrabold tracking-wide text-[12px] text-[#0f285a]">QUOTATION</p>
+                  <p class="text-center font-extrabold tracking-wide text-[13px] text-[#0f285a]">QUOTATION</p>
                   <div class="flex justify-between mt-2 font-semibold">
                     <span x-text="activeQuotation?.quotationNo"></span>
                     <span x-text="sheetDate(activeQuotation?.date)"></span>
@@ -1583,7 +1589,7 @@
                   <p x-show="activeQuotation?.referenceNo"><b>Ref:</b> <span x-text="activeQuotation?.referenceNo"></span></p>
                   <p class="mt-1"><b>Subject:</b> <span x-text="activeQuotation?.subject"></span></p>
                   <p class="mt-2" x-text="activeQuotation?.body || 'We are pleased to submit our quotation for supply of LPG as under.'"></p>
-                  <table class="w-full mt-2 border text-[9px] bg-white/80">
+                  <table class="w-full mt-2 border text-[10px] bg-transparent">
                     <tr class="bg-[#eef4ff] text-[#0f285a]"><th class="p-1 text-left">Product</th><th class="p-1">Qty</th><th class="p-1">Rate</th><th class="p-1">Amount</th></tr>
                     <tr>
                       <td class="p-1" x-text="activeQuotation?.product"></td>
@@ -1616,7 +1622,8 @@
           <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">Outstanding</p><p class="vip-value mt-1" x-text="fmtMoney(parties.reduce((s,p)=>s+(Number(p.balance)||0),0))"></p></div>
         </div>
         <div class="mb-4">
-          <h2 class="text-base font-bold">Management Reports</h2>
+          <button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register', report.type || 'summary')"><i class="fas fa-file-pdf"></i> Download PDF</button>
+            <h2 class="text-base font-bold">Management Reports</h2>
           <p class="text-xs text-slate-500">Ek click preset. Phir deep filter laga sakte ho.</p>
         </div>
         <div class="flex flex-wrap gap-2 mb-4">
@@ -1731,7 +1738,7 @@
           <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">Origins</p><p class="vip-value mt-1" x-text="(master.source||[]).length"></p></div>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div><h2 class="text-base font-bold">Master Data</h2><p class="text-xs text-slate-500">Dropdowns yahi se bharti hain.</p></div>
+          <div><button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','summary')"><i class="fas fa-file-pdf"></i> Download PDF</button><h2 class="text-base font-bold">Master Data</h2><p class="text-xs text-slate-500">Dropdowns yahi se bharti hain.</p></div>
         </div>
         <div class="card p-4 mb-4 rounded-2xl">
           <input class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search master lists..." x-model="masterQuery">
