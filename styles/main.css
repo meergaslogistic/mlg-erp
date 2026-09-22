@@ -211,7 +211,7 @@ html, body {
   flex-wrap: wrap;
   gap: 12px;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 .dash-hero::after {
   content: "";
@@ -246,7 +246,7 @@ html, body {
   color: #f6e2a8;
   white-space: nowrap;
 }
-.hero-clock { font-size: 11px; color: #c3d0ea; text-align: left; }
+.hero-clock { font-size: 11px; color: #c3d0ea; text-align: right; min-width: 118px; position: relative; z-index: 2; }
 .hero-clock b { display: block; font-size: 17px; color: #fff; font-weight: 700; letter-spacing: .6px; margin-top: 2px; }
 
 @keyframes waveHand {
