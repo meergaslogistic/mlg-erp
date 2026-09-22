@@ -848,23 +848,60 @@
               </thead>
               <tbody class="divide-y divide-slate-100">
                 <template x-for="(r, idx) in filteredPurchaseRows()" :key="r.id">
-                  <tr class="hover:bg-slate-50">
+                  <tr class="hover:bg-slate-50" :class="isInlineEditing('purchase', r.id) ? 'bg-amber-50 ring-1 ring-amber-200' : ''">
                     <td class="px-3 py-2.5" x-text="idx + 1"></td>
-                    <td class="px-3 py-2.5 whitespace-nowrap" x-text="sheetDate(r.date || r.loadDate)"></td>
-                    <td class="px-3 py-2.5" x-text="r.brand || r.source || '—'"></td>
-                    <td class="px-3 py-2.5 font-medium" x-text="r.bowser"></td>
-                    <td class="px-3 py-2.5" x-text="r.source || r.plant || '—'"></td>
-                    <td class="px-3 py-2.5 font-medium text-teal-800" x-text="purchaseLoadedPartyLabel(r) || r.party || '—'"></td>
-                    <td class="px-3 py-2.5" x-text="r.city || '—'"></td>
+                    <td class="px-1 py-1.5 whitespace-nowrap">
+                      <span x-show="!isInlineEditing('purchase', r.id)" x-text="sheetDate(r.date || r.loadDate)"></span>
+                      <input x-show="isInlineEditing('purchase', r.id)" type="date" class="w-full min-w-[7rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.date">
+                    </td>
+                    <td class="px-1 py-1.5">
+                      <span x-show="!isInlineEditing('purchase', r.id)" x-text="r.brand || '—'"></span>
+                      <input x-show="isInlineEditing('purchase', r.id)" list="sourceList" class="w-full min-w-[6rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.brand" placeholder="Brand">
+                    </td>
+                    <td class="px-1 py-1.5">
+                      <span x-show="!isInlineEditing('purchase', r.id)" class="font-medium" x-text="r.bowser"></span>
+                      <input x-show="isInlineEditing('purchase', r.id)" list="bowserList" class="w-full min-w-[5rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white font-medium" x-model="inlineEdit.draft.bowser">
+                    </td>
+                    <td class="px-1 py-1.5">
+                      <span x-show="!isInlineEditing('purchase', r.id)" x-text="r.source || r.plant || '—'"></span>
+                      <input x-show="isInlineEditing('purchase', r.id)" list="sourceList" class="w-full min-w-[5rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.source" placeholder="Loaded From">
+                    </td>
+                    <td class="px-1 py-1.5">
+                      <span x-show="!isInlineEditing('purchase', r.id)" class="font-medium text-teal-800" x-text="purchaseLoadedPartyLabel(r) || r.party || '—'"></span>
+                      <input x-show="isInlineEditing('purchase', r.id)" list="partyList" class="w-full min-w-[6rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white font-medium text-teal-800" x-model="inlineEdit.draft.loadedParty" placeholder="Loaded Party">
+                    </td>
+                    <td class="px-1 py-1.5">
+                      <span x-show="!isInlineEditing('purchase', r.id)" x-text="r.city || '—'"></span>
+                      <input x-show="isInlineEditing('purchase', r.id)" list="cityList" class="w-full min-w-[4rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.city">
+                    </td>
                     <td class="px-3 py-2.5">Ton</td>
-                    <td class="px-3 py-2.5" x-text="r.loadQty || r.qty || ''"></td>
-                    <td class="px-3 py-2.5" x-text="r.rate || ''"></td>
-                    <td class="px-3 py-2.5 font-semibold" x-text="r.amount || ''"></td>
+                    <td class="px-1 py-1.5">
+                      <span x-show="!isInlineEditing('purchase', r.id)" x-text="r.loadQty || r.qty || ''"></span>
+                      <input x-show="isInlineEditing('purchase', r.id)" type="number" step="0.001" class="w-full min-w-[4rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.qty" @input="onInlineRateOrQty()">
+                    </td>
+                    <td class="px-1 py-1.5">
+                      <span x-show="!isInlineEditing('purchase', r.id)" x-text="r.rate || ''"></span>
+                      <input x-show="isInlineEditing('purchase', r.id)" type="number" step="0.01" class="w-full min-w-[4.5rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.rate" @input="onInlineRateOrQty()" placeholder="0=clear">
+                    </td>
+                    <td class="px-1 py-1.5 font-semibold">
+                      <span x-show="!isInlineEditing('purchase', r.id)" x-text="r.amount || ''"></span>
+                      <span x-show="isInlineEditing('purchase', r.id)" class="text-xs" x-text="inlineDraftAmount(inlineEdit.draft) || '—'"></span>
+                    </td>
                     <td class="px-3 py-2.5 text-xs" x-text="(r.dealType === 'stock' || r.addToStock) ? 'IN' : '—'"></td>
-                    <td class="px-3 py-2.5 text-right whitespace-nowrap">
-                      <button type="button" @click.stop="editPurchase(r)" class="text-slate-600 text-xs mr-2">Edit</button>
-                      <button type="button" @click.stop="deletePurchase(r)" class="text-rose-600 text-xs mr-2">Delete</button>
-                      <button type="button" @click.stop="openPdfOptions('purchase', r)" class="text-rose-600 text-xs" title="Download PDF"><i class="fas fa-file-pdf"></i></button>
+                    <td class="px-1 py-1.5 text-right whitespace-nowrap">
+                      <template x-if="!isInlineEditing('purchase', r.id)">
+                        <span>
+                          <button type="button" @click.stop="editPurchase(r)" class="text-slate-600 text-xs mr-2">Edit</button>
+                          <button type="button" @click.stop="deletePurchase(r)" class="text-rose-600 text-xs mr-2">Delete</button>
+                          <button type="button" @click.stop="openPdfOptions('purchase', r)" class="text-rose-600 text-xs" title="Download PDF"><i class="fas fa-file-pdf"></i></button>
+                        </span>
+                      </template>
+                      <template x-if="isInlineEditing('purchase', r.id)">
+                        <span>
+                          <button type="button" @click.stop="saveInlinePurchase()" class="text-emerald-700 text-xs font-bold mr-1">Save</button>
+                          <button type="button" @click.stop="cancelInlineEdit()" class="text-slate-500 text-xs">Cancel</button>
+                        </span>
+                      </template>
                     </td>
                   </tr>
                 </template>
@@ -1044,23 +1081,57 @@
               </thead>
               <tbody>
                 <template x-for="(s, idx) in filteredSaleRows()" :key="s.id">
-                  <tr>
+                  <tr :class="isInlineEditing('sale', s.id) ? 'bg-amber-50 ring-1 ring-amber-200' : ''">
                     <td x-text="idx+1"></td>
-                    <td x-text="sheetDate(s.date)"></td>
-                    <td class="font-medium" x-text="s.bowser"></td>
-                    <td x-text="s.party"></td>
-                    <td x-text="s.city || '—'"></td>
-                    <td x-text="s.plant || '—'"></td>
+                    <td class="px-1 py-1">
+                      <span x-show="!isInlineEditing('sale', s.id)" x-text="sheetDate(s.date)"></span>
+                      <input x-show="isInlineEditing('sale', s.id)" type="date" class="w-full min-w-[7rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.date">
+                    </td>
+                    <td class="px-1 py-1">
+                      <span x-show="!isInlineEditing('sale', s.id)" class="font-medium" x-text="s.bowser"></span>
+                      <input x-show="isInlineEditing('sale', s.id)" list="bowserList" class="w-full min-w-[5rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white font-medium" x-model="inlineEdit.draft.bowser">
+                    </td>
+                    <td class="px-1 py-1">
+                      <span x-show="!isInlineEditing('sale', s.id)" x-text="s.party"></span>
+                      <input x-show="isInlineEditing('sale', s.id)" list="partyList" class="w-full min-w-[6rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.party">
+                    </td>
+                    <td class="px-1 py-1">
+                      <span x-show="!isInlineEditing('sale', s.id)" x-text="s.city || '—'"></span>
+                      <input x-show="isInlineEditing('sale', s.id)" list="cityList" class="w-full min-w-[4rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.city">
+                    </td>
+                    <td class="px-1 py-1">
+                      <span x-show="!isInlineEditing('sale', s.id)" x-text="s.plant || '—'"></span>
+                      <input x-show="isInlineEditing('sale', s.id)" list="plantList" class="w-full min-w-[5rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.plant">
+                    </td>
                     <td>Ton</td>
-                    <td x-text="s.qty"></td>
+                    <td class="px-1 py-1">
+                      <span x-show="!isInlineEditing('sale', s.id)" x-text="s.qty"></span>
+                      <input x-show="isInlineEditing('sale', s.id)" type="number" step="0.001" class="w-full min-w-[4rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.qty" @input="onInlineRateOrQty()">
+                    </td>
                     <td x-text="s.baseRate || ''"></td>
-                    <td x-text="s.rate || ''"></td>
-                    <td class="font-semibold" x-text="s.amount || ''"></td>
-                    <td :class="saleProfit(s)>=0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'" x-text="saleProfitLabel(s)"></td>
-                    <td class="text-right whitespace-nowrap">
-                      <button type="button" class="text-slate-600 text-xs mr-2" @click="editSale(s)">Edit</button>
-                      <button type="button" class="text-rose-600 text-xs mr-2" @click="deleteSale(s)">Delete</button>
-                      <button type="button" class="text-rose-600 text-xs" @click="openPdfOptions('sale', s)"><i class="fas fa-file-pdf"></i></button>
+                    <td class="px-1 py-1">
+                      <span x-show="!isInlineEditing('sale', s.id)" x-text="s.rate || ''"></span>
+                      <input x-show="isInlineEditing('sale', s.id)" type="number" step="0.01" class="w-full min-w-[4.5rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.rate" @input="onInlineRateOrQty()" placeholder="0=clear">
+                    </td>
+                    <td class="font-semibold px-1 py-1">
+                      <span x-show="!isInlineEditing('sale', s.id)" x-text="s.amount || ''"></span>
+                      <span x-show="isInlineEditing('sale', s.id)" class="text-xs" x-text="inlineDraftAmount(inlineEdit.draft) || '—'"></span>
+                    </td>
+                    <td :class="saleProfit(s)>=0 ? 'text-emerald-700 font-semibold' : 'text-rose-600 font-semibold'" x-text="isInlineEditing('sale', s.id) ? '' : saleProfitLabel(s)"></td>
+                    <td class="text-right whitespace-nowrap px-1">
+                      <template x-if="!isInlineEditing('sale', s.id)">
+                        <span>
+                          <button type="button" class="text-slate-600 text-xs mr-2" @click="editSale(s)">Edit</button>
+                          <button type="button" class="text-rose-600 text-xs mr-2" @click="deleteSale(s)">Delete</button>
+                          <button type="button" class="text-rose-600 text-xs" @click="openPdfOptions('sale', s)"><i class="fas fa-file-pdf"></i></button>
+                        </span>
+                      </template>
+                      <template x-if="isInlineEditing('sale', s.id)">
+                        <span>
+                          <button type="button" @click.stop="saveInlineSale()" class="text-emerald-700 text-xs font-bold mr-1">Save</button>
+                          <button type="button" @click.stop="cancelInlineEdit()" class="text-slate-500 text-xs">Cancel</button>
+                        </span>
+                      </template>
                     </td>
                   </tr>
                 </template>
