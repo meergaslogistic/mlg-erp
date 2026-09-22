@@ -75,7 +75,7 @@ function createApp() {
     ledgerBank: 'ALL',
     purchaseFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'', status:'' },
     saleFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'', dealType:'' },
-    paymentFilter: { q:'', type:'', party:'', bank:'' },
+    paymentFilter: { q:'', type:'', mode:'', party:'', bank:'' },
     dieselFilter: { q:'', type:'', bowser:'', location:'' },
     partyFilter: { q:'', city:'', outstanding:'' },
     invFilter: { q:'' },
@@ -131,7 +131,7 @@ function createApp() {
     paymentForm: {
       showForm: false,
       showBowser: false, showTid: false, showSlip: false, showBank: false, showNote: false,
-      date: '', type: 'Received', party: '', fromParty: '', toParty: 'MLG',
+      date: '', mode: 'Cash', type: 'Received', party: '', fromParty: '', toParty: 'MLG',
       slip: '', tid: '', bank: '', fromBank: '', amount: '', receiveAmount: '', remarks: '', proofName: '', proofData: '',
       lines: [{ party: '', bank: '', tid: '', slip: '', amount: '', note: '' }]
     },
@@ -524,9 +524,11 @@ function createApp() {
       const f = this.paymentFilter || {};
       const q = (f.q || '').toLowerCase();
       return (this.payments || []).filter(p => {
-        const blob = [p.date, p.type, p.party, p.fromParty, p.toParty, p.bank, p.tid, p.slip, p.amount, p.remarks].join(' ').toLowerCase();
+        const mode = p.mode || ((p.tid && String(p.tid).trim()) ? 'Bank' : 'Cash');
+        const blob = [p.date, p.type, mode, p.party, p.fromParty, p.toParty, p.bank, p.tid, p.slip, p.amount, p.remarks].join(' ').toLowerCase();
         if (q && !blob.includes(q)) return false;
         if (f.type && p.type !== f.type) return false;
+        if (f.mode && mode !== f.mode) return false;
         if (f.party && !blob.includes(f.party.toLowerCase())) return false;
         if (f.bank && String(p.bank||'') !== f.bank && !(p.lines||[]).some(l => l.bank === f.bank)) return false;
         return true;
@@ -764,23 +766,30 @@ function createApp() {
       const rows = [];
       (this.payments || []).forEach(p => {
         const kind = this.paymentKind(p.type);
+        const mode = p.mode || ((p.tid && String(p.tid).trim()) ? 'Bank' : 'Cash');
         const lines = (p.lines && p.lines.length) ? p.lines : [{
           party: p.toParty || p.party || '', bank: p.bank || '', tid: p.tid || '', amount: p.amount, note: p.remarks || ''
         }];
         lines.forEach(l => {
-          const ourBank = kind === 'Made'
-            ? (p.fromBank || l.bank || p.bank || 'Cash / Bank')
-            : (l.bank || p.bank || 'Cash / Bank');
+          let ourBank;
+          if (mode === 'Cash') {
+            ourBank = 'Cash';
+          } else if (kind === 'Made') {
+            ourBank = p.fromBank || l.bank || p.bank || 'Bank';
+          } else {
+            ourBank = l.bank || p.bank || p.fromBank || 'Bank';
+          }
           if (kind === 'Transfer') return;
-          if (bank !== 'ALL' && ourBank !== bank) return;
+          if (bank !== 'ALL' && ourBank !== bank && !(bank === 'Cash' && mode === 'Cash')) return;
           const amt = parseFloat(l.amount || p.amount) || 0;
           const sender = p.fromParty || (kind === 'Received' ? (p.party || l.party || '') : 'MLG');
           const receiver = p.toParty || (kind === 'Made' ? (l.party || p.party || '') : 'MLG');
+          const desc = mode + ' ' + (kind === 'Made' ? 'Paid' : 'Received');
           rows.push({
             date: p.date,
-            description: kind === 'Made' ? 'Paid' : 'Received',
+            description: desc,
             bank: ourBank,
-            tid: l.tid || p.tid || '',
+            tid: l.tid || p.tid || p.slip || '',
             sender,
             receiver,
             amountIn: kind === 'Received' ? amt : 0,
@@ -1102,16 +1111,18 @@ function createApp() {
       const first = (row.lines && row.lines[0]) || {};
       const kind = this.paymentKind(row.type);
       const amt = first.amount || row.amount || '';
+      const mode = (row.mode === 'Bank' || (row.tid && String(row.tid).trim())) ? 'Bank' : (row.mode || 'Cash');
       this.paymentForm = {
         showForm: true,
         date: row.date || today(),
+        mode,
         type: kind,
         party: row.fromParty || row.party || '',
         fromParty: row.fromParty || (kind === 'Received' ? (row.party || '') : (kind === 'Made' ? 'MLG' : '')),
         toParty: row.toParty || first.party || (kind === 'Received' ? 'MLG' : (row.party || '')),
         slip: first.slip || row.slip || '',
         tid: first.tid || row.tid || '',
-        bank: first.bank || row.bank || '',
+        bank: (first.bank && first.bank !== 'Cash') ? (first.bank || row.bank || '') : (row.bank && row.bank !== 'Cash' ? row.bank : ''),
         fromBank: row.fromBank || '',
         amount: amt,
         receiveAmount: amt,
@@ -1508,10 +1519,12 @@ function createApp() {
 
     resetPaymentForm(type) {
       const lastFromBank = (this.paymentForm && this.paymentForm.fromBank) || '';
+      const lastMode = (this.paymentForm && this.paymentForm.mode) || 'Cash';
       const keepType = this.paymentKind(type || (this.paymentForm && this.paymentForm.type) || 'Received');
       this.paymentForm = {
         showForm: true,
         date: today(),
+        mode: lastMode,
         type: keepType,
         party: '',
         fromParty: keepType === 'Made' ? 'MLG' : '',
@@ -1613,24 +1626,20 @@ function createApp() {
         this.showToast('Date is required');
         return;
       }
-      const amount = parseFloat(f.amount || f.receiveAmount || f.amountReceiving) || 0;
+      const amount = parseFloat(f.amount || f.receiveAmount) || 0;
       if (!(amount > 0)) {
         this.showToast('Amount is required');
         return;
       }
 
+      const mode = (f.mode === 'Bank') ? 'Bank' : 'Cash';
       const type = this.paymentKind(f.type || 'Received');
-      /* Support both old and new field names so form always works */
-      const fromParty = String(
-        f.fromParty || f.senderParty || f.party || (type === 'Made' ? 'MLG' : '')
-      ).trim();
-      const toParty = String(
-        f.toParty || f.receiver || (type === 'Received' ? 'MLG' : '')
-      ).trim();
-      const fromBank = String(f.fromBank || f.senderBank || '').trim();
-      const toBank = String(f.bank || f.receiverBank || fromBank || '').trim();
-      const tid = String(f.tid || f.slip || '').trim();
-      const slip = String(f.slip || f.tid || '').trim();
+      const fromParty = String(f.fromParty || f.party || (type === 'Made' ? 'MLG' : '')).trim();
+      const toParty = String(f.toParty || (type === 'Received' ? 'MLG' : '')).trim();
+      const fromBank = mode === 'Bank' ? String(f.fromBank || '').trim() : '';
+      const toBank = mode === 'Bank' ? String(f.bank || '').trim() : '';
+      const tid = mode === 'Bank' ? String(f.tid || '').trim() : '';
+      const slip = String(f.slip || '').trim();
 
       if (!fromParty) {
         this.showToast('Sender party is required');
@@ -1639,6 +1648,16 @@ function createApp() {
       if (!toParty) {
         this.showToast('Receiver party is required');
         return;
+      }
+      if (mode === 'Bank') {
+        if (!fromBank) {
+          this.showToast('Sender bank / title is required for bank payment');
+          return;
+        }
+        if (!tid) {
+          this.showToast('TID is required for bank payment');
+          return;
+        }
       }
 
       const dup = this.findDuplicatePaymentTid(tid, f.editingId);
@@ -1654,10 +1673,10 @@ function createApp() {
 
       const note = String(f.remarks || '').trim();
       const payId = f.editingId || ('pay-' + Date.now());
-      const partyNameForLine = type === 'Received' ? fromParty : toParty;
+      const bankLabel = mode === 'Cash' ? 'Cash' : (toBank || fromBank || 'Bank');
       const filled = [{
-        party: partyNameForLine,
-        bank: toBank || fromBank,
+        party: type === 'Received' ? fromParty : toParty,
+        bank: bankLabel,
         tid, slip,
         amount,
         note
@@ -1666,13 +1685,14 @@ function createApp() {
       this.payments.unshift({
         id: payId,
         date: f.date,
+        mode,
         type,
         party: type === 'Transfer' ? (fromParty + ' → ' + toParty) : (type === 'Received' ? fromParty : toParty),
         fromParty,
         toParty,
         slip,
         tid,
-        bank: toBank || fromBank,
+        bank: bankLabel,
         fromBank,
         amount,
         remarks: note,
@@ -1681,10 +1701,11 @@ function createApp() {
         lines: filled
       });
 
-      const word = this.rebuildLedgerNarration(type);
+      /* Narration: Cash Received / Bank Paid / etc. */
+      const word = mode + ' ' + (type === 'Made' ? 'Paid' : (type === 'Transfer' ? 'Transfer' : 'Received'));
       const extraBase = {
         date: f.date,
-        tid,
+        tid: tid || slip || '',
         voucher: tid || slip || '',
         fromParty,
         toParty,
@@ -1693,21 +1714,29 @@ function createApp() {
         customerNarration: word
       };
 
+      /* Master ledger account name */
+      const masterAccount = mode === 'Cash'
+        ? 'MLG • Cash'
+        : this.companyLedgerName(toBank || fromBank);
+
       if (type === 'Received') {
-        /* Party paid us: party CREDIT, our bank / MLG DEBIT */
+        /* Party paid us → party CREDIT, cash/bank DEBIT */
         this.postToLedger(fromParty, word, 0, amount, extraBase);
-        this.postToLedger(this.companyLedgerName(toBank || fromBank), word, amount, 0, { ...extraBase, isBank: true });
+        this.postToLedger(masterAccount, word, amount, 0, { ...extraBase, isBank: true });
       } else if (type === 'Made') {
-        /* We paid party: party DEBIT, our bank CREDIT */
+        /* We paid party → party DEBIT, cash/bank CREDIT */
         this.postToLedger(toParty, word, amount, 0, extraBase);
-        this.postToLedger(this.companyLedgerName(fromBank || toBank), word, 0, amount, { ...extraBase, isBank: true });
+        this.postToLedger(masterAccount, word, 0, amount, { ...extraBase, isBank: true });
       } else {
-        /* Party-to-party: sender CREDIT, receiver DEBIT */
+        /* Party-to-party transfer */
         this.postToLedger(fromParty, word, 0, amount, extraBase);
         this.postToLedger(toParty, word, amount, 0, extraBase);
+        if (mode === 'Bank' && (fromBank || toBank)) {
+          this.postToLedger(this.companyLedgerName(fromBank || toBank), word, 0, 0, { ...extraBase, isBank: true });
+        }
       }
 
-      this.showToast('Saved ' + fmtMoney(amount) + ' • ' + word + ' posted to ledgers');
+      this.showToast('Saved ' + fmtMoney(amount) + ' • ' + word + ' → ledgers updated');
       this.resetPaymentForm(type);
       this.saveToStorage();
     },
