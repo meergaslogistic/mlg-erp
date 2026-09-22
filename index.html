@@ -884,7 +884,8 @@
                   <th class="px-3 py-3 font-bold">LPG/GAS Quality</th>
                   <th class="px-3 py-3 font-bold">Unloading Date</th>
                   <th class="px-3 py-3 font-bold">Bowser No</th>
-                  <th class="px-3 py-3 font-bold">Party</th>
+                  <th class="px-3 py-3 font-bold">Loaded Party</th>
+                  <th class="px-3 py-3 font-bold">Unload Party</th>
                   <th class="px-3 py-3 font-bold">City</th>
                   <th class="px-3 py-3 font-bold">Filling Plant</th>
                   <th class="px-3 py-3 font-bold">Unit</th>
@@ -904,7 +905,8 @@
                     <td class="px-3 py-2.5" x-text="r.brand || r.source || '—'"></td>
                     <td class="px-3 py-2.5 whitespace-nowrap" x-text="sheetDate(r.unloadDate) || '—'"></td>
                     <td class="px-3 py-2.5 font-medium" x-text="r.bowser"></td>
-                    <td class="px-3 py-2.5" x-text="r.party"></td>
+                    <td class="px-3 py-2.5 font-medium text-teal-800" x-text="purchaseLoadedPartyLabel(r) || '—'"></td>
+                    <td class="px-3 py-2.5" x-text="r.party || '—'"></td>
                     <td class="px-3 py-2.5" x-text="r.city || '—'"></td>
                     <td class="px-3 py-2.5" x-text="r.plant || r.source || '—'"></td>
                     <td class="px-3 py-2.5">Ton</td>
