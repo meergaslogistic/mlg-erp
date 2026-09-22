@@ -131,7 +131,7 @@ function createApp() {
     paymentForm: {
       showForm: false,
       showBowser: false, showTid: false, showSlip: false, showBank: false, showNote: false,
-      date: '', mode: 'Cash', type: 'Received', party: '', fromParty: '', toParty: 'MLG',
+      date: '', mode: 'Cash', type: 'Transfer', party: '', fromParty: '', toParty: '',
       slip: '', tid: '', bank: '', fromBank: '', amount: '', receiveAmount: '', remarks: '', proofName: '', proofData: '',
       lines: [{ party: '', bank: '', tid: '', slip: '', amount: '', note: '' }]
     },
@@ -764,36 +764,46 @@ function createApp() {
     masterLedgerRows() {
       const bank = this.ledgerBank;
       const rows = [];
+      const isMlg = (name) => {
+        const n = String(name || '').trim().toUpperCase();
+        return n === 'MLG' || n === 'MEER GAS' || n.startsWith('MLG');
+      };
       (this.payments || []).forEach(p => {
-        const kind = this.paymentKind(p.type);
         const mode = p.mode || ((p.tid && String(p.tid).trim()) ? 'Bank' : 'Cash');
         const lines = (p.lines && p.lines.length) ? p.lines : [{
           party: p.toParty || p.party || '', bank: p.bank || '', tid: p.tid || '', amount: p.amount, note: p.remarks || ''
         }];
         lines.forEach(l => {
+          const amt = parseFloat(l.amount || p.amount) || 0;
+          const sender = p.fromParty || '';
+          const receiver = p.toParty || l.party || p.party || '';
           let ourBank;
           if (mode === 'Cash') {
             ourBank = 'Cash';
-          } else if (kind === 'Made') {
-            ourBank = p.fromBank || l.bank || p.bank || 'Bank';
           } else {
-            ourBank = l.bank || p.bank || p.fromBank || 'Bank';
+            ourBank = p.fromBank || l.bank || p.bank || 'Bank';
           }
-          if (kind === 'Transfer') return;
           if (bank !== 'ALL' && ourBank !== bank && !(bank === 'Cash' && mode === 'Cash')) return;
-          const amt = parseFloat(l.amount || p.amount) || 0;
-          const sender = p.fromParty || (kind === 'Received' ? (p.party || l.party || '') : 'MLG');
-          const receiver = p.toParty || (kind === 'Made' ? (l.party || p.party || '') : 'MLG');
-          const desc = mode + ' ' + (kind === 'Made' ? 'Paid' : 'Received');
+
+          /* amountIn when MLG receives, amountOut when MLG sends; pure party-party still listed as memo */
+          let amountIn = 0, amountOut = 0;
+          if (isMlg(receiver) && !isMlg(sender)) amountIn = amt;
+          else if (isMlg(sender) && !isMlg(receiver)) amountOut = amt;
+          else if (isMlg(sender) && isMlg(receiver)) {
+            /* internal MLG move — neutral */
+          } else {
+            /* external party to party: show under bank book without affecting MLG balance */
+          }
+          const desc = mode + ' Payment';
           rows.push({
             date: p.date,
             description: desc,
             bank: ourBank,
             tid: l.tid || p.tid || p.slip || '',
-            sender,
-            receiver,
-            amountIn: kind === 'Received' ? amt : 0,
-            amountOut: kind === 'Made' ? amt : 0
+            sender: sender || '—',
+            receiver: receiver || '—',
+            amountIn,
+            amountOut
           });
         });
       });
@@ -1109,17 +1119,16 @@ function createApp() {
 
     editPayment(row) {
       const first = (row.lines && row.lines[0]) || {};
-      const kind = this.paymentKind(row.type);
       const amt = first.amount || row.amount || '';
       const mode = (row.mode === 'Bank' || (row.tid && String(row.tid).trim())) ? 'Bank' : (row.mode || 'Cash');
       this.paymentForm = {
         showForm: true,
         date: row.date || today(),
         mode,
-        type: kind,
+        type: 'Transfer',
         party: row.fromParty || row.party || '',
-        fromParty: row.fromParty || (kind === 'Received' ? (row.party || '') : (kind === 'Made' ? 'MLG' : '')),
-        toParty: row.toParty || first.party || (kind === 'Received' ? 'MLG' : (row.party || '')),
+        fromParty: row.fromParty || row.party || '',
+        toParty: row.toParty || first.party || '',
         slip: first.slip || row.slip || '',
         tid: first.tid || row.tid || '',
         bank: (first.bank && first.bank !== 'Cash') ? (first.bank || row.bank || '') : (row.bank && row.bank !== 'Cash' ? row.bank : ''),
@@ -1517,18 +1526,17 @@ function createApp() {
       return { party: '', bank: bank || '', tid: '', slip: '', amount: '', note: '' };
     },
 
-    resetPaymentForm(type) {
+    resetPaymentForm() {
       const lastFromBank = (this.paymentForm && this.paymentForm.fromBank) || '';
       const lastMode = (this.paymentForm && this.paymentForm.mode) || 'Cash';
-      const keepType = this.paymentKind(type || (this.paymentForm && this.paymentForm.type) || 'Received');
       this.paymentForm = {
         showForm: true,
         date: today(),
         mode: lastMode,
-        type: keepType,
+        type: 'Transfer',
         party: '',
-        fromParty: keepType === 'Made' ? 'MLG' : '',
-        toParty: keepType === 'Received' ? 'MLG' : '',
+        fromParty: '',
+        toParty: '',
         slip: '', tid: '', bank: '', fromBank: lastFromBank,
         amount: '', receiveAmount: '',
         remarks: '', proofName: '', proofData: '', editingId: null,
@@ -1537,18 +1545,7 @@ function createApp() {
     },
 
     onPaymentTypeChange() {
-      const t = this.paymentKind(this.paymentForm.type);
-      this.paymentForm.type = t;
-      if (t === 'Received') {
-        if (!this.paymentForm.toParty || this.paymentForm.toParty === this.paymentForm.fromParty) this.paymentForm.toParty = 'MLG';
-        if (this.paymentForm.fromParty === 'MLG') this.paymentForm.fromParty = '';
-      } else if (t === 'Made') {
-        if (!this.paymentForm.fromParty || this.paymentForm.fromParty === this.paymentForm.toParty) this.paymentForm.fromParty = 'MLG';
-        if (this.paymentForm.toParty === 'MLG') this.paymentForm.toParty = '';
-      } else {
-        if (this.paymentForm.fromParty === 'MLG') this.paymentForm.fromParty = '';
-        if (this.paymentForm.toParty === 'MLG') this.paymentForm.toParty = '';
-      }
+      /* Direction removed — kept as no-op for any residual callers */
     },
 
     syncReceiveAmount() {
@@ -1633,9 +1630,8 @@ function createApp() {
       }
 
       const mode = (f.mode === 'Bank') ? 'Bank' : 'Cash';
-      const type = this.paymentKind(f.type || 'Received');
-      const fromParty = String(f.fromParty || f.party || (type === 'Made' ? 'MLG' : '')).trim();
-      const toParty = String(f.toParty || (type === 'Received' ? 'MLG' : '')).trim();
+      const fromParty = String(f.fromParty || f.party || '').trim();
+      const toParty = String(f.toParty || '').trim();
       const fromBank = mode === 'Bank' ? String(f.fromBank || '').trim() : '';
       const toBank = mode === 'Bank' ? String(f.bank || '').trim() : '';
       const tid = mode === 'Bank' ? String(f.tid || '').trim() : '';
@@ -1647,6 +1643,10 @@ function createApp() {
       }
       if (!toParty) {
         this.showToast('Receiver party is required');
+        return;
+      }
+      if (fromParty === toParty) {
+        this.showToast('Sender and receiver must be different');
         return;
       }
       if (mode === 'Bank') {
@@ -1671,11 +1671,21 @@ function createApp() {
         this.payments = this.payments.filter(x => x.id !== f.editingId);
       }
 
+      const isMlg = (name) => {
+        const n = String(name || '').trim().toUpperCase();
+        return n === 'MLG' || n === 'MEER GAS' || n.startsWith('MLG');
+      };
+
+      /* Auto type only for storage/filter compatibility — UI has no direction */
+      let type = 'Transfer';
+      if (isMlg(toParty) && !isMlg(fromParty)) type = 'Received';
+      else if (isMlg(fromParty) && !isMlg(toParty)) type = 'Made';
+
       const note = String(f.remarks || '').trim();
       const payId = f.editingId || ('pay-' + Date.now());
       const bankLabel = mode === 'Cash' ? 'Cash' : (toBank || fromBank || 'Bank');
       const filled = [{
-        party: type === 'Received' ? fromParty : toParty,
+        party: toParty,
         bank: bankLabel,
         tid, slip,
         amount,
@@ -1687,7 +1697,7 @@ function createApp() {
         date: f.date,
         mode,
         type,
-        party: type === 'Transfer' ? (fromParty + ' → ' + toParty) : (type === 'Received' ? fromParty : toParty),
+        party: fromParty + ' → ' + toParty,
         fromParty,
         toParty,
         slip,
@@ -1701,8 +1711,7 @@ function createApp() {
         lines: filled
       });
 
-      /* Narration: Cash Received / Bank Paid / etc. */
-      const word = mode + ' ' + (type === 'Made' ? 'Paid' : (type === 'Transfer' ? 'Transfer' : 'Received'));
+      const word = mode + ' Payment';
       const extraBase = {
         date: f.date,
         tid: tid || slip || '',
@@ -1714,30 +1723,25 @@ function createApp() {
         customerNarration: word
       };
 
-      /* Master ledger account name */
+      /* Always update both party ledgers: sender CREDIT, receiver DEBIT */
+      this.postToLedger(fromParty, word + ' → ' + toParty, 0, amount, extraBase);
+      this.postToLedger(toParty, word + ' ← ' + fromParty, amount, 0, extraBase);
+
+      /* Master / company cash-bank when MLG is involved */
       const masterAccount = mode === 'Cash'
         ? 'MLG • Cash'
-        : this.companyLedgerName(toBank || fromBank);
+        : this.companyLedgerName(isMlg(fromParty) ? fromBank : (toBank || fromBank));
 
-      if (type === 'Received') {
-        /* Party paid us → party CREDIT, cash/bank DEBIT */
-        this.postToLedger(fromParty, word, 0, amount, extraBase);
-        this.postToLedger(masterAccount, word, amount, 0, { ...extraBase, isBank: true });
-      } else if (type === 'Made') {
-        /* We paid party → party DEBIT, cash/bank CREDIT */
-        this.postToLedger(toParty, word, amount, 0, extraBase);
-        this.postToLedger(masterAccount, word, 0, amount, { ...extraBase, isBank: true });
-      } else {
-        /* Party-to-party transfer */
-        this.postToLedger(fromParty, word, 0, amount, extraBase);
-        this.postToLedger(toParty, word, amount, 0, extraBase);
-        if (mode === 'Bank' && (fromBank || toBank)) {
-          this.postToLedger(this.companyLedgerName(fromBank || toBank), word, 0, 0, { ...extraBase, isBank: true });
-        }
+      if (isMlg(toParty) && !isMlg(fromParty)) {
+        /* Money into MLG */
+        this.postToLedger(masterAccount, word + ' from ' + fromParty, amount, 0, { ...extraBase, isBank: true });
+      } else if (isMlg(fromParty) && !isMlg(toParty)) {
+        /* Money out of MLG */
+        this.postToLedger(masterAccount, word + ' to ' + toParty, 0, amount, { ...extraBase, isBank: true });
       }
 
-      this.showToast('Saved ' + fmtMoney(amount) + ' • ' + word + ' → ledgers updated');
-      this.resetPaymentForm(type);
+      this.showToast('Saved ' + fmtMoney(amount) + ' • ' + fromParty + ' → ' + toParty + ' • ledgers updated');
+      this.resetPaymentForm();
       this.saveToStorage();
     },
 
