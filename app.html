@@ -1083,7 +1083,7 @@
             <span x-text="paymentForm.showForm ? 'Hide payment entry' : 'Payment Entry'"></span>
           </button>
         </div>
-        <div class="card p-6 mb-5 rounded-2xl" x-show="paymentForm.showForm">
+                <div class="card p-6 mb-5 rounded-2xl" x-show="paymentForm.showForm">
           <form @submit.prevent="savePayment" class="space-y-4">
             <div class="grid md:grid-cols-3 gap-4">
               <div>
@@ -1106,14 +1106,18 @@
             <!-- Sender details -->
             <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
               <p class="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide">Sender details</p>
-              <div class="grid md:grid-cols-2 gap-4">
+              <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sender party *</label>
-                  <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Who is sending" required>
+                  <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Who is sending (e.g. Bugti Plant or MLG)" required>
                 </div>
-                <div x-show="paymentForm.mode === 'Bank'">
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sender bank / title *</label>
-                  <input list="bankList" x-model="paymentForm.fromBank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Sender bank or account title">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sender bank account with title <span x-show="paymentForm.mode==='Bank'" class="text-rose-500">*</span></label>
+                  <input list="bankList" x-model="paymentForm.fromBank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="e.g. HBL · Wakeel Ahmed Enterprises">
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">TID <span x-show="paymentForm.mode==='Bank'" class="text-rose-500">*</span></label>
+                  <input type="text" x-model="paymentForm.tid" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Transaction ID">
                 </div>
               </div>
             </div>
@@ -1124,20 +1128,16 @@
               <div class="grid md:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-[11px] font-semibold text-slate-500 mb-1">Receiver party *</label>
-                  <input list="partyList" x-model="paymentForm.toParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Who receives" required>
+                  <input list="partyList" x-model="paymentForm.toParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Who receives (e.g. MLG or party name)" required>
                 </div>
-                <div x-show="paymentForm.mode === 'Bank'">
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Receiver bank / title</label>
-                  <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Receiver bank or account title">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Receiver bank account with title</label>
+                  <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="e.g. MBL · Pak Rice Commission Agent">
                 </div>
               </div>
             </div>
 
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div x-show="paymentForm.mode === 'Bank'">
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">TID *</label>
-                <input type="text" x-model="paymentForm.tid" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Transaction ID">
-              </div>
+            <div class="grid md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-[11px] font-semibold text-slate-500 mb-1">Voucher / slip (optional)</label>
                 <input type="text" x-model="paymentForm.slip" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Voucher or slip no">
@@ -1160,7 +1160,8 @@
 
             <div class="pt-1">
               <p class="text-xs text-slate-500 mb-3">
-                Enter sender + receiver. On save: both party ledgers and master ledger update automatically (debit / credit).
+                Type <b>MLG</b> as sender or receiver so system knows money is on behalf of Meer Gas.
+                Both party ledgers + master ledger update automatically.
               </p>
               <button type="submit" class="btn-info px-6 py-2.5 text-sm">
                 <i class="fas fa-save mr-1.5"></i> Save Payment
@@ -1262,485 +1263,24 @@
             <table class="w-full text-sm sheet-table">
               <thead>
                 <tr>
-                  <th>Serial</th><th>Date</th><th>Bank Title / TID</th><th>Sender</th><th>Receiver</th><th>Amount</th><th>Balance</th>
+                  <th>S#</th><th>Date</th><th>Sender Party</th><th>Receiver Party</th><th>TID</th><th>Amount</th><th>Balance</th>
                 </tr>
               </thead>
               <tbody>
-                <template x-for="row in filteredMasterLedgerRows()" :key="row.serial">
+                                <template x-for="row in filteredMasterLedgerRows()" :key="row.serial">
                   <tr>
                     <td x-text="row.serial"></td>
-                    <td x-text="sheetDate(row.date)"></td>
-                    <td x-text="(row.bank||'') + (row.tid ? ' / '+row.tid : '')"></td>
-                    <td x-text="row.sender || '—'"></td>
-                    <td x-text="row.receiver || '—'"></td>
-                    <td class="font-semibold" :class="row.amount>=0 ? 'text-emerald-700' : 'text-rose-600'" x-text="fmtMoney(row.amount)"></td>
-                    <td class="font-medium" x-text="fmtMoney(row.balance)"></td>
+                    <td x-text="row.date"></td>
+                    <td class="text-xs">
+                      <div class="font-medium" x-text="row.sender || '—'"></div>
+                      <div class="text-slate-500" x-show="row.senderBank" x-text="row.senderBank"></div>
+                    </td>
+                    <td class="text-xs">
+                      <div class="font-medium" x-text="row.receiver || '—'"></div>
+                      <div class="text-slate-500" x-show="row.receiverBank" x-text="row.receiverBank"></div>
+                    </td>
+                    <td class="text-xs text-slate-600" x-text="row.tid || '—'"></td>
+                    <td class="font-semibold" :class="row.amount >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="fmtMoney(Math.abs(row.amount))"></td>
+                    <td x-text="fmtMoney(row.balance)"></td>
                   </tr>
                 </template>
-                <tr x-show="!filteredMasterLedgerRows().length">
-                  <td colspan="7" class="px-3 py-8 text-center text-slate-400">Payments se data aayega.</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== DIESEL ==================== -->
-      <section x-show="section === 'diesel'">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-          <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">Entries</p><p class="vip-value mt-1" x-text="dieselEntries.length"></p></div>
-          <div class="card-vip accent-orange p-5 pl-6"><p class="vip-label">Diesel + Cash</p><p class="vip-value mt-1" x-text="fmtMoney(dieselGross(dieselEntries))"></p></div>
-          <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Diesel lines</p><p class="vip-value mt-1" x-text="dieselEntries.filter(d=>String(d.type||d.description).toLowerCase().includes('diesel')).length"></p></div>
-          <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">Cash lines</p><p class="vip-value mt-1" x-text="dieselEntries.filter(d=>String(d.type||d.description).toLowerCase().includes('cash')).length"></p></div>
-        </div>
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div>
-            <button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','diesel')"><i class="fas fa-file-pdf"></i> Download PDF</button>
-            <h2 class="text-base font-bold">Diesel & Cash</h2>
-            <p class="text-xs text-slate-500">Trip kharch: diesel drums/ltr + driver cash + boarder (Mand / BP 250 / Gwadar / Turbat).</p>
-          </div>
-          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="dieselForm.showForm = !dieselForm.showForm">Diesel / Cash Entry</button>
-        </div>
-        <div class="card p-6 mb-5 rounded-2xl" x-show="dieselForm.showForm">
-          <form @submit.prevent="saveDiesel" class="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Loading Date *</label><input type="date" x-model="dieselForm.date" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser No</label><input list="bowserList" x-model="dieselForm.bowser" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
-              <select x-model="dieselForm.type" @change="dieselForm.unit = dieselForm.type==='Cash' ? 'PKR' : (dieselForm.type==='Diesel' ? 'Drum' : 'PKR')" class="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                <option>Diesel</option><option>Cash</option><option>Salary</option><option>Washil</option><option>Other</option>
-              </select>
-            </div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Description</label><input x-model="dieselForm.description" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Cash / Diesel / salary batha"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Boarder / Location</label><input x-model="dieselForm.boarder" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Mand / BP 250 / Gwadar / Turbat"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Unit</label>
-              <select x-model="dieselForm.unit" class="w-full border rounded-lg px-3 py-2 text-sm bg-white"><option>Drum</option><option>Ltr</option><option>PKR</option></select>
-            </div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Quantity</label><input type="number" step="any" x-model="dieselForm.qty" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate</label><input type="number" step="any" x-model="dieselForm.rate" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div class="lg:col-span-4"><button class="btn-primary px-6 py-2.5 text-sm" type="submit">Save line</button></div>
-          </form>
-        </div>
-        <div class="card p-4 mb-4 rounded-2xl">
-          <div class="grid md:grid-cols-4 gap-3">
-            <input class="border rounded-lg px-3 py-2 text-sm" placeholder="Search..." x-model="dieselFilter.q">
-            <select class="border rounded-lg px-3 py-2 text-sm bg-white" x-model="dieselFilter.type"><option value="">All types</option><option>Diesel</option><option>Cash</option><option>Salary</option></select>
-            <select class="border rounded-lg px-3 py-2 text-sm bg-white" x-model="dieselFilter.bowser"><option value="">All bowsers</option><template x-for="v in uniqueField(dieselEntries,'bowser')" :key="'db'+v"><option x-text="v"></option></template></select>
-            <select class="border rounded-lg px-3 py-2 text-sm bg-white" x-model="dieselFilter.location"><option value="">All boarders</option><template x-for="v in uniqueField(dieselEntries,'boarder')" :key="'dl'+v"><option x-text="v"></option></template></select>
-          </div>
-        </div>
-        <div class="card overflow-hidden rounded-2xl ring-1 ring-slate-200">
-          <div class="px-5 py-3 border-b bg-slate-50/80 font-bold text-sm">DIESEL-CASH REPORT</div>
-          <div class="table-scroll">
-            <table class="w-full text-sm sheet-table">
-              <thead>
-                <tr><th>No</th><th>Loading Date</th><th>Bowser No</th><th>Description</th><th>Boarder</th><th>Unit</th><th>Quantity</th><th>Rate</th><th>Amount</th><th>Gross Amount</th></tr>
-              </thead>
-              <tbody>
-                <template x-for="(d,i) in filteredDieselRows()" :key="d.id">
-                  <tr>
-                    <td x-text="i+1"></td>
-                    <td x-text="sheetDate(d.date)"></td>
-                    <td x-text="d.bowser"></td>
-                    <td x-text="d.description || d.type"></td>
-                    <td x-text="d.boarder || d.location"></td>
-                    <td x-text="d.unit"></td>
-                    <td x-text="d.qty"></td>
-                    <td x-text="d.rate"></td>
-                    <td class="font-semibold" x-text="d.amount"></td>
-                    <td x-text="d.gross || ''"></td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section x-show="section === 'quotation'">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-          <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Quotations</p><p class="vip-value mt-1" x-text="quotations.length"></p></div>
-          <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">Draft</p><p class="vip-value mt-1" x-text="quotations.filter(q=>q.status==='Draft').length"></p></div>
-          <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">Issued</p><p class="vip-value mt-1" x-text="quotations.filter(q=>q.status!=='Draft').length"></p></div>
-          <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">This view</p><p class="vip-value mt-1" x-text="filteredQuotations().length"></p></div>
-        </div>
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div>
-            <button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','quotations')"><i class="fas fa-file-pdf"></i> Download PDF</button>
-            <h2 class="text-base font-bold">Quotations</h2>
-            <p class="text-xs text-slate-500">Subject, reference, rates. Generate letter with header / footer / watermark.</p>
-          </div>
-          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="quotationForm.showForm=!quotationForm.showForm; if(!quotationForm.quotationNo) quotationForm.quotationNo=nextQuotationNo()">Quotation Entry</button>
-        </div>
-        <div class="card p-6 mb-5 rounded-2xl" x-show="quotationForm.showForm">
-          <form @submit.prevent="saveQuotation" class="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Quotation No *</label><input x-model="quotationForm.quotationNo" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Reference No</label><input x-model="quotationForm.referenceNo" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Party letter / inquiry no"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Date *</label><input type="date" x-model="quotationForm.date" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Party *</label><input list="partyList" x-model="quotationForm.party" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label><input list="cityList" x-model="quotationForm.city" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Validity</label><input x-model="quotationForm.validity" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div class="md:col-span-2 lg:col-span-3"><label class="block text-[11px] font-semibold text-slate-500 mb-1">Subject *</label><input x-model="quotationForm.subject" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
-            <div class="md:col-span-2 lg:col-span-3"><label class="block text-[11px] font-semibold text-slate-500 mb-1">Letter body</label>
-              <textarea x-model="quotationForm.body" rows="4" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="We are pleased to quote the following rates for supply of LPG..."></textarea>
-            </div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Product</label><input x-model="quotationForm.product" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty</label><input type="number" step="0.001" x-model="quotationForm.qty" @input="calcQuotation()" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Unit</label><input x-model="quotationForm.unit" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate quoted</label><input type="number" step="0.01" x-model="quotationForm.rate" @input="calcQuotation()" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount</label><input x-model="quotationForm.amount" class="w-full border rounded-lg px-3 py-2 text-sm bg-slate-100" readonly></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Delivery</label><input x-model="quotationForm.delivery" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div class="md:col-span-2 lg:col-span-3"><label class="block text-[11px] font-semibold text-slate-500 mb-1">Terms (mandatory on letter)</label>
-              <textarea x-model="quotationForm.terms" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
-            </div>
-            <div class="md:col-span-2 lg:col-span-3 rounded-xl border border-slate-200 p-3 bg-slate-50">
-              <label class="flex items-center gap-2 text-sm font-semibold mb-2">
-                <input type="checkbox" x-model="quotationForm.usePermanentContact"> Use permanent company contact on this quotation
-              </label>
-              <p class="text-[11px] text-slate-500 mb-2">Uncheck karein agar is quotation ke liye address/phone alag chahiye.</p>
-              <div class="grid md:grid-cols-2 gap-2" x-show="!quotationForm.usePermanentContact">
-                <input class="border rounded-lg px-3 py-2 text-sm" placeholder="Office address" x-model="quotationForm.address">
-                <input class="border rounded-lg px-3 py-2 text-sm" placeholder="Phone" x-model="quotationForm.phone">
-                <input class="border rounded-lg px-3 py-2 text-sm" placeholder="Email" x-model="quotationForm.email">
-                <input class="border rounded-lg px-3 py-2 text-sm" placeholder="Website" x-model="quotationForm.website">
-              </div>
-            </div>
-            <div class="md:col-span-2 lg:col-span-3 flex flex-wrap gap-2">
-              <button type="button" class="px-4 py-2 text-sm border rounded-lg" @click="polishQuotation()">Polish wording</button>
-              <button type="submit" class="btn-primary px-6 py-2.5 text-sm">Generate quotation</button>
-            </div>
-          </form>
-        </div>
-        <div class="card p-4 mb-4 rounded-2xl">
-          <div class="grid md:grid-cols-3 gap-3">
-            <input class="border rounded-lg px-3 py-2 text-sm" placeholder="Search quotation no / party / subject" x-model="quotationFilter.q">
-            <select class="border rounded-lg px-3 py-2 text-sm bg-white" x-model="quotationFilter.party"><option value="">All parties</option><template x-for="v in uniqueField(quotations,'party')" :key="'qp'+v"><option x-text="v"></option></template></select>
-          </div>
-        </div>
-        <div class="grid lg:grid-cols-5 gap-4">
-          <div class="lg:col-span-3 card overflow-hidden rounded-2xl ring-1 ring-slate-200">
-            <div class="px-5 py-3 border-b bg-slate-50/80 font-bold text-sm">QUOTATION REGISTER</div>
-            <div class="table-scroll">
-              <table class="w-full text-sm sheet-table">
-                <thead><tr><th>S#</th><th>Quotation No</th><th>Date</th><th>Party</th><th>Subject</th><th>Qty</th><th>Rate</th><th>Amount</th><th>Status</th></tr></thead>
-                <tbody>
-                  <template x-for="(q,i) in filteredQuotations()" :key="q.id">
-                    <tr class="cursor-pointer" @click="openQuotation(q)">
-                      <td x-text="i+1"></td>
-                      <td class="font-semibold text-teal-700 underline" x-text="q.quotationNo"></td>
-                      <td x-text="sheetDate(q.date)"></td>
-                      <td x-text="q.party"></td>
-                      <td x-text="q.subject"></td>
-                      <td x-text="q.qty"></td>
-                      <td x-text="q.rate"></td>
-                      <td x-text="q.amount"></td>
-                      <td x-text="q.status"></td>
-                    </tr>
-                  </template>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="lg:col-span-2">
-            <div class="flex justify-end gap-2 mb-2" x-show="activeQuotation">
-              <button type="button" class="px-3 py-1.5 text-xs border rounded-lg" @click="downloadQuotationPDF(activeQuotation,'print')">Print</button>
-              <button type="button" class="btn-primary px-3 py-1.5 text-xs" @click="openPdfOptions('quotation', activeQuotation)">Download PDF</button>
-            </div>
-            <div class="a4-sheet relative overflow-hidden rounded-sm shadow-xl ring-1 ring-slate-300 bg-white mx-auto">
-              <img src="./assets/letterhead-a4.png" alt="" class="absolute inset-0 w-full h-full object-cover pointer-events-none select-none">
-              <div class="relative a4-inner text-[11px] leading-relaxed text-slate-800" x-show="activeQuotation">
-                <div class="a4-headerband flex justify-end">
-                  <div class="text-right text-[8px] text-[#0f285a] space-y-0.5 max-w-[46%]">
-                    <p x-show="quoteContact(activeQuotation,'address')" class="flex items-start justify-end gap-1"><i class="fas fa-location-dot mt-0.5"></i><span x-text="quoteContact(activeQuotation,'address')"></span></p>
-                    <p x-show="quoteContact(activeQuotation,'phone')" class="flex items-center justify-end gap-1"><i class="fas fa-phone"></i><span x-text="quoteContact(activeQuotation,'phone')"></span></p>
-                    <p x-show="quoteContact(activeQuotation,'email')" class="flex items-center justify-end gap-1"><i class="fas fa-envelope"></i><span x-text="quoteContact(activeQuotation,'email')"></span></p>
-                    <p x-show="quoteContact(activeQuotation,'website')" class="flex items-center justify-end gap-1"><i class="fas fa-globe"></i><span x-text="quoteContact(activeQuotation,'website')"></span></p>
-                  </div>
-                </div>
-                <div class="a4-body">
-                  <p class="text-center font-extrabold tracking-wide text-[13px] text-[#0f285a]">QUOTATION</p>
-                  <div class="flex justify-between mt-2 font-semibold">
-                    <span x-text="activeQuotation?.quotationNo"></span>
-                    <span x-text="sheetDate(activeQuotation?.date)"></span>
-                  </div>
-                  <p class="mt-2"><b>To:</b> <span x-text="activeQuotation?.party"></span><span x-show="activeQuotation?.city" x-text="', ' + activeQuotation.city"></span></p>
-                  <p x-show="activeQuotation?.referenceNo"><b>Ref:</b> <span x-text="activeQuotation?.referenceNo"></span></p>
-                  <p class="mt-1"><b>Subject:</b> <span x-text="activeQuotation?.subject"></span></p>
-                  <p class="mt-2" x-text="activeQuotation?.body || 'We are pleased to submit our quotation for supply of LPG as under.'"></p>
-                  <table class="w-full mt-2 border text-[10px] bg-transparent">
-                    <tr class="bg-[#eef4ff] text-[#0f285a]"><th class="p-1 text-left">Product</th><th class="p-1">Qty</th><th class="p-1">Rate</th><th class="p-1">Amount</th></tr>
-                    <tr>
-                      <td class="p-1" x-text="activeQuotation?.product"></td>
-                      <td class="p-1 text-center" x-text="(activeQuotation?.qty||'') + ' ' + (activeQuotation?.unit||'')"></td>
-                      <td class="p-1 text-center" x-text="activeQuotation?.rate"></td>
-                      <td class="p-1 text-center font-semibold" x-text="activeQuotation?.amount"></td>
-                    </tr>
-                  </table>
-                  <p class="mt-2"><b>Delivery:</b> <span x-text="activeQuotation?.delivery"></span></p>
-                  <p><b>Validity:</b> <span x-text="activeQuotation?.validity"></span></p>
-                  <p class="mt-1"><b>Terms:</b> <span x-text="activeQuotation?.terms"></span></p>
-                  <div class="mt-8 text-right">
-                    <p>For Meer Logistics &amp; Gas Energy</p>
-                    <p class="font-semibold mt-6">Authorized Signatory</p>
-                  </div>
-                </div>
-              </div>
-              <div class="relative a4-inner text-sm text-slate-400" x-show="!activeQuotation">Quotation number par click karein.</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== REPORTS ==================== -->
-      <section x-show="section === 'reports'">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-          <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Purchased</p><p class="vip-value mt-1" x-text="fmt(totals.purchased)+' T'"></p></div>
-          <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">Sold</p><p class="vip-value mt-1" x-text="fmt(totals.sold)+' T'"></p></div>
-          <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">Stock</p><p class="vip-value mt-1" x-text="fmt(totals.stock)+' T'"></p></div>
-          <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">Outstanding</p><p class="vip-value mt-1" x-text="fmtMoney(parties.reduce((s,p)=>s+(Number(p.balance)||0),0))"></p></div>
-        </div>
-        <div class="mb-4">
-          <button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register', report.type || 'summary')"><i class="fas fa-file-pdf"></i> Download PDF</button>
-            <h2 class="text-base font-bold">Management Reports</h2>
-          <p class="text-xs text-slate-500">Ek click preset. Phir deep filter laga sakte ho.</p>
-        </div>
-        <div class="flex flex-wrap gap-2 mb-4">
-          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('summary')">Summary</button>
-          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('monthly','Jun')">June monthly</button>
-          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('purchases')">Purchase register</button>
-          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('sales')">Sale register</button>
-          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('payments')">Payments</button>
-          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('ledger')">Master ledger</button>
-          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('outstanding')">Outstanding</button>
-          <button type="button" class="px-3 py-2 rounded-lg border text-xs font-semibold" @click="setReportPreset('pnl')">Sale P&amp;L</button>
-          <button type="button" class="btn-primary px-4 py-2 text-xs" @click="openPdfOptions('register', report.type || 'summary')">Download PDF</button>
-        </div>
-        <div class="card p-4 mb-4 rounded-2xl">
-          <div class="grid md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.type">
-              <option value="summary">Summary</option>
-              <option value="monthly">Monthly</option>
-              <option value="purchases">Purchase records</option>
-              <option value="sales">Sale records</option>
-              <option value="payments">Payment records</option>
-              <option value="ledger">Master ledger</option>
-              <option value="outstanding">Outstanding parties</option>
-              <option value="diesel">Diesel & cash</option>
-              <option value="pnl">Sale profit & loss</option>
-            </select>
-            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.month"><option value="">All months</option><option>Jan</option><option>Feb</option><option>Mar</option><option>Apr</option><option>May</option><option>Jun</option><option>Jul</option><option>Aug</option><option>Sep</option></select>
-            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.party"><option value="">All parties</option><template x-for="v in master.party" :key="'rp'+v"><option x-text="v"></option></template></select>
-            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.bank"><option value="">All banks</option><template x-for="v in master.bank" :key="'rb'+v"><option x-text="v"></option></template></select>
-            <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="report.bowser"><option value="">All bowsers</option><template x-for="v in master.bowser" :key="'rw'+v"><option x-text="v"></option></template></select>
-            <input class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search report..." x-model="report.q">
-          </div>
-        </div>
-        <div class="card overflow-hidden rounded-2xl ring-1 ring-slate-200">
-          <div class="px-5 py-3 border-b bg-slate-50/80 font-bold text-sm uppercase" x-text="(report.type||'summary') + ' report'"></div>
-          <div class="table-scroll">
-            <table class="w-full text-sm sheet-table">
-              <thead>
-                <tr>
-                  <template x-for="(h,hi) in reportHeaders()" :key="'h'+hi"><th class="px-3 py-2" x-text="h"></th></template>
-                </tr>
-              </thead>
-              <tbody>
-                <template x-for="(row,ri) in reportRows()" :key="'rr'+ri">
-                  <tr>
-                    <td x-text="row.c1"></td><td x-text="row.c2"></td><td x-text="row.c3"></td>
-                    <td x-text="row.c4"></td><td class="font-medium" x-text="row.c5"></td><td x-text="row.c6"></td>
-                  </tr>
-                </template>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== SETTINGS ==================== -->
-      <section x-show="section === 'settings'">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-          <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Company</p><p class="vip-value mt-1 text-lg" x-text="settings.company || 'MLG'"></p></div>
-          <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">PDF watermark</p><p class="vip-value mt-1 text-lg" x-text="settings.defaultWatermark ? 'On' : 'Off'"></p></div>
-          <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">Letterhead</p><p class="vip-value mt-1 text-lg" x-text="settings.defaultLetterhead ? 'On' : 'Off'"></p></div>
-          <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">Backup</p><p class="vip-value mt-1 text-lg">Local</p></div>
-        </div>
-        <div class="flex items-center justify-between mb-4">
-          <div><h2 class="text-base font-bold">Settings</h2><p class="text-xs text-slate-500">Company profile, PDF defaults, backup.</p></div>
-        </div>
-        <div class="card p-5 rounded-2xl max-w-2xl">
-          <h2 class="font-bold mb-4">Company &amp; documents</h2>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Company name</label>
-              <input class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" x-model="settings.company">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Slogan</label>
-              <input class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" x-model="settings.slogan">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1"><i class="fas fa-location-dot text-[#0f285a] mr-1"></i>Office address (permanent)</label>
-              <input class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" x-model="settings.address" placeholder="Office / plant address">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1"><i class="fas fa-phone text-[#0f285a] mr-1"></i>Phone</label>
-              <input class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" x-model="settings.phone">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1"><i class="fas fa-envelope text-[#0f285a] mr-1"></i>Email</label>
-              <input class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" x-model="settings.email">
-            </div>
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1"><i class="fas fa-globe text-[#0f285a] mr-1"></i>Website</label>
-              <input class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" x-model="settings.website">
-            </div>
-            <button type="button" class="btn-primary px-4 py-2 text-sm" @click="savePermanentContact()">Save permanent letterhead details</button>
-            <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="settings.defaultWatermark"> Default PDF watermark</label>
-            <label class="flex items-center gap-2 text-sm"><input type="checkbox" x-model="settings.defaultLetterhead"> Default letterhead on PDF</label>
-            <div class="flex flex-wrap gap-3 pt-2">
-              <button type="button" class="btn-primary px-4 py-2 text-sm" @click="exportBackup()">Export backup JSON</button>
-              <button type="button" class="px-4 py-2 text-sm rounded-lg border border-rose-200 text-rose-700" @click="resetAllData()">Reset local data</button>
-            </div>
-            <p class="text-xs text-slate-500">Data is saved in this browser. Export backup before reset.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== MASTER ==================== -->
-      <section x-show="section === 'master'">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-          <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Parties</p><p class="vip-value mt-1" x-text="(master.party||[]).length"></p></div>
-          <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">Bowsers</p><p class="vip-value mt-1" x-text="(master.bowser||[]).length"></p></div>
-          <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">Banks</p><p class="vip-value mt-1" x-text="(master.bank||[]).length"></p></div>
-          <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">Origins</p><p class="vip-value mt-1" x-text="(master.source||[]).length"></p></div>
-        </div>
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div><button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','summary')"><i class="fas fa-file-pdf"></i> Download PDF</button><h2 class="text-base font-bold">Master Data</h2><p class="text-xs text-slate-500">Dropdowns yahi se bharti hain.</p></div>
-        </div>
-        <div class="card p-4 mb-4 rounded-2xl">
-          <input class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search master lists..." x-model="masterQuery">
-        </div>
-        <div class="grid md:grid-cols-2 gap-5">
-          <template x-for="m in masterSections" :key="m.key">
-            <div class="card overflow-hidden rounded-2xl ring-1 ring-slate-200">
-              <div class="px-5 py-3 border-b bg-slate-50/80 flex items-center justify-between">
-                <h3 class="font-bold text-sm" x-text="m.title"></h3>
-                <button type="button" @click="addMasterItem(m.key)" class="text-xs font-semibold text-teal-700">+ Add</button>
-              </div>
-              <div class="table-scroll max-h-64">
-                <table class="w-full text-sm sheet-table">
-                  <thead><tr><th>S#</th><th>Name</th></tr></thead>
-                  <tbody>
-                    <template x-for="(v,i) in filteredMasterList(m.key)" :key="m.key+i">
-                      <tr><td x-text="i+1"></td><td x-text="v"></td></tr>
-                    </template>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </template>
-        </div>
-      </section>
-
-    </div><!-- /.content-inner -->
-    </div><!-- /.content -->
-  </div><!-- /.main -->
-  </div><!-- /.shell -->
-  </div><!-- /.app-frame -->
-
-  <!-- Toast -->
-  <div x-show="toast.show" class="toast">
-    <i class="fas fa-check-circle text-emerald-400"></i>
-    <span x-text="toast.msg"></span>
-  </div>
-
-  <!-- Add Party Modal -->
-  <div x-show="showAddParty" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/40" @click="showAddParty = false"></div>
-    <div class="relative bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl" @click.stop>
-      <h3 class="font-bold text-lg mb-4">Add New Party</h3>
-      <input type="text" x-model="newPartyName" placeholder="Party name *"
-             class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm mb-3"
-             @keydown.enter="confirmAddParty">
-      <input type="text" x-model="newPartyCity" placeholder="City (optional)"
-             class="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm mb-5">
-      <div class="flex justify-end gap-2">
-        <button type="button" @click="showAddParty = false" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-        <button type="button" @click="confirmAddParty" class="btn-primary px-5 py-2 text-sm">Add Party</button>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- PDF Download Options Modal -->
-  <div x-show="pdfOptions.show" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/40" @click="pdfOptions.show = false"></div>
-    <div class="relative bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl" @click.stop>
-      <h3 class="font-bold text-lg mb-1">Download PDF</h3>
-      <p class="text-xs text-slate-500 mb-4">Select what to include on the page</p>
-
-      <div class="space-y-3 mb-5">
-        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
-          <input type="checkbox" x-model="pdfOptions.header" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
-          <div>
-            <p class="text-sm font-semibold">Header</p>
-            <p class="text-[11px] text-slate-400">Company banner at top</p>
-          </div>
-        </label>
-        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
-          <input type="checkbox" x-model="pdfOptions.footer" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
-          <div>
-            <p class="text-sm font-semibold">Footer</p>
-            <p class="text-[11px] text-slate-400">Brand strip at bottom</p>
-          </div>
-        </label>
-        <label class="flex items-center gap-3 p-3 rounded-xl border border-teal-200 bg-teal-50/40 hover:bg-teal-50 cursor-pointer">
-          <input type="checkbox" x-model="pdfOptions.watermark" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
-          <div>
-            <p class="text-sm font-semibold">Watermark</p>
-            <p class="text-[11px] text-slate-400">Centered faded mark under content (on by default)</p>
-          </div>
-        </label>
-      </div>
-
-      <div class="flex gap-2">
-        <button type="button" @click="pdfOptions.show = false"
-                class="px-3 py-2.5 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
-        <button type="button" @click="confirmPdfDownload('print')"
-                class="flex-1 px-3 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded-lg">
-          <i class="fas fa-print mr-1.5"></i> Print
-        </button>
-        <button type="button" @click="confirmPdfDownload('download')"
-                class="flex-1 px-3 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-lg">
-          <i class="fas fa-download mr-1.5"></i> Download
-        </button>
-      </div>
-      <p class="text-[10px] text-slate-400 mt-3 text-center leading-relaxed">Print &amp; Download = same full-color PDF.<br>Print dialog mein <b>Margins → None</b> select karein.</p>
-    </div>
-  </div>
-
-  <!-- Datalists -->
-  <datalist id="bowserList"></datalist>
-  <datalist id="partyList"></datalist>
-  <datalist id="cityList"></datalist>
-  <datalist id="plantList"></datalist>
-  <datalist id="bankList"></datalist>
-  <datalist id="sourceList"></datalist>
-  <datalist id="loadFromList"></datalist>
-
-  <!-- Load order: data → helpers → app → Alpine (100% reliable, no modules) -->
-  <script src="./src/utils/helpers.js"></script>
-  <script src="./src/data/store.js"></script>
-  <script src="./src/modules/app.js"></script>
-
-  <script>
-    // Register with Alpine before it starts
-    document.addEventListener('alpine:init', () => {
-      Alpine.data('app', window.createApp);
-    });
-  </script>
-
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.3/dist/cdn.min.js"></script>
-</body>
-</html>
