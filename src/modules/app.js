@@ -366,21 +366,41 @@ function createApp() {
     shortLedgerWord(e) {
       if (!e) return '';
       const src = String(e.sourceType || '').toLowerCase();
-      if (src === 'purchase') return 'Purchase';
-      if (src === 'sale') return 'Sale';
+      const debit = Number(e.debit) || 0;
+      const credit = Number(e.credit) || 0;
+      // Single clear tag so user instantly knows relation
+      if (src === 'purchase') return 'Purchase (Unko Dena)';
+      if (src === 'sale') return 'Sale (Unse Lena)';
       if (src === 'payment') {
         const raw = String(e.customerNarration || e.narration || '').toLowerCase();
-        if (raw.includes('transfer') || raw.includes('direct')) return 'Transfer';
-        if (raw.includes('paid') || raw.includes('made') || raw.includes('payment made')) return 'Paid';
-        return 'Received';
+        const fromP = String(e.fromParty || '').toLowerCase();
+        const toP = String(e.toParty || '').toLowerCase();
+        const isMlg = (n) => { const x = String(n||'').toUpperCase(); return x === 'MLG' || x.startsWith('MLG') || x === 'MEER GAS'; };
+        if (raw.includes('transfer') || raw.includes('direct') || (!isMlg(fromP) && !isMlg(toP) && fromP && toP)) {
+          return credit ? 'Transfer (Unko Dena)' : 'Transfer (Unse Lena)';
+        }
+        if (raw.includes('paid') || raw.includes('made') || raw.includes('payment made')) {
+          return debit ? 'Paid (Unse Lena)' : 'Paid (Unko Dena)';
+        }
+        // Received
+        return credit ? 'Received (Unko Dena)' : 'Received (Unse Lena)';
       }
       const t = String(e.customerNarration || e.narration || '').toLowerCase();
-      if (t.includes('purchase')) return 'Purchase';
-      if (t.includes('sale')) return 'Sale';
-      if (t.includes('transfer') || t.includes('direct')) return 'Transfer';
-      if (t.includes('paid') || t.includes('made')) return 'Paid';
-      if (t.includes('received') || t.includes('payment')) return 'Received';
-      return '';
+      if (t.includes('purchase')) return 'Purchase (Unko Dena)';
+      if (t.includes('sale')) return 'Sale (Unse Lena)';
+      if (t.includes('transfer') || t.includes('direct')) {
+        return credit ? 'Transfer (Unko Dena)' : 'Transfer (Unse Lena)';
+      }
+      if (t.includes('paid') || t.includes('made')) {
+        return debit ? 'Paid (Unse Lena)' : 'Paid (Unko Dena)';
+      }
+      if (t.includes('received') || t.includes('payment')) {
+        return credit ? 'Received (Unko Dena)' : 'Received (Unse Lena)';
+      }
+      // Fallback by side
+      if (debit) return 'Entry (Unse Lena)';
+      if (credit) return 'Entry (Unko Dena)';
+      return 'Entry';
     },
     customerLedgerNarration(e) {
       return this.shortLedgerWord(e) || 'Entry';
@@ -2235,7 +2255,7 @@ function createApp() {
         /* A4 usable width ~194mm with 8mm margins */
         doc.autoTable({
           startY: y + 6,
-          head: [['S#', 'Date', 'Voucher', 'Description', 'Debit', 'Credit', 'Balance']],
+          head: [['S#', 'Date', 'Voucher', 'Description', 'Debit (Unse Lena)', 'Credit (Unko Dena)', 'Balance']],
           body: rows.length ? rows : [['—', '—', '—', 'No entries yet', '', '', '']],
           theme: 'plain',
           styles: {
