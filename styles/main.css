@@ -449,3 +449,6 @@ tr:hover td { background: #f8fafd; }
 }
 .sheet-table tbody tr:nth-child(even) td { background: #f6f8fc; }
 .sheet-table tbody tr:hover td { background: #eef6f4; }
+
+/* Instant section switch — no fade/blink */
+[x-cloak] { display: none !important; }
