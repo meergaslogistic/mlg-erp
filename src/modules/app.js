@@ -621,8 +621,19 @@ function createApp() {
           body,
           styles: { fontSize: 8, textColor:[15,23,42] },
           headStyles: { fillColor:[15,39,68], textColor:255 },
+          willDrawPage: function() {
+            if (opts.watermark !== false) self.drawWatermark(doc);
+          },
           didDrawPage: function() {
-            self.stampLetterhead(doc, opts);
+            const pageW = 210, pageH = 297;
+            const HH = pageW * (438 / 2480);
+            const FH = pageW * (229 / 2480);
+            if (opts.footer && self._imgCache['footer.png']) {
+              try { doc.addImage(self._imgCache['footer.png'], 'PNG', 0, pageH - FH, pageW, FH, undefined, 'FAST'); } catch (e) {}
+            }
+            if (opts.header && self._imgCache['header.png']) {
+              try { doc.addImage(self._imgCache['header.png'], 'PNG', 0, 0, pageW, HH, undefined, 'FAST'); } catch (e) {}
+            }
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(11);
             doc.setTextColor(15,23,42);
