@@ -39,6 +39,7 @@ function createApp() {
       payment: 'Payments',
       masterLedger: 'Master Ledger',
       diesel: 'Diesel & Cash',
+      quotation: 'Quotations',
       reports: 'Reports',
       settings: 'Settings',
       master: 'Master Data'
@@ -54,6 +55,7 @@ function createApp() {
       { id: 'masterLedger', label: 'Master Ledger', icon: 'fas fa-book' },
       { id: 'inventory', label: 'Inventory', icon: 'fas fa-warehouse' },
       { id: 'diesel', label: 'Diesel & Cash', icon: 'fas fa-gas-pump' },
+      { id: 'quotation', label: 'Quotations', icon: 'fas fa-file-alt' },
       { id: 'reports', label: 'Reports', icon: 'fas fa-chart-pie' },
       { id: 'settings', label: 'Settings', icon: 'fas fa-cog' },
       { id: 'master', label: 'Master Data', icon: 'fas fa-database' }
@@ -67,6 +69,9 @@ function createApp() {
     sales: [...sampleSales],
     payments: [],
     dieselEntries: [],
+    quotations: [],
+    activeQuotation: null,
+    quotationFilter: { q:'', party:'', month:'' },
     ledgerBank: 'ALL',
     purchaseFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'', status:'' },
     saleFilter: { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'', dealType:'' },
@@ -131,7 +136,20 @@ function createApp() {
       location: 'RPG Plant – STOCK', type: 'In', qty: '', notes: ''
     },
     dieselForm: {
-      date: '', bowser: '', type: 'Diesel', location: 'Mand', qty: '', rate: '', amount: ''
+      showForm: false,
+      date: '', bowser: '', type: 'Diesel', description: '', boarder: 'Mand',
+      unit: 'Drum', qty: '', rate: '', amount: '', remarks: ''
+    },
+    quotationForm: {
+      showForm: false,
+      quotationNo: '', referenceNo: '', date: '', party: '', city: '',
+      subject: 'Quotation for Supply of LPG',
+      body: '',
+      product: 'LPG (Liquefied Petroleum Gas)',
+      qty: '', unit: 'Metric Ton', rate: '', amount: '',
+      validity: '7 days', delivery: 'As per agreed loading point',
+      terms: 'Rate is exclusive of taxes unless stated. Quantity subject to weighbridge. Payment as per agreed terms.',
+      status: 'Draft'
     },
 
     masterSections: [
@@ -576,7 +594,7 @@ function createApp() {
       this.deliverPdf(doc, 'MLG-Report.pdf', 'download');
     },
     exportBackup() {
-      const payload = { parties:this.parties, purchases:this.purchases, sales:this.sales, payments:this.payments, inventories:this.inventories, master:this.master, dieselEntries:this.dieselEntries, settings:this.settings };
+      const payload = { parties:this.parties, purchases:this.purchases, sales:this.sales, payments:this.payments, inventories:this.inventories, master:this.master, dieselEntries:this.dieselEntries, quotations:this.quotations, settings:this.settings };
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)], {type:'application/json'}));
       a.download = 'mlg-erp-backup.json';
@@ -1678,14 +1696,87 @@ function createApp() {
 
     saveDiesel() {
       const f = this.dieselForm;
-      if (!f.date || !f.bowser) return;
+      if (!f.date) { this.showToast('Date required'); return; }
+      const qty = parseFloat(f.qty) || 0;
+      const rate = parseFloat(f.rate) || 0;
+      const amount = f.amount || (qty && rate ? String(qty * rate) : (f.type==='Cash' ? f.qty : ''));
+      const prev = (this.dieselEntries[0] && parseFloat(this.dieselEntries[0].gross)) || 0;
+      const gross = prev + (parseFloat(amount) || 0);
       this.dieselEntries.unshift({
         id: Date.now(),
-        ...f
+        date: f.date, bowser: f.bowser, type: f.type,
+        description: f.description || f.type,
+        boarder: f.boarder || f.location || '',
+        location: f.boarder || f.location || '',
+        unit: f.unit || (f.type==='Cash' ? 'PKR' : 'Drum'),
+        qty: f.qty, rate: f.rate, amount, gross
       });
-      this.showToast('Diesel / Cash entry saved');
-      this.dieselForm = { date: '', bowser: '', type: 'Diesel', location: 'Mand', qty: '', rate: '', amount: '' };
+      this.showToast('Diesel / Cash saved');
+      this.dieselForm = { showForm: true, date: f.date, bowser: '', type: f.type, description: '', boarder: f.boarder || 'Mand', unit: f.unit, qty: '', rate: '', amount: '', remarks: '' };
       this.saveToStorage();
+    },
+    dieselGross(rows) {
+      return (rows||[]).reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+    },
+    nextQuotationNo() {
+      const n = (this.quotations||[]).length + 1;
+      return 'MLG-Q-' + new Date().getFullYear() + '-' + String(n).padStart(3,'0');
+    },
+    polishText(s) {
+      if (!s) return '';
+      let t = String(s).replace(/\s+/g,' ').trim();
+      t = t.replace(/\s+,/g, ',').replace(/\s+\./g, '.');
+      t = t.replace(/(^|[.!?]\s+)([a-z])/g, (_,a,b)=>a+b.toUpperCase());
+      t = t.replace(/\bi\b/g,'I');
+      return t;
+    },
+    polishQuotation() {
+      const f = this.quotationForm;
+      f.subject = this.polishText(f.subject);
+      f.body = this.polishText(f.body);
+      f.terms = this.polishText(f.terms);
+      f.delivery = this.polishText(f.delivery);
+      this.showToast('Wording polished');
+    },
+    calcQuotation() {
+      const q=parseFloat(this.quotationForm.qty)||0, r=parseFloat(this.quotationForm.rate)||0;
+      this.quotationForm.amount = q&&r ? (q*r).toLocaleString('en-PK',{maximumFractionDigits:0}) : '';
+    },
+    saveQuotation() {
+      const f = this.quotationForm;
+      if (!f.party || !f.subject) { this.showToast('Party and subject required'); return; }
+      this.polishQuotation();
+      const rec = {
+        id: Date.now(),
+        quotationNo: f.quotationNo || this.nextQuotationNo(),
+        referenceNo: f.referenceNo || '',
+        date: f.date || today(),
+        party: f.party, city: f.city || '',
+        subject: f.subject, body: f.body, product: f.product,
+        qty: f.qty, unit: f.unit, rate: f.rate, amount: f.amount,
+        validity: f.validity, delivery: f.delivery, terms: f.terms,
+        status: f.status || 'Draft'
+      };
+      if (f.editingId) {
+        this.quotations = this.quotations.filter(x => x.id !== f.editingId);
+        rec.id = f.editingId;
+      }
+      this.quotations.unshift(rec);
+      this.activeQuotation = rec;
+      this.quotationForm.showForm = false;
+      this.showToast('Quotation ' + rec.quotationNo + ' saved');
+      this.saveToStorage();
+    },
+    openQuotation(q) { this.activeQuotation = q; },
+    filteredQuotations() {
+      const f = this.quotationFilter || {};
+      const q = (f.q||'').toLowerCase();
+      return (this.quotations||[]).filter(r => {
+        const blob = [r.quotationNo,r.referenceNo,r.party,r.subject,r.date].join(' ').toLowerCase();
+        if (q && !blob.includes(q)) return false;
+        if (f.party && r.party !== f.party) return false;
+        return true;
+      });
     },
 
     // ========== PDF EXPORT (Header/Footer/Logo toggles + 6cm margins + page border) ==========
