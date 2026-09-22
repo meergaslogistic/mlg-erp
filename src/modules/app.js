@@ -28,6 +28,8 @@ function createApp() {
     greeting: 'Welcome',
     greetIcon: '☀️',
     pdfOptions: { show: false, header: false, footer: false, watermark: true, type: null, data: null },
+    // Inline table editing
+    inlineEdit: { kind: '', id: null, draft: null },
 
     titles: {
       dashboard: 'Dashboard',
@@ -1080,56 +1082,206 @@ function createApp() {
       this.showToast('Stock movement removed');
     },
 
-    editPurchase(row) {
-      const sources = (row.sources && row.sources.length) ? row.sources.map(s => ({
-        date: s.date || '', bowser: s.bowser || '', location: s.location || '',
-        loadedParty: s.loadedParty || row.loadedParty || row.party || '',
-        brand: s.brand || '', city: s.city || '', qty: s.qty || '', rate: s.rate || ''
-      })) : [{
-        date: row.date || '', bowser: row.bowser || '', location: row.source || row.plant || '',
-        loadedParty: row.loadedParty || row.party || '',
-        brand: row.brand || '', city: row.city || '', qty: row.loadQty || row.qty || '', rate: row.rate || ''
-      }];
-      this.purchaseForm = {
-        showForm: true,
-        addToStock: !!(row.addToStock || row.dealType === 'stock'),
-        dealType: 'purchase',
-        loadingDate: row.date || '',
-        bowser: row.bowser || '',
-        party: row.loadedParty || row.party || '',
-        city: row.city || '',
-        plant: row.plant || row.source || '',
-        source: row.source || row.plant || '',
-        brand: row.brand || '',
-        qty: row.loadQty || row.qty || '',
-        rate: row.rate || '',
-        amount: row.amount || '',
-        remarks: row.remarks || '',
-        tradingParty: row.tradingParty || 'MLG',
-        sources,
-        splits: [],
-        editingId: row.id
-      };
-      this.go('purchase');
-      this.showToast('Edit mode — save to replace this purchase');
+    /* ========== INLINE TABLE EDIT (edit inside the row, not top form) ========== */
+    isInlineEditing(kind, id) {
+      return this.inlineEdit.kind === kind && String(this.inlineEdit.id) === String(id);
     },
-
+    toInputDate(val) {
+      if (!val) return '';
+      const s = String(val).trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+      // Try parse display like 02-Sept-26 or 1-Jun-26
+      const dt = new Date(s);
+      if (!isNaN(dt.getTime())) return dt.toISOString().slice(0, 10);
+      // Manual: 02-Sep-26 / 02-Sept-26
+      const m = s.match(/(\d{1,2})[-/ ]([A-Za-z]+)[-/ ](\d{2,4})/);
+      if (m) {
+        const months = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,sept:8,oct:9,nov:10,dec:11 };
+        const mi = months[m[2].toLowerCase().slice(0, 4)] ?? months[m[2].toLowerCase().slice(0, 3)];
+        if (mi != null) {
+          let y = parseInt(m[3], 10);
+          if (y < 100) y += 2000;
+          const d = new Date(y, mi, parseInt(m[1], 10));
+          if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+        }
+      }
+      return '';
+    },
+    startInlineEdit(kind, row) {
+      if (!row || !row.id) return;
+      // Deep copy for draft so cancel restores original
+      const draft = JSON.parse(JSON.stringify(row));
+      // Normalize common fields for purchase
+      if (kind === 'purchase') {
+        draft.date = this.toInputDate(draft.date || draft.loadDate || '');
+        draft.loadQty = draft.loadQty || draft.qty || '';
+        draft.qty = draft.loadQty || draft.qty || '';
+        draft.source = draft.source || draft.plant || '';
+        draft.loadedParty = draft.loadedParty || draft.party || '';
+        draft.brand = draft.brand || '';
+        draft.rate = draft.rate || '';
+        draft.amount = draft.amount || '';
+        draft.city = draft.city || '';
+      }
+      if (kind === 'sale') {
+        draft.date = this.toInputDate(draft.date || '');
+        draft.qty = draft.qty || '';
+        draft.rate = draft.rate || '';
+        draft.amount = draft.amount || '';
+        draft.party = draft.party || '';
+        draft.bowser = draft.bowser || '';
+        draft.city = draft.city || '';
+        draft.plant = draft.plant || '';
+        draft.brand = draft.brand || '';
+      }
+      this.inlineEdit = { kind, id: row.id, draft };
+      this.showToast('Row edit mode — change fields then Save');
+    },
+    cancelInlineEdit() {
+      this.inlineEdit = { kind: '', id: null, draft: null };
+    },
+    inlineDraftAmount(d) {
+      if (!d) return '';
+      const q = parseFloat(d.qty || d.loadQty) || 0;
+      const r = parseFloat(d.rate) || 0;
+      if (!q || !r) return '';
+      return calcAmount(q, r);
+    },
+    onInlineRateOrQty() {
+      const d = this.inlineEdit.draft;
+      if (!d) return;
+      d.amount = this.inlineDraftAmount(d);
+    },
+    editPurchase(row) {
+      // Prefer inline edit in table (user request)
+      this.startInlineEdit('purchase', row);
+    },
     editSale(row) {
-      this.saleForm = {
-        dealType: row.dealType || ((row.plant || '').toUpperCase().includes('STOCK') || (row.plant || '').toUpperCase().includes('RPG') ? 'from_stock' : 'direct'),
-        date: row.date || '',
-        bowser: row.bowser || '',
-        party: row.party || '',
-        city: row.city || '',
-        plant: row.plant || '',
-        qty: row.qty || '',
-        rate: row.rate || '',
-        amount: row.amount || '',
-        remarks: row.remarks || '',
-        editingId: row.id
-      };
-      this.go('sale');
-      this.showToast('Edit mode — save to replace this sale');
+      this.startInlineEdit('sale', row);
+    },
+    saveInlinePurchase() {
+      const d = this.inlineEdit.draft;
+      if (!d || this.inlineEdit.kind !== 'purchase') return;
+      const id = this.inlineEdit.id;
+      const rec = this.purchases.find(x => String(x.id) === String(id));
+      if (!rec) { this.cancelInlineEdit(); return; }
+
+      const qty = parseFloat(d.qty || d.loadQty) || 0;
+      if (!d.date || !d.bowser || !qty) {
+        this.showToast('Date, bowser aur qty zaroori hain');
+        return;
+      }
+      const rateStr = (d.rate === 0 || d.rate === '0') ? '' : String(d.rate || '').trim();
+      const rateNum = parseFloat(rateStr) || 0;
+      const amount = rateNum ? calcAmount(qty, rateNum) : '';
+
+      // Reverse old ledger + stock
+      this.removeLedgerBySource('purchase', rec.id);
+      this.removeStockBySource(rec.id);
+
+      // Apply fields
+      rec.date = formatDateDisplay(d.date) || d.date;
+      rec.loadDate = rec.date;
+      rec.bowser = d.bowser || '';
+      rec.brand = d.brand || '';
+      rec.source = d.source || d.plant || '';
+      rec.plant = d.source || d.plant || '';
+      rec.loadedParty = d.loadedParty || d.party || '';
+      rec.party = rec.loadedParty;
+      rec.city = d.city || '';
+      rec.qty = qty;
+      rec.loadQty = qty;
+      rec.rate = rateStr;
+      rec.amount = amount;
+      rec.ratePending = !rateNum;
+      if (rateNum) rec.rateDate = formatDateDisplay(new Date());
+      else rec.rateDate = '';
+
+      // Sync sources array if present
+      if (rec.sources && rec.sources.length) {
+        rec.sources[0] = {
+          ...(rec.sources[0] || {}),
+          date: rec.date,
+          bowser: rec.bowser,
+          location: rec.source,
+          loadedParty: rec.loadedParty,
+          brand: rec.brand,
+          city: rec.city,
+          qty: String(qty),
+          rate: rateStr
+        };
+      } else {
+        rec.sources = [{
+          date: rec.date, bowser: rec.bowser, location: rec.source,
+          loadedParty: rec.loadedParty, brand: rec.brand, city: rec.city,
+          qty: String(qty), rate: rateStr
+        }];
+      }
+
+      // Re-post supplier CREDIT (0 if no rate)
+      if (rec.loadedParty) {
+        const narr = 'Purchase (Unko Dena)' + (rateNum ? '' : ' • Rate pending') + (rateNum && rec.rateDate ? ' • Rate set on ' + rec.rateDate : '');
+        this.postToLedger(rec.loadedParty, narr, 0, parseAmount(amount), {
+          qty: qty, rate: rateStr, bowser: rec.bowser, date: rec.date,
+          sourceType: 'purchase', sourceId: rec.id, customerNarration: narr
+        });
+      }
+      if (rec.addToStock || rec.dealType === 'stock') {
+        this.applyStockMove('In', qty, `${rec.bowser} – ${qty}T purchase to stock`, rec.date, rec.id);
+      }
+
+      this.recalcTotals();
+      this.saveToStorage();
+      this.cancelInlineEdit();
+      this.showToast(rateNum ? 'Purchase updated • ledger refreshed' : 'Purchase updated • rate cleared • ledger 0');
+    },
+    saveInlineSale() {
+      const d = this.inlineEdit.draft;
+      if (!d || this.inlineEdit.kind !== 'sale') return;
+      const id = this.inlineEdit.id;
+      const rec = this.sales.find(x => String(x.id) === String(id));
+      if (!rec) { this.cancelInlineEdit(); return; }
+
+      const qty = parseFloat(d.qty) || 0;
+      if (!d.date || !d.bowser || !d.party || !qty) {
+        this.showToast('Date, bowser, party aur qty zaroori hain');
+        return;
+      }
+      const rateStr = (d.rate === 0 || d.rate === '0') ? '' : String(d.rate || '').trim();
+      const rateNum = parseFloat(rateStr) || 0;
+      const amount = rateNum ? calcAmount(qty, rateNum) : '';
+
+      this.removeLedgerBySource('sale', rec.id);
+      this.removeStockBySource(rec.id);
+
+      rec.date = formatDateDisplay(d.date) || d.date;
+      rec.bowser = d.bowser || '';
+      rec.party = d.party || '';
+      rec.city = d.city || '';
+      rec.plant = d.plant || '';
+      rec.brand = d.brand || '';
+      rec.qty = qty;
+      rec.rate = rateStr;
+      rec.amount = amount;
+      rec.ratePending = !rateNum;
+      if (rateNum) rec.rateDate = formatDateDisplay(new Date());
+      else rec.rateDate = '';
+
+      const narr = 'Sale (Unse Lena)' + (rateNum ? '' : ' • Rate pending') + (rateNum && rec.rateDate ? ' • Rate set on ' + rec.rateDate : '');
+      this.postToLedger(rec.party, narr, parseAmount(amount), 0, {
+        qty, rate: rateStr, bowser: rec.bowser, date: rec.date,
+        sourceType: 'sale', sourceId: rec.id, customerNarration: narr
+      });
+
+      const fromStock = rec.dealType === 'from_stock' || (rec.plant || '').toUpperCase().includes('RPG') || (rec.plant || '').toUpperCase().includes('STOCK');
+      if (fromStock) {
+        this.applyStockMove('Out', qty, `Sale to ${rec.party}`, rec.date, rec.id);
+      }
+
+      this.recalcTotals();
+      this.saveToStorage();
+      this.cancelInlineEdit();
+      this.showToast(rateNum ? 'Sale updated • ledger refreshed' : 'Sale updated • rate cleared • ledger 0');
     },
 
     editPayment(row) {
@@ -1323,8 +1475,8 @@ function createApp() {
         qty: loadQty,
         loadQty: loadQty,
         unit: 'Ton',
-        rate: rate,
-        amount: rate ? calcAmount(loadQty, rate) : (f.amount || ''),
+        rate: rate || '',
+        amount: rate ? calcAmount(loadQty, rate) : '',
         status: 'Loaded',
         ratePending: !rate,
         dealType: addToStock ? 'stock' : 'purchase',
