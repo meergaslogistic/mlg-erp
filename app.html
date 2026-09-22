@@ -482,10 +482,9 @@
                       <th class="px-3 py-2.5">S#</th>
                       <th class="px-3 py-2.5">Slip / Voucher</th>
                       <th class="px-3 py-2.5">Date</th>
-                      <th class="px-3 py-2.5">Narration</th>
+                      <th class="px-3 py-2.5 min-w-[180px]">Narration</th>
                       <th class="px-3 py-2.5">Bowser</th>
-                      <th class="px-3 py-2.5">Unload Wt</th>
-                      <th class="px-3 py-2.5">Base Rate</th>
+                      <th class="px-3 py-2.5">Qty (MT)</th>
                       <th class="px-3 py-2.5">Rate</th>
                       <th class="px-3 py-2.5 text-right">Debit</th>
                       <th class="px-3 py-2.5 text-right">Credit</th>
@@ -496,20 +495,19 @@
                     <template x-for="(e, i) in (activeParty?.ledger || [])" :key="i">
                       <tr>
                         <td class="px-3 py-2 text-xs text-slate-400" x-text="(activeParty.ledger.length - i)"></td>
-                        <td class="px-3 py-2 text-xs" x-text="e.voucher || e.tid || e.slip || '—'"></td>
+                        <td class="px-3 py-2 text-xs whitespace-nowrap" x-text="e.voucher || e.tid || e.slip || '—'"></td>
                         <td class="px-3 py-2 text-xs text-slate-500 whitespace-nowrap" x-text="e.date"></td>
-                        <td class="px-3 py-2 text-sm text-slate-800" x-text="customerLedgerNarration(e)"></td>
-                        <td class="px-3 py-2 text-xs" x-text="e.bowser || '—'"></td>
-                        <td class="px-3 py-2 text-xs" x-text="e.qty || '—'"></td>
-                        <td class="px-3 py-2 text-xs" x-text="e.baseRate || '—'"></td>
-                        <td class="px-3 py-2 text-xs" x-text="e.rate || '—'"></td>
-                        <td class="px-3 py-2 text-right text-rose-600" x-text="e.debit ? fmtMoney(e.debit) : ''"></td>
-                        <td class="px-3 py-2 text-right text-emerald-600" x-text="e.credit ? fmtMoney(e.credit) : ''"></td>
-                        <td class="px-3 py-2 text-right font-medium" x-text="fmtMoney(e.balance)"></td>
+                        <td class="px-3 py-2 text-sm text-slate-800 max-w-[280px] break-words leading-snug" x-text="customerLedgerNarration(e)"></td>
+                        <td class="px-3 py-2 text-xs whitespace-nowrap" x-text="e.bowser || '—'"></td>
+                        <td class="px-3 py-2 text-xs whitespace-nowrap" x-text="e.qty || '—'"></td>
+                        <td class="px-3 py-2 text-xs whitespace-nowrap" x-text="e.rate || '—'"></td>
+                        <td class="px-3 py-2 text-right text-rose-600 whitespace-nowrap" x-text="e.debit ? fmtMoney(e.debit) : ''"></td>
+                        <td class="px-3 py-2 text-right text-emerald-600 whitespace-nowrap" x-text="e.credit ? fmtMoney(e.credit) : ''"></td>
+                        <td class="px-3 py-2 text-right font-medium whitespace-nowrap" x-text="fmtMoney(e.balance)"></td>
                       </tr>
                     </template>
                     <tr x-show="!(activeParty?.ledger || []).length">
-                      <td colspan="6" class="px-3 py-8 text-center text-slate-400 text-sm">No entries yet</td>
+                      <td colspan="10" class="px-3 py-8 text-center text-slate-400 text-sm">No entries yet</td>
                     </tr>
                   </tbody>
                 </table>
@@ -758,9 +756,23 @@
               <span class="text-xs text-slate-500">Tick = Inventory IN. Nahi to sirf purchase register + supplier ledger (Loaded Party CREDIT).</span></span>
             </label>
 
+            <div class="rounded-xl border border-slate-200 p-3 space-y-2">
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Narration mein kya dikhe (tick karein)</p>
+              <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.bowser" class="rounded"> Bowser</label>
+                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.qty" class="rounded"> Qty</label>
+                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.loadedFrom" class="rounded"> Loaded From</label>
+                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.brand" class="rounded"> Brand / Quality</label>
+                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.city" class="rounded"> City</label>
+                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.rate" class="rounded"> Rate</label>
+                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.remarks" class="rounded"> Extra note</label>
+              </div>
+              <p class="text-[11px] text-slate-400">Bowser / Qty / Rate columns mein alag dikhte hain — yahan sirf Description text control hai.</p>
+            </div>
+
             <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration / Details</label>
-              <input type="text" x-model="purchaseForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Party ledger note">
+              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Extra note (optional)</label>
+              <input type="text" x-model="purchaseForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Extra note for ledger">
             </div>
             <div class="flex flex-wrap items-center gap-3">
               <button type="submit" class="btn-primary px-6 py-2.5 text-sm">
