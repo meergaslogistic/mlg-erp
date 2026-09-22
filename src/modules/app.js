@@ -609,7 +609,7 @@ function createApp() {
     },
     resetAllData() {
       if (!confirm('Delete all saved ERP data on this browser?')) return;
-      localStorage.removeItem('mlg_erp_v6');
+      localStorage.removeItem('mlg_erp_v7');
       location.reload();
     },
     filteredPurchaseRows() { return this.applyRowFilter(this.purchases || [], this.purchaseFilter || {}); },
@@ -757,13 +757,13 @@ function createApp() {
           master: this.master,
           totals: this.totals
         };
-        localStorage.setItem('mlg_erp_v6', JSON.stringify(payload));
+        localStorage.setItem('mlg_erp_v7', JSON.stringify(payload));
       } catch (e) { console.warn('Storage save failed', e); }
     },
 
     loadFromStorage() {
       try {
-        const raw = localStorage.getItem('mlg_erp_v6');
+        const raw = localStorage.getItem('mlg_erp_v7');
         if (!raw) return;
         const data = JSON.parse(raw);
         if (data.parties) this.parties = data.parties;
@@ -1811,13 +1811,13 @@ function createApp() {
       if (email) { doc.text(email, rx, hy, { align:'right' }); hy += 3.8; }
       if (web) { doc.text(web, rx, hy, { align:'right' }); }
       // content starts at 42mm — never inside the 4cm header band
-      let y = 46;
+      let y = 98;
       doc.setTextColor(20, 30, 50);
-      doc.setFontSize(11);
+      doc.setFontSize(12);
       doc.setFont(undefined, 'bold');
       doc.text('QUOTATION', 105, y, { align:'center' });
       y += 8;
-      doc.setFontSize(9);
+      doc.setFontSize(10);
       doc.setFont(undefined, 'bold');
       doc.text(q.quotationNo || '', 18, y);
       doc.setFont(undefined, 'normal');
@@ -1841,8 +1841,9 @@ function createApp() {
       const body = doc.splitTextToSize(q.body || 'We are pleased to submit our quotation for supply of LPG as under.', 174);
       doc.text(body, 18, y);
       y += body.length * 4.5 + 6;
-      doc.setFillColor(240, 246, 255);
-      doc.rect(18, y-4, 174, 8, 'F');
+      doc.setDrawColor(180, 200, 220);
+      doc.setLineWidth(0.2);
+      doc.rect(18, y-5, 174, 16);
       doc.setFont(undefined, 'bold');
       doc.text('Product', 20, y);
       doc.text('Qty', 95, y);
@@ -1957,6 +1958,11 @@ function createApp() {
       const mode = action || 'download';
       if (opts.type === 'ledger') {
         this.downloadPartyLedgerPDF(opts.data, opts, mode);
+      } else if (opts.type === 'quotation') {
+        this.downloadQuotationPDF(opts.data, mode);
+      } else if (opts.type === 'register') {
+        if (opts.data) this.report.type = opts.data;
+        this.downloadReportPDF();
       } else if (opts.type === 'sale' || opts.type === 'purchase' || opts.type === 'payment') {
         this.downloadSingleEntryPDF(opts.type, opts.data, opts, mode);
       }
@@ -2118,7 +2124,7 @@ function createApp() {
 
         y += 6;
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
+        doc.setFontSize(10);
         doc.setTextColor(71, 85, 105);
         doc.text((party.name || '') + (party.city ? '  •  ' + party.city : ''), 8, y);
 
@@ -2239,7 +2245,7 @@ function createApp() {
 
         y += 6;
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
+        doc.setFontSize(10);
         doc.setTextColor(71, 85, 105);
         doc.text('Single Transaction Document', 14, y);
 
