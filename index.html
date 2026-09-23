@@ -702,100 +702,26 @@
           </button>
         </div>
 
-        <div class="card p-6 mb-5 rounded-2xl" x-show="purchaseForm.showForm">
-          <form @submit.prevent="savePurchase" class="space-y-5">
-            <div>
-              <div class="space-y-3">
-                <template x-for="(src, si) in purchaseForm.sources" :key="'src'+si">
-                  <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50/70">
-                    <div class="flex items-center justify-between mb-2" x-show="si > 0">
-                      <button type="button" class="text-[11px] font-semibold text-teal-700" @click="copyFirstSource(si)">Same as first line (all fields)</button>
-                      <button type="button" class="text-rose-600 text-xs" @click="removePurchaseSource(si)">Remove line</button>
-                    </div>
-                    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-9 gap-2">
-                      <div>
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loading Date *</label>
-                        <input type="date" x-model="src.date" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
-                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'date')">same as first</button>
-                      </div>
-                      <div>
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser / Vehicle *</label>
-                        <input list="bowserList" x-model="src.bowser" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
-                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'bowser')">same as first</button>
-                      </div>
-                      <div>
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loaded From *</label>
-                        <input list="loadFromList" x-model="src.location" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" placeholder="Plant / border">
-                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'location')">same as first</button>
-                      </div>
-                      <div>
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Loaded Party</label>
-                        <input list="partyList" x-model="src.loadedParty" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" placeholder="Supplier / seller">
-                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'loadedParty')">same as first</button>
-                      </div>
-                      <div>
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type / Origin / Brand</label>
-                        <input list="sourceList" x-model="src.brand" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
-                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'brand')">same as first</button>
-                      </div>
-                      <div>
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label>
-                        <input list="cityList" x-model="src.city" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
-                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'city')">same as first</button>
-                      </div>
-                      <div>
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty (Ton) *</label>
-                        <input type="number" step="0.001" x-model="src.qty" @input="recalcPurchaseFromSources()" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
-                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'qty'); recalcPurchaseFromSources()">same as first</button>
-                      </div>
-                      <div>
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate (optional)</label>
-                        <input type="number" step="0.01" x-model="src.rate" @input="recalcPurchaseFromSources()" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" placeholder="Later">
-                        <button type="button" class="text-[10px] text-teal-700 mt-1" x-show="si>0" @click="sameAsFirst(si,'rate'); recalcPurchaseFromSources()">same as first</button>
-                      </div>
-                      <div>
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount</label>
-                        <input type="text" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-slate-100 font-semibold" :value="sourceLineAmount(src)" readonly>
-                      </div>
-                    </div>
-                  </div>
-                </template>
+        <div class="card p-4 mb-5 rounded-2xl border border-slate-200 bg-slate-50/40" x-show="purchaseForm.showForm">
+          <form @submit.prevent="savePurchase" class="space-y-3">
+            <template x-for="(src, si) in purchaseForm.sources" :key="'src'+si">
+              <div class="flex flex-wrap items-end gap-2">
+                <input type="date" x-model="src.date" class="entry-field w-[9.5rem]" title="Loading Date" required>
+                <input list="bowserList" x-model="src.bowser" class="entry-field w-[7rem]" placeholder="Bowser *" required>
+                <input list="loadFromList" x-model="src.location" class="entry-field w-[8rem]" placeholder="Loaded From *">
+                <input list="partyList" x-model="src.loadedParty" class="entry-field w-[9rem]" placeholder="Loaded Party">
+                <input list="sourceList" x-model="src.brand" class="entry-field w-[8rem]" placeholder="Brand / Origin">
+                <input list="cityList" x-model="src.city" class="entry-field w-[6rem]" placeholder="City">
+                <input type="number" step="0.001" x-model="src.qty" @input="recalcPurchaseFromSources()" class="entry-field w-[5.5rem]" placeholder="Qty *" required>
+                <input type="number" step="0.01" x-model="src.rate" @input="recalcPurchaseFromSources()" class="entry-field w-[6rem]" placeholder="Rate">
+                <input type="text" class="entry-field w-[7rem] bg-slate-100 font-semibold" :value="sourceLineAmount(src)" placeholder="Amount" readonly>
+                <input type="text" x-model="purchaseForm.remarks" class="entry-field min-w-[8rem] flex-1" placeholder="Note">
+                <label class="inline-flex items-center gap-1.5 text-xs text-slate-600 whitespace-nowrap px-1">
+                  <input type="checkbox" x-model="purchaseForm.addToStock" class="rounded"> RPG Stock
+                </label>
+                <button type="submit" class="btn-primary px-4 py-2 text-sm whitespace-nowrap"><i class="fas fa-save mr-1"></i> Save</button>
               </div>
-              <div class="flex items-center justify-between mt-3">
-                <p class="text-[11px] text-slate-500">Total loaded <b x-text="fmt(purchaseSourceQty())"></b> T · Total amount <b x-text="purchaseForm.amount || '—'"></b></p>
-              </div>
-            </div>
-
-            <label class="flex items-start gap-2 text-sm p-3 rounded-xl border border-teal-100 bg-teal-50/60">
-              <input type="checkbox" class="mt-1" x-model="purchaseForm.addToStock">
-              <span><b>RPG company stock mein bhi add karo</b><br>
-              <span class="text-xs text-slate-500">Tick = Inventory IN. Nahi to sirf purchase register + supplier ledger (Loaded Party CREDIT).</span></span>
-            </label>
-
-            <div class="rounded-xl border border-slate-200 p-3 space-y-2">
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Narration mein kya dikhe (tick karein)</p>
-              <div class="flex flex-wrap gap-x-4 gap-y-2 text-sm">
-                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.bowser" class="rounded"> Bowser</label>
-                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.qty" class="rounded"> Qty</label>
-                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.loadedFrom" class="rounded"> Loaded From</label>
-                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.brand" class="rounded"> Brand / Quality</label>
-                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.city" class="rounded"> City</label>
-                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.rate" class="rounded"> Rate</label>
-                <label class="inline-flex items-center gap-1.5"><input type="checkbox" x-model="purchaseForm.narrOpts.remarks" class="rounded"> Extra note</label>
-              </div>
-              <p class="text-[11px] text-slate-400">Bowser / Qty / Rate columns mein alag dikhte hain — yahan sirf Description text control hai.</p>
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Extra note (optional)</label>
-              <input type="text" x-model="purchaseForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Extra note for ledger">
-            </div>
-            <div class="flex flex-wrap items-center gap-3">
-              <button type="submit" class="btn-primary px-6 py-2.5 text-sm">
-                <i class="fas fa-save mr-1.5"></i> Save Purchase
-              </button>
-              <span class="text-xs text-slate-500">Unload / sale alag — Sale menu se. Rate baad mein bhi lag sakta hai.</span>
-            </div>
+            </template>
           </form>
         </div>
 
@@ -942,106 +868,31 @@
           </button>
         </div>
 
-        <div class="card p-6 mb-5 rounded-2xl" x-show="saleForm.showForm">
-          <form @submit.prevent="saveSale" class="space-y-5">
-            <div class="grid sm:grid-cols-2 gap-3">
-              <button type="button" @click="setSaleDeal('from_stock')" class="p-3 rounded-xl border text-left"
-                      :class="saleForm.dealType === 'from_stock' ? 'border-teal-500 bg-teal-50' : 'border-slate-200'">
-                <p class="font-bold text-sm">Sell from company stock</p>
-                <p class="text-[11px] text-slate-500">Pehle purchase stock mein gaya. Ab inventory OUT + buyer debit.</p>
-              </button>
-              <button type="button" @click="setSaleDeal('direct')" class="p-3 rounded-xl border text-left"
-                      :class="saleForm.dealType === 'direct' ? 'border-amber-500 bg-amber-50' : 'border-slate-200'">
-                <p class="font-bold text-sm">Direct sale / linked purchase</p>
-                <p class="text-[11px] text-slate-500">Party par pehle unload ho chuka. Stock nahi katna. Sirf sale bill.</p>
-              </button>
-            </div>
-
-            <div x-show="linkablePurchases().length">
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">1-click: linked purchase trip</label>
-              <div class="flex flex-wrap gap-2">
-                <select class="flex-1 min-w-[240px] border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="saleForm.linkedPurchaseId" @change="applyLinkedPurchase()">
-                  <option value="">Select loaded trip to auto-fill</option>
-                  <template x-for="p in linkablePurchases()" :key="'lp'+p.id">
-                    <option :value="p.id" x-text="(p.date||'') + ' · ' + (p.bowser||'') + ' · ' + (p.party||'') + ' · ' + (p.qty||'') + 'T'"></option>
-                  </template>
-                </select>
-                <button type="button" class="btn-primary px-4 py-2 text-sm" @click="applyLinkedPurchase()">Fill from purchase</button>
-              </div>
-              <p class="text-[11px] text-slate-500 mt-1">Operator ko dobara date/bowser/party/qty type nahi karni. Sirf sale rate likho aur save.</p>
-            </div>
-
-            <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50/70">
-              <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2">
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sale Date *</label>
-                  <input type="date" x-model="saleForm.date" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" required>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser / Vehicle *</label>
-                  <input list="bowserList" x-model="saleForm.bowser" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" required>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Party *</label>
-                  <input list="partyList" x-model="saleForm.party" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" required>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label>
-                  <input list="cityList" x-model="saleForm.city" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Filling Plant</label>
-                  <input list="plantList" x-model="saleForm.plant" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">LPG/GAS Quality</label>
-                  <input list="sourceList" x-model="saleForm.brand" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white">
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty (Ton) *</label>
-                  <input type="number" step="0.001" x-model="saleForm.qty" @input="calcSale" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" required>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sale Rate *</label>
-                  <input type="number" step="0.01" x-model="saleForm.rate" @input="calcSale" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" placeholder="Selling price">
-                </div>
-              </div>
-              <div class="grid md:grid-cols-3 gap-2 mt-2">
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Base Rate (cost, optional)</label>
-                  <input type="number" step="0.01" x-model="saleForm.baseRate" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" placeholder="Purchase cost / base">
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount (auto)</label>
-                  <input type="text" x-model="saleForm.amount" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-slate-100 font-semibold" readonly>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Narration</label>
-                  <input type="text" x-model="saleForm.remarks" class="w-full border border-slate-200 rounded-lg px-2 py-2 text-sm bg-white" placeholder="Invoice note">
-                </div>
-              </div>
-            </div>
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Split destinations — optional</p>
-                <button type="button" class="text-xs font-semibold text-teal-700" @click="addSaleSplit()">+ Add split party</button>
-              </div>
-              <p class="text-[11px] text-slate-500 mb-2">Ek bowser ki qty do parties / cities par baant sakte ho. Khali chhodoge to poori qty upar wali party par jayegi.</p>
-              <div class="space-y-2">
-                <template x-for="(line, si) in (saleForm.splits || [])" :key="'ss'+si">
-                  <div class="grid md:grid-cols-5 gap-2 p-3 rounded-xl border border-slate-200 bg-white">
-                    <input list="partyList" x-model="line.party" class="border border-slate-200 rounded-lg px-2 py-2 text-sm" placeholder="Party">
-                    <input list="cityList" x-model="line.city" class="border border-slate-200 rounded-lg px-2 py-2 text-sm" placeholder="City">
-                    <input list="plantList" x-model="line.plant" class="border border-slate-200 rounded-lg px-2 py-2 text-sm" placeholder="Plant">
-                    <input type="number" step="0.001" x-model="line.qty" class="border border-slate-200 rounded-lg px-2 py-2 text-sm" placeholder="Qty">
-                    <button type="button" class="text-rose-600 text-xs" @click="removeSaleSplit(si)">✕</button>
-                  </div>
+        <div class="card p-4 mb-5 rounded-2xl border border-slate-200 bg-slate-50/40" x-show="saleForm.showForm">
+          <form @submit.prevent="saveSale" class="space-y-2">
+            <div class="flex flex-wrap items-end gap-2">
+              <select class="entry-field w-[9rem]" x-model="saleForm.dealType" @change="setSaleDeal(saleForm.dealType)">
+                <option value="from_stock">From Stock</option>
+                <option value="direct">Direct / Linked</option>
+              </select>
+              <select class="entry-field min-w-[12rem] flex-1" x-model="saleForm.linkedPurchaseId" @change="applyLinkedPurchase()" x-show="linkablePurchases().length">
+                <option value="">Link purchase trip…</option>
+                <template x-for="p in linkablePurchases()" :key="'lp'+p.id">
+                  <option :value="p.id" x-text="(p.date||'') + ' · ' + (p.bowser||'') + ' · ' + (p.party||'') + ' · ' + (p.qty||'') + 'T'"></option>
                 </template>
-              </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-3">
-              <button type="submit" class="btn-primary px-6 py-2.5 text-sm"><i class="fas fa-save mr-1.5"></i> Save Sale</button>
-              <span class="text-xs text-slate-500">Linked / direct sale stock nahi karti. Stock sale RPG se qty kam karti hai.</span>
+              </select>
+              <input type="date" x-model="saleForm.date" class="entry-field w-[9.5rem]" title="Sale Date" required>
+              <input list="bowserList" x-model="saleForm.bowser" class="entry-field w-[7rem]" placeholder="Bowser *" required>
+              <input list="partyList" x-model="saleForm.party" class="entry-field w-[9rem]" placeholder="Party *" required>
+              <input list="cityList" x-model="saleForm.city" class="entry-field w-[6rem]" placeholder="City">
+              <input list="plantList" x-model="saleForm.plant" class="entry-field w-[8rem]" placeholder="Plant">
+              <input list="sourceList" x-model="saleForm.brand" class="entry-field w-[7rem]" placeholder="Brand">
+              <input type="number" step="0.001" x-model="saleForm.qty" @input="calcSale" class="entry-field w-[5.5rem]" placeholder="Qty *" required>
+              <input type="number" step="0.01" x-model="saleForm.rate" @input="calcSale" class="entry-field w-[6rem]" placeholder="Sale Rate">
+              <input type="number" step="0.01" x-model="saleForm.baseRate" class="entry-field w-[6rem]" placeholder="Base Rate">
+              <input type="text" x-model="saleForm.amount" class="entry-field w-[7rem] bg-slate-100 font-semibold" placeholder="Amount" readonly>
+              <input type="text" x-model="saleForm.remarks" class="entry-field min-w-[7rem] flex-1" placeholder="Note">
+              <button type="submit" class="btn-primary px-4 py-2 text-sm whitespace-nowrap"><i class="fas fa-save mr-1"></i> Save</button>
             </div>
           </form>
         </div>
@@ -1170,95 +1021,36 @@
             <span x-text="paymentForm.showForm ? 'Hide payment entry' : 'Payment Entry'"></span>
           </button>
         </div>
-        <div class="card p-6 mb-5 rounded-2xl" x-show="paymentForm.showForm">
-          <form @submit.prevent="savePayment" class="space-y-4">
-            <div class="grid md:grid-cols-3 gap-4">
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Date *</label>
-                <input type="date" x-model="paymentForm.date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Payment mode *</label>
-                <select x-model="paymentForm.mode" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
-                  <option value="Cash">Cash</option>
-                  <option value="Bank">Bank</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount *</label>
-                <input type="number" step="any" x-model="paymentForm.amount" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="0" required>
-              </div>
+        <div class="card p-4 mb-5 rounded-2xl border border-slate-200 bg-slate-50/40" x-show="paymentForm.showForm">
+          <form @submit.prevent="savePayment" class="space-y-2">
+            <div class="flex flex-wrap items-end gap-2">
+              <input type="date" x-model="paymentForm.date" class="entry-field w-[9.5rem]" title="Date" required>
+              <select x-model="paymentForm.mode" class="entry-field w-[6rem]">
+                <option value="Cash">Cash</option>
+                <option value="Bank">Bank</option>
+              </select>
+              <input list="partyList" x-model="paymentForm.fromParty" class="entry-field w-[9rem]" placeholder="Sender *" required>
+              <input list="bankList" x-model="paymentForm.fromBank" class="entry-field w-[9rem]" placeholder="Sender Bank">
+              <input type="text" x-model="paymentForm.tid" class="entry-field w-[7rem]" placeholder="TID">
+              <input list="partyList" x-model="paymentForm.toParty" class="entry-field w-[9rem]" placeholder="Receiver *" required>
+              <input list="bankList" x-model="paymentForm.bank" class="entry-field w-[9rem]" placeholder="Receiver Bank">
+              <input type="number" step="any" x-model="paymentForm.amount" class="entry-field w-[7rem]" placeholder="Amount *" required>
+              <input type="text" x-model="paymentForm.slip" class="entry-field w-[6rem]" placeholder="Slip">
+              <input type="text" x-model="paymentForm.remarks" class="entry-field min-w-[6rem] flex-1" placeholder="Note">
+              <label class="text-xs text-slate-500 whitespace-nowrap">
+                <input type="file" accept="image/*,.pdf" @change="onProofFile($event)" class="text-[10px] max-w-[7rem]">
+              </label>
+              <button type="submit" class="btn-info px-4 py-2 text-sm whitespace-nowrap"><i class="fas fa-save mr-1"></i> Save</button>
+              <span class="text-xs text-amber-700" x-show="paymentForm.editingId">Edit</span>
             </div>
-
-            <!-- Sender details -->
-            <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-              <p class="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide">Sender details</p>
-              <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sender party *</label>
-                  <input list="partyList" x-model="paymentForm.fromParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Who is sending (e.g. Bugti Plant or MLG)" required>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Sender bank account with title <span x-show="paymentForm.mode==='Bank'" class="text-rose-500">*</span></label>
-                  <input list="bankList" x-model="paymentForm.fromBank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="e.g. HBL · Wakeel Ahmed Enterprises">
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">TID <span x-show="paymentForm.mode==='Bank'" class="text-rose-500">*</span></label>
-                  <input type="text" x-model="paymentForm.tid" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Transaction ID">
-                </div>
-              </div>
-            </div>
-
-            <!-- Receiver details -->
-            <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-              <p class="text-xs font-bold text-slate-700 mb-3 uppercase tracking-wide">Receiver details</p>
-              <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Receiver party *</label>
-                  <input list="partyList" x-model="paymentForm.toParty" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Who receives (e.g. MLG or party name)" required>
-                </div>
-                <div>
-                  <label class="block text-[11px] font-semibold text-slate-500 mb-1">Receiver bank account with title</label>
-                  <input list="bankList" x-model="paymentForm.bank" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="e.g. MBL · Pak Rice Commission Agent">
-                </div>
-              </div>
-            </div>
-
-            <div class="grid md:grid-cols-2 gap-4">
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Voucher / slip (optional)</label>
-                <input type="text" x-model="paymentForm.slip" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Voucher or slip no">
-              </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Note (optional)</label>
-                <input type="text" x-model="paymentForm.remarks" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Short note">
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-semibold text-slate-500 mb-1">Photo / proof (optional)</label>
-              <div class="flex flex-wrap items-center gap-2">
-                <input type="file" accept="image/*,.pdf" @change="onProofFile($event)" class="text-xs">
-                <span class="text-xs text-teal-700" x-show="paymentForm.proofName" x-text="paymentForm.proofName"></span>
-                <button type="button" class="text-xs text-rose-600" x-show="paymentForm.proofData" @click="clearProof()">Remove</button>
-              </div>
-              <img x-show="paymentForm.proofData" :src="paymentForm.proofData" alt="Proof" class="mt-2 max-h-20 rounded border border-slate-200">
-            </div>
-
-            <div class="pt-1">
-              <p class="text-xs text-slate-500 mb-3">
-                Type <b>MLG</b> as sender or receiver so system knows money is on behalf of Meer Gas.
-                Both party ledgers + master ledger update automatically.
-              </p>
-              <button type="submit" class="btn-info px-6 py-2.5 text-sm">
-                <i class="fas fa-save mr-1.5"></i> Save Payment
-              </button>
-              <span class="text-xs text-amber-700 ml-3" x-show="paymentForm.editingId">Edit mode — save will replace this payment</span>
+            <div class="flex items-center gap-2" x-show="paymentForm.proofData">
+              <img :src="paymentForm.proofData" alt="Proof" class="max-h-12 rounded border">
+              <button type="button" class="text-xs text-rose-600" @click="clearProof()">Remove proof</button>
             </div>
           </form>
         </div>
 
-        <div class="card p-4 mb-4 rounded-2xl">        <div class="card p-4 mb-4 rounded-2xl">
+        <div class="card p-4 mb-4 rounded-2xl">
           <div class="grid md:grid-cols-4 gap-3">
             <input class="border border-slate-200 rounded-lg px-3 py-2 text-sm" placeholder="Search payments..." x-model="paymentFilter.q">
             <select class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" x-model="paymentFilter.mode">
@@ -1474,23 +1266,19 @@
           </div>
           <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="dieselForm.showForm = !dieselForm.showForm">Diesel / Cash Entry</button>
         </div>
-        <div class="card p-6 mb-5 rounded-2xl" x-show="dieselForm.showForm">
-          <form @submit.prevent="saveDiesel" class="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Loading Date *</label><input type="date" x-model="dieselForm.date" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Bowser No</label><input list="bowserList" x-model="dieselForm.bowser" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
-              <select x-model="dieselForm.type" @change="dieselForm.unit = dieselForm.type==='Cash' ? 'PKR' : (dieselForm.type==='Diesel' ? 'Drum' : 'PKR')" class="w-full border rounded-lg px-3 py-2 text-sm bg-white">
-                <option>Diesel</option><option>Cash</option><option>Salary</option><option>Washil</option><option>Other</option>
-              </select>
-            </div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Description</label><input x-model="dieselForm.description" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Cash / Diesel / salary batha"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Boarder / Location</label><input x-model="dieselForm.boarder" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Mand / BP 250 / Gwadar / Turbat"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Unit</label>
-              <select x-model="dieselForm.unit" class="w-full border rounded-lg px-3 py-2 text-sm bg-white"><option>Drum</option><option>Ltr</option><option>PKR</option></select>
-            </div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Quantity</label><input type="number" step="any" x-model="dieselForm.qty" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate</label><input type="number" step="any" x-model="dieselForm.rate" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div class="lg:col-span-4"><button class="btn-primary px-6 py-2.5 text-sm" type="submit">Save line</button></div>
+        <div class="card p-4 mb-5 rounded-2xl border border-slate-200 bg-slate-50/40" x-show="dieselForm.showForm">
+          <form @submit.prevent="saveDiesel" class="flex flex-wrap items-end gap-2">
+            <input type="date" x-model="dieselForm.date" class="entry-field w-[9.5rem]" title="Date" required>
+            <input list="bowserList" x-model="dieselForm.bowser" class="entry-field w-[7rem]" placeholder="Bowser">
+            <select x-model="dieselForm.type" @change="dieselForm.unit = dieselForm.type==='Cash' ? 'PKR' : (dieselForm.type==='Diesel' ? 'Drum' : 'PKR')" class="entry-field w-[6.5rem]">
+              <option>Diesel</option><option>Cash</option><option>Salary</option><option>Washil</option><option>Other</option>
+            </select>
+            <input x-model="dieselForm.description" class="entry-field min-w-[8rem] flex-1" placeholder="Description">
+            <input x-model="dieselForm.boarder" class="entry-field w-[7rem]" placeholder="Boarder">
+            <select x-model="dieselForm.unit" class="entry-field w-[5rem]"><option>Drum</option><option>Ltr</option><option>PKR</option></select>
+            <input type="number" step="any" x-model="dieselForm.qty" class="entry-field w-[5.5rem]" placeholder="Qty">
+            <input type="number" step="any" x-model="dieselForm.rate" class="entry-field w-[5.5rem]" placeholder="Rate">
+            <button class="btn-primary px-4 py-2 text-sm whitespace-nowrap" type="submit"><i class="fas fa-save mr-1"></i> Save</button>
           </form>
         </div>
         <div class="card p-4 mb-4 rounded-2xl">
@@ -1590,43 +1378,29 @@
           </div>
           <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="quotationForm.showForm=!quotationForm.showForm; if(!quotationForm.quotationNo) quotationForm.quotationNo=nextQuotationNo()">Quotation Entry</button>
         </div>
-        <div class="card p-6 mb-5 rounded-2xl" x-show="quotationForm.showForm">
-          <form @submit.prevent="saveQuotation" class="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Quotation No *</label><input x-model="quotationForm.quotationNo" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Reference No</label><input x-model="quotationForm.referenceNo" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="Party letter / inquiry no"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Date *</label><input type="date" x-model="quotationForm.date" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Party *</label><input list="partyList" x-model="quotationForm.party" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">City</label><input list="cityList" x-model="quotationForm.city" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Validity</label><input x-model="quotationForm.validity" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div class="md:col-span-2 lg:col-span-3"><label class="block text-[11px] font-semibold text-slate-500 mb-1">Subject *</label><input x-model="quotationForm.subject" class="w-full border rounded-lg px-3 py-2 text-sm" required></div>
-            <div class="md:col-span-2 lg:col-span-3"><label class="block text-[11px] font-semibold text-slate-500 mb-1">Letter body</label>
-              <textarea x-model="quotationForm.body" rows="4" class="w-full border rounded-lg px-3 py-2 text-sm" placeholder="We are pleased to quote the following rates for supply of LPG..."></textarea>
+        <div class="card p-4 mb-5 rounded-2xl border border-slate-200 bg-slate-50/40" x-show="quotationForm.showForm">
+          <form @submit.prevent="saveQuotation" class="space-y-2">
+            <div class="flex flex-wrap items-end gap-2">
+              <input x-model="quotationForm.quotationNo" class="entry-field w-[8rem]" placeholder="Quote No *" required>
+              <input x-model="quotationForm.referenceNo" class="entry-field w-[7rem]" placeholder="Ref No">
+              <input type="date" x-model="quotationForm.date" class="entry-field w-[9.5rem]" title="Date">
+              <input list="partyList" x-model="quotationForm.party" class="entry-field w-[9rem]" placeholder="Party *" required>
+              <input list="cityList" x-model="quotationForm.city" class="entry-field w-[6rem]" placeholder="City">
+              <input x-model="quotationForm.validity" class="entry-field w-[5rem]" placeholder="Validity">
+              <input x-model="quotationForm.product" class="entry-field w-[7rem]" placeholder="Product">
+              <input type="number" step="0.001" x-model="quotationForm.qty" @input="calcQuotation()" class="entry-field w-[5rem]" placeholder="Qty">
+              <input x-model="quotationForm.unit" class="entry-field w-[5rem]" placeholder="Unit">
+              <input type="number" step="0.01" x-model="quotationForm.rate" @input="calcQuotation()" class="entry-field w-[6rem]" placeholder="Rate">
+              <input x-model="quotationForm.amount" class="entry-field w-[7rem] bg-slate-100 font-semibold" placeholder="Amount" readonly>
+              <input x-model="quotationForm.delivery" class="entry-field min-w-[7rem] flex-1" placeholder="Delivery">
             </div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Product</label><input x-model="quotationForm.product" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Qty</label><input type="number" step="0.001" x-model="quotationForm.qty" @input="calcQuotation()" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Unit</label><input x-model="quotationForm.unit" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Rate quoted</label><input type="number" step="0.01" x-model="quotationForm.rate" @input="calcQuotation()" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Amount</label><input x-model="quotationForm.amount" class="w-full border rounded-lg px-3 py-2 text-sm bg-slate-100" readonly></div>
-            <div><label class="block text-[11px] font-semibold text-slate-500 mb-1">Delivery</label><input x-model="quotationForm.delivery" class="w-full border rounded-lg px-3 py-2 text-sm"></div>
-            <div class="md:col-span-2 lg:col-span-3"><label class="block text-[11px] font-semibold text-slate-500 mb-1">Terms (mandatory on letter)</label>
-              <textarea x-model="quotationForm.terms" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
-            </div>
-            <div class="md:col-span-2 lg:col-span-3 rounded-xl border border-slate-200 p-3 bg-slate-50">
-              <label class="flex items-center gap-2 text-sm font-semibold mb-2">
-                <input type="checkbox" x-model="quotationForm.usePermanentContact"> Use permanent company contact on this quotation
-              </label>
-              <p class="text-[11px] text-slate-500 mb-2">Uncheck karein agar is quotation ke liye address/phone alag chahiye.</p>
-              <div class="grid md:grid-cols-2 gap-2" x-show="!quotationForm.usePermanentContact">
-                <input class="border rounded-lg px-3 py-2 text-sm" placeholder="Office address" x-model="quotationForm.address">
-                <input class="border rounded-lg px-3 py-2 text-sm" placeholder="Phone" x-model="quotationForm.phone">
-                <input class="border rounded-lg px-3 py-2 text-sm" placeholder="Email" x-model="quotationForm.email">
-                <input class="border rounded-lg px-3 py-2 text-sm" placeholder="Website" x-model="quotationForm.website">
-              </div>
-            </div>
-            <div class="md:col-span-2 lg:col-span-3 flex flex-wrap gap-2">
-              <button type="button" class="px-4 py-2 text-sm border rounded-lg" @click="polishQuotation()">Polish wording</button>
-              <button type="submit" class="btn-primary px-6 py-2.5 text-sm" x-text="quotationForm.editingId ? 'Update quotation' : 'Generate quotation'"></button>
-              <span x-show="quotationForm.editingId" class="text-xs text-amber-600 self-center">Edit mode</span>
+            <div class="flex flex-wrap items-end gap-2">
+              <input x-model="quotationForm.subject" class="entry-field min-w-[12rem] flex-1" placeholder="Subject *" required>
+              <input x-model="quotationForm.body" class="entry-field min-w-[12rem] flex-1" placeholder="Letter body">
+              <input x-model="quotationForm.terms" class="entry-field min-w-[10rem] flex-1" placeholder="Terms">
+              <button type="button" class="px-3 py-2 text-xs border rounded-lg" @click="polishQuotation()">Polish</button>
+              <button type="submit" class="btn-primary px-4 py-2 text-sm whitespace-nowrap" x-text="quotationForm.editingId ? 'Update' : 'Save'"></button>
+              <span x-show="quotationForm.editingId" class="text-xs text-amber-600">Edit</span>
             </div>
           </form>
         </div>
