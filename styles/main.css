@@ -470,3 +470,27 @@ tr:hover td { background: #f8fafd; }
 .a4-body table th, .a4-body table td { background: rgba(255,255,255,0.28); }
 
 .a4-inner { min-height: 100%; }
+
+/* Unified entry bar — same look on Purchase / Sale / Payment / Diesel / Quotation */
+.entry-field {
+  border: 1px solid #d8dee9;
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  background: #fff;
+  color: #0c2a52;
+  min-height: 2.15rem;
+}
+.entry-field:focus {
+  outline: none;
+  border-color: #0d9488;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.15);
+}
+.entry-field::placeholder {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+select.entry-field {
+  cursor: pointer;
+}
