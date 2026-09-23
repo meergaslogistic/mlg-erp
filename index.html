@@ -704,12 +704,7 @@
 
         <div class="card p-6 mb-5 rounded-2xl" x-show="purchaseForm.showForm">
           <form @submit.prevent="savePurchase" class="space-y-5">
-            <p class="text-xs text-slate-500 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-              <b>Purchase = Loading only.</b> Supplier (Loaded Party) ledger par CREDIT. Unload / bechna <b>Sale</b> menu se hoga.
-            </p>
-
             <div>
-              <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-3">Loading — one complete line per source</p>
               <div class="space-y-3">
                 <template x-for="(src, si) in purchaseForm.sources" :key="'src'+si">
                   <div class="p-3 rounded-2xl border border-slate-200 bg-slate-50/70">
@@ -768,7 +763,6 @@
               </div>
               <div class="flex items-center justify-between mt-3">
                 <p class="text-[11px] text-slate-500">Total loaded <b x-text="fmt(purchaseSourceQty())"></b> T · Total amount <b x-text="purchaseForm.amount || '—'"></b></p>
-                <button type="button" class="text-xs font-semibold text-teal-700" @click="addPurchaseSource()">+ Add another Loaded From location</button>
               </div>
             </div>
 
@@ -1366,11 +1360,48 @@
           <div class="card-vip accent-rose p-5 pl-6"><p class="vip-label">Out</p><p class="vip-value mt-1 text-rose-600" x-text="fmtMoney(masterLedgerTotals().out)"></p></div>
           <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">Running</p><p class="vip-value mt-1" x-text="fmtMoney(masterLedgerTotals().bal)"></p></div>
         </div>
+
+        <!-- Receivable / Payable live cards -->
+        <div class="grid lg:grid-cols-2 gap-4 mb-5">
+          <div class="card rounded-2xl ring-1 ring-emerald-100 overflow-hidden">
+            <div class="px-5 py-3 bg-emerald-50 border-b border-emerald-100">
+              <p class="text-[11px] font-bold uppercase tracking-wide text-emerald-800">Receivable — Unse Lena</p>
+              <p class="text-xl font-extrabold text-emerald-700 mt-0.5" x-text="fmtMoney(partyExposure().recvTotal)"></p>
+              <p class="text-[11px] text-emerald-600">Trading parties se lena hai (sale − payments)</p>
+            </div>
+            <div class="max-h-56 overflow-y-auto divide-y divide-slate-100">
+              <template x-for="row in partyExposure().recv" :key="'recv'+row.name">
+                <div class="flex items-center justify-between px-4 py-2.5 text-sm">
+                  <span class="font-medium text-slate-800" x-text="row.name"></span>
+                  <span class="font-bold text-emerald-600" x-text="fmtMoney(row.amount)"></span>
+                </div>
+              </template>
+              <p x-show="!partyExposure().recv.length" class="px-4 py-6 text-center text-xs text-slate-400">Koi receivable nahi</p>
+            </div>
+          </div>
+          <div class="card rounded-2xl ring-1 ring-rose-100 overflow-hidden">
+            <div class="px-5 py-3 bg-rose-50 border-b border-rose-100">
+              <p class="text-[11px] font-bold uppercase tracking-wide text-rose-800">Payable — Unko Dena</p>
+              <p class="text-xl font-extrabold text-rose-700 mt-0.5" x-text="fmtMoney(partyExposure().payTotal)"></p>
+              <p class="text-[11px] text-rose-600">Suppliers ko dena hai (purchase − payments)</p>
+            </div>
+            <div class="max-h-56 overflow-y-auto divide-y divide-slate-100">
+              <template x-for="row in partyExposure().pay" :key="'pay'+row.name">
+                <div class="flex items-center justify-between px-4 py-2.5 text-sm">
+                  <span class="font-medium text-slate-800" x-text="row.name"></span>
+                  <span class="font-bold text-rose-600" x-text="fmtMoney(row.amount)"></span>
+                </div>
+              </template>
+              <p x-show="!partyExposure().pay.length" class="px-4 py-6 text-center text-xs text-slate-400">Koi payable nahi</p>
+            </div>
+          </div>
+        </div>
+
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
             <button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','ledger')"><i class="fas fa-file-pdf"></i> Download PDF</button>
             <h2 class="text-base font-bold">Master Ledger — Meer Gas</h2>
-            <p class="text-xs text-slate-500">Payments se auto. Month-wise ya bank-wise dekho. Extra entry yahan nahi.</p>
+            <p class="text-xs text-slate-500">Bank book: MLG money In/Out. Party→party = Directed (amount dikhega, bank balance change nahi).</p>
           </div>
           <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="go('payment')">Payment Entry</button>
         </div>
@@ -1393,14 +1424,17 @@
             <table class="w-full text-sm sheet-table">
               <thead>
                 <tr>
-                  <th>S#</th><th>Date</th><th>Sender Party</th><th>Receiver Party</th><th>TID</th><th>Amount</th><th>Balance</th>
+                  <th>S#</th><th>Date</th><th>Type</th><th>Sender Party</th><th>Receiver Party</th><th>TID</th><th>Bank Amt</th><th>Directed</th><th>Balance</th>
                 </tr>
               </thead>
               <tbody>
-                <template                 <template x-for="row in filteredMasterLedgerRows()" :key="row.serial">
-                  <tr>
+                <template x-for="row in filteredMasterLedgerRows()" :key="row.serial">
+                  <tr :class="row.directed ? 'bg-amber-50/60' : ''">
                     <td x-text="row.serial"></td>
                     <td x-text="row.date"></td>
+                    <td class="text-xs">
+                      <span class="badge" :class="row.directed ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'" x-text="row.description"></span>
+                    </td>
                     <td class="text-xs">
                       <div class="font-medium" x-text="row.sender || '—'"></div>
                       <div class="text-slate-500" x-show="row.senderBank" x-text="row.senderBank"></div>
@@ -1410,12 +1444,13 @@
                       <div class="text-slate-500" x-show="row.receiverBank" x-text="row.receiverBank"></div>
                     </td>
                     <td class="text-xs text-slate-600" x-text="row.tid || '—'"></td>
-                    <td class="font-semibold" :class="row.amount >= 0 ? 'text-emerald-600' : 'text-rose-600'" x-text="fmtMoney(Math.abs(row.amount))"></td>
+                    <td class="font-semibold" :class="row.amount > 0 ? 'text-emerald-600' : (row.amount < 0 ? 'text-rose-600' : 'text-slate-400')" x-text="row.amount ? fmtMoney(Math.abs(row.amount)) : '—'"></td>
+                    <td class="font-semibold text-amber-700" x-text="row.directed ? fmtMoney(row.directedAmt) : '—'"></td>
                     <td x-text="fmtMoney(row.balance)"></td>
                   </tr>
                 </template>
                 <tr x-show="!filteredMasterLedgerRows().length">
-                  <td colspan="7" class="px-3 py-8 text-center text-slate-400">Payments se data aayega.</td>
+                  <td colspan="9" class="px-3 py-8 text-center text-slate-400">Payments se data aayega.</td>
                 </tr>
               </tbody>
             </table>
@@ -1590,7 +1625,8 @@
             </div>
             <div class="md:col-span-2 lg:col-span-3 flex flex-wrap gap-2">
               <button type="button" class="px-4 py-2 text-sm border rounded-lg" @click="polishQuotation()">Polish wording</button>
-              <button type="submit" class="btn-primary px-6 py-2.5 text-sm">Generate quotation</button>
+              <button type="submit" class="btn-primary px-6 py-2.5 text-sm" x-text="quotationForm.editingId ? 'Update quotation' : 'Generate quotation'"></button>
+              <span x-show="quotationForm.editingId" class="text-xs text-amber-600 self-center">Edit mode</span>
             </div>
           </form>
         </div>
@@ -1605,10 +1641,10 @@
             <div class="px-5 py-3 border-b bg-slate-50/80 font-bold text-sm">QUOTATION REGISTER</div>
             <div class="table-scroll">
               <table class="w-full text-sm sheet-table">
-                <thead><tr><th>S#</th><th>Quotation No</th><th>Date</th><th>Party</th><th>Subject</th><th>Qty</th><th>Rate</th><th>Amount</th><th>Status</th></tr></thead>
+                <thead><tr><th>S#</th><th>Quotation No</th><th>Date</th><th>Party</th><th>Subject</th><th>Qty</th><th>Rate</th><th>Amount</th><th>Status</th><th class="text-right">Actions</th></tr></thead>
                 <tbody>
                   <template x-for="(q,i) in filteredQuotations()" :key="q.id">
-                    <tr class="cursor-pointer" @click="openQuotation(q)">
+                    <tr class="cursor-pointer hover:bg-slate-50" @click="openQuotation(q)">
                       <td x-text="i+1"></td>
                       <td class="font-semibold text-teal-700 underline" x-text="q.quotationNo"></td>
                       <td x-text="sheetDate(q.date)"></td>
@@ -1618,6 +1654,11 @@
                       <td x-text="q.rate"></td>
                       <td x-text="q.amount"></td>
                       <td x-text="q.status"></td>
+                      <td class="text-right whitespace-nowrap" @click.stop>
+                        <button type="button" class="text-slate-600 text-xs mr-2" @click="editQuotation(q)">Edit</button>
+                        <button type="button" class="text-rose-600 text-xs mr-2" @click="deleteQuotation(q)">Delete</button>
+                        <button type="button" class="text-rose-600 text-xs" @click="openPdfOptions('quotation', q)"><i class="fas fa-file-pdf"></i></button>
+                      </td>
                     </tr>
                   </template>
                 </tbody>
