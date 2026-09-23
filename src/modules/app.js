@@ -157,7 +157,8 @@ function createApp() {
       terms: 'Rate is exclusive of taxes unless stated. Quantity subject to weighbridge. Payment as per agreed terms.',
       status: 'Draft',
       usePermanentContact: true,
-      address: '', phone: '', email: '', website: ''
+      address: '', phone: '', email: '', website: '',
+      editingId: null
     },
 
     masterSections: [
@@ -788,7 +789,7 @@ function createApp() {
       const rows = [];
       const isMlg = (name) => {
         const n = String(name || '').trim().toUpperCase();
-        return n === 'MLG' || n === 'MEER GAS' || n === 'MEER LOGISTICS' || n.startsWith('MLG');
+        return n === 'MLG' || n === 'MEER GAS' || n === 'MEER LOGISTICS' || n.startsWith('MLG') || n.startsWith('MEER');
       };
       (this.payments || []).forEach(p => {
         const mode = p.mode || ((p.tid && String(p.tid).trim()) ? 'Bank' : 'Cash');
@@ -799,21 +800,20 @@ function createApp() {
         const receiverBank = (p.bank && p.bank !== 'Cash' && p.bank !== 'Bank') ? p.bank : '';
         const tid = p.tid || p.slip || '';
 
-        /* bank filter: match sender or receiver bank title, or Cash */
         let ourBank = mode === 'Cash' ? 'Cash' : (senderBank || receiverBank || p.bank || 'Bank');
         if (bank !== 'ALL' && ourBank !== bank && !(bank === 'Cash' && mode === 'Cash')) {
-          /* also allow match if filter equals either bank string */
           if (senderBank !== bank && receiverBank !== bank && String(p.bank||'') !== bank) return;
         }
 
-        /* MLG balance: + when MLG receives, - when MLG sends */
-        let amountIn = 0, amountOut = 0;
+        /* Bank book In/Out only when MLG money moves. Party→party = Directed (shown, balance unchanged). */
+        let amountIn = 0, amountOut = 0, directed = false;
         if (isMlg(receiver) && !isMlg(sender)) amountIn = amt;
         else if (isMlg(sender) && !isMlg(receiver)) amountOut = amt;
+        else if (sender && receiver && !isMlg(sender) && !isMlg(receiver)) directed = true;
 
         rows.push({
           date: p.date,
-          description: (mode || 'Cash') + ' Payment',
+          description: directed ? ((mode || 'Cash') + ' Directed') : ((mode || 'Cash') + ' Payment'),
           bank: ourBank,
           tid: tid || '',
           sender: sender || '—',
@@ -821,14 +821,43 @@ function createApp() {
           receiver: receiver || '—',
           receiverBank: receiverBank || (mode === 'Cash' && isMlg(receiver) ? 'Cash' : ''),
           amountIn,
-          amountOut
+          amountOut,
+          directed,
+          directedAmt: directed ? amt : 0
         });
       });
       let bal = 0;
       return rows.map((r, i) => {
         bal += (r.amountIn || 0) - (r.amountOut || 0);
-        return { serial: i + 1, ...r, amount: (r.amountIn || 0) - (r.amountOut || 0), balance: bal };
+        return {
+          serial: i + 1, ...r,
+          amount: r.directed ? 0 : ((r.amountIn || 0) - (r.amountOut || 0)),
+          balance: bal
+        };
       });
+    },
+
+    /** Live receivable / payable from party ledgers (updates with purchase/sale/payment) */
+    partyExposure() {
+      const recv = [];
+      const pay = [];
+      (this.parties || []).forEach(p => {
+        if (!p || p.isBank) return;
+        const name = String(p.name || '');
+        const n = name.toUpperCase();
+        if (!name || n === 'MLG' || n.startsWith('MLG') || n.startsWith('MEER') || n.includes('• CASH') || n.includes('• BANK')) return;
+        const bal = Number(p.balance) || 0;
+        if (bal > 0.5) recv.push({ name, amount: bal });
+        else if (bal < -0.5) pay.push({ name, amount: Math.abs(bal) });
+      });
+      recv.sort((a, b) => b.amount - a.amount);
+      pay.sort((a, b) => b.amount - a.amount);
+      return {
+        recv,
+        pay,
+        recvTotal: recv.reduce((s, x) => s + x.amount, 0),
+        payTotal: pay.reduce((s, x) => s + x.amount, 0)
+      };
     },
 
     onSplitTypeChange(row) {
@@ -2136,14 +2165,53 @@ function createApp() {
         website: f.usePermanentContact ? (this.settings.website||'') : (f.website||this.settings.website||'')
       };
       if (f.editingId) {
-        this.quotations = this.quotations.filter(x => x.id !== f.editingId);
+        this.quotations = this.quotations.filter(x => String(x.id) !== String(f.editingId));
         rec.id = f.editingId;
       }
       this.quotations.unshift(rec);
       this.activeQuotation = rec;
       this.quotationForm.showForm = false;
-      this.showToast('Quotation ' + rec.quotationNo + ' saved');
+      this.quotationForm.editingId = null;
+      this.showToast(f.editingId ? ('Quotation ' + rec.quotationNo + ' updated') : ('Quotation ' + rec.quotationNo + ' saved'));
       this.saveToStorage();
+    },
+    editQuotation(q) {
+      if (!q) return;
+      this.quotationForm = {
+        showForm: true,
+        quotationNo: q.quotationNo || '',
+        referenceNo: q.referenceNo || '',
+        date: this.toInputDate(q.date) || q.date || today(),
+        party: q.party || '',
+        city: q.city || '',
+        subject: q.subject || '',
+        body: q.body || '',
+        product: q.product || 'LPG (Liquefied Petroleum Gas)',
+        qty: q.qty || '',
+        unit: q.unit || 'Metric Ton',
+        rate: q.rate || '',
+        amount: q.amount || '',
+        validity: q.validity || '7 days',
+        delivery: q.delivery || '',
+        terms: q.terms || '',
+        status: q.status || 'Draft',
+        usePermanentContact: false,
+        address: q.address || '',
+        phone: q.phone || '',
+        email: q.email || '',
+        website: q.website || '',
+        editingId: q.id
+      };
+      this.activeQuotation = q;
+      this.showToast('Edit mode — update karke save karein');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+    deleteQuotation(q) {
+      if (!q || !this.confirmDelete('quotation')) return;
+      this.quotations = this.quotations.filter(x => String(x.id) !== String(q.id));
+      if (this.activeQuotation && String(this.activeQuotation.id) === String(q.id)) this.activeQuotation = null;
+      this.saveToStorage();
+      this.showToast('Quotation deleted');
     },
     openQuotation(q) { this.activeQuotation = q; },
     quoteContact(q, key) {
