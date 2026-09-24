@@ -22,6 +22,9 @@ function createApp() {
     newPartyName: '',
     newPartyCity: '',
     selectedInv: 'rpg',
+    showAddInventory: false,
+    newInvName: '',
+    newInvType: 'Stock',
     toast: { show: false, msg: '' },
     clockNow: '',
     clockDate: '',
@@ -108,13 +111,14 @@ function createApp() {
     purchaseForm: {
       showForm: false,
       addToStock: false,
+      inventoryId: 'rpg',
       alsoCreateSale: false,
       saleRate: '',
       dealType: 'purchase',
       loadingDate: '', bowser: '', party: '', city: '', plant: '',
       qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '',
       tradingParty: 'MLG', remarks: '',
-      narrOpts: { bowser: true, qty: true, loadedFrom: true, brand: false, city: false, rate: false, remarks: true },
+      narrOpts: { date: true, bowser: true, qty: true, loadedFrom: true, loadedParty: false, brand: false, city: false, rate: false, remarks: true },
       loadFroms: [],
       sources: [{ date: '', bowser: '', location: '', loadedParty: '', brand: '', city: '', qty: '', rate: '' }],
       splits: []
@@ -122,9 +126,11 @@ function createApp() {
     saleForm: {
       showForm: false,
       dealType: 'from_stock',
+      inventoryId: 'rpg',
       date: '', bowser: '', party: '', city: '', plant: 'RPG STOCK - Karachi',
       qty: '', rate: '', amount: '', remarks: '', brand: '', source: '',
       linkedPurchaseId: '',
+      narrOpts: { date: true, bowser: true, qty: true, party: false, plant: true, brand: false, city: false, rate: false, remarks: true },
       loadFroms: [],
       splits: [
         { destType: 'party', party: '', city: '', qty: '', unloadDate: '' }
@@ -135,16 +141,21 @@ function createApp() {
       showBowser: false, showTid: false, showSlip: false, showBank: false, showNote: false,
       date: '', mode: 'Cash', type: 'Transfer', party: '', fromParty: '', toParty: '',
       slip: '', tid: '', bank: '', fromBank: '', amount: '', receiveAmount: '', remarks: '', proofName: '', proofData: '',
+      narrOpts: { date: true, mode: true, fromParty: true, toParty: true, bank: true, tid: true, slip: false, remarks: true },
       lines: [{ party: '', bank: '', tid: '', slip: '', amount: '', note: '' }]
     },
     stockForm: {
       showForm: false,
+      inventoryId: 'rpg',
       location: 'RPG Plant – STOCK', type: 'In', qty: '', notes: ''
     },
     dieselForm: {
       showForm: false,
       date: '', bowser: '', type: 'Diesel', description: '', boarder: 'Mand',
-      unit: 'Drum', qty: '', rate: '', amount: '', remarks: ''
+      unit: 'Drum', qty: '', rate: '', amount: '', remarks: '',
+      party: '', inventoryId: '',
+      cashAmount: '', lainKarcha: '', gadiSabiqa: '', extraKarcha: '',
+      narrOpts: { date: true, bowser: true, type: true, qty: true, rate: false, boarder: true, description: true, party: true, cash: true, lainKarcha: true, gadiSabiqa: true, extraKarcha: true }
     },
     quotationForm: {
       showForm: false,
@@ -179,6 +190,12 @@ function createApp() {
     // ========== Computed ==========
     get currentInv() {
       return this.inventories.find(i => i.id === this.selectedInv) || this.inventories[0];
+    },
+    get inventorySummary() {
+      const list = this.inventories || [];
+      const qty = list.reduce((s, i) => s + (parseFloat(i.qty) || 0), 0);
+      const amount = list.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
+      return { count: list.length, qty: Math.round(qty * 1000) / 1000, amount };
     },
     get filteredParties() {
       const q = (this.partySearch || '').toLowerCase();
@@ -366,47 +383,178 @@ function createApp() {
       if (!s.baseRate || !s.rate) return '';
       return Number(this.saleProfit(s)).toLocaleString('en-PK', {maximumFractionDigits:0});
     },
+    defaultNarrOpts(kind) {
+      if (kind === 'purchase') return { date: true, bowser: true, qty: true, loadedFrom: true, loadedParty: false, brand: false, city: false, rate: false, remarks: true };
+      if (kind === 'sale') return { date: true, bowser: true, qty: true, party: false, plant: true, brand: false, city: false, rate: false, remarks: true };
+      if (kind === 'payment') return { date: true, mode: true, fromParty: true, toParty: true, bank: true, tid: true, slip: false, remarks: true };
+      if (kind === 'diesel') return { date: true, bowser: true, type: true, qty: true, rate: false, boarder: true, description: true, party: true, cash: true, lainKarcha: true, gadiSabiqa: true, extraKarcha: true };
+      return {};
+    },
+    ledgerActionTitle(kind) {
+      const map = {
+        purchase: 'Purchase Entry',
+        sale: 'Sale Entry',
+        payment: 'Payment Entry',
+        diesel: 'Diesel & Cash Expense',
+        stock: 'Stock Adjustment'
+      };
+      return map[kind] || 'Entry';
+    },
+    rebuildLedgerNarration(kind, data, opts) {
+      const k = String(kind || '').toLowerCase();
+      const d = data || {};
+      const o = Object.assign({}, this.defaultNarrOpts(k.includes('sale') ? 'sale' : k.includes('purchase') ? 'purchase' : k.includes('diesel') ? 'diesel' : k.includes('pay') || k.includes('transfer') || k.includes('received') || k.includes('paid') ? 'payment' : k), opts || {});
+      const parts = [];
+      const add = (flag, val) => {
+        if (!flag) return;
+        const s = val == null ? '' : String(val).trim();
+        if (s) parts.push(s);
+      };
+
+      if (k.includes('purchase')) {
+        parts.push('Purchase');
+        add(o.bowser, d.bowser);
+        add(o.qty, d.qty ? (String(d.qty) + ' MT') : '');
+        add(o.loadedFrom, d.source || d.location || d.loadedFrom);
+        add(o.loadedParty, d.loadedParty);
+        add(o.brand, d.brand);
+        add(o.city, d.city);
+        add(o.rate, d.rate ? ('Rate ' + d.rate) : '');
+        add(o.remarks, d.remarks);
+        if (d.ratePending) parts.push('Rate pending');
+        return parts.join(' • ');
+      }
+      if (k.includes('sale')) {
+        parts.push('Sale');
+        add(o.bowser, d.bowser);
+        add(o.qty, d.qty ? (String(d.qty) + ' MT') : '');
+        add(o.party, d.party);
+        add(o.plant, d.plant || d.source);
+        add(o.brand, d.brand);
+        add(o.city, d.city);
+        add(o.rate, d.rate ? ('Rate ' + d.rate) : '');
+        add(o.remarks, d.remarks);
+        if (d.ratePending) parts.push('Rate pending');
+        return parts.join(' • ');
+      }
+      if (k.includes('diesel') || k.includes('cash') || k.includes('expense') || k.includes('karcha')) {
+        parts.push(d.lineTitle || d.type || 'Expense');
+        add(o.bowser, d.bowser);
+        add(o.qty, d.qty ? (String(d.qty) + (d.unit ? (' ' + d.unit) : '')) : '');
+        add(o.rate, d.rate ? ('Rate ' + d.rate) : '');
+        add(o.boarder, d.boarder || d.location);
+        add(o.description, d.description);
+        add(o.party, d.party);
+        add(o.remarks, d.remarks);
+        return parts.join(' • ');
+      }
+      const title = k.includes('transfer') ? 'Transfer' : k.includes('paid') || k.includes('made') ? 'Paid' : k.includes('received') ? 'Received' : (d.mode ? (d.mode + ' Payment') : 'Payment');
+      parts.push(title);
+      add(o.mode && d.mode && !String(parts[0]).toLowerCase().includes(String(d.mode).toLowerCase()), d.mode);
+      add(o.fromParty, d.fromParty ? ('From ' + d.fromParty) : '');
+      add(o.toParty, d.toParty ? ('To ' + d.toParty) : '');
+      add(o.bank, d.bank || d.fromBank);
+      add(o.tid, d.tid ? ('TID ' + d.tid) : '');
+      add(o.slip, d.slip ? ('Slip ' + d.slip) : '');
+      add(o.remarks, d.remarks || d.note);
+      return parts.join(' • ');
+    },
     shortLedgerWord(e) {
       if (!e) return '';
+      if (e.customerNarration) return e.customerNarration;
+      if (e.narration) return e.narration;
       const src = String(e.sourceType || '').toLowerCase();
       const debit = Number(e.debit) || 0;
       const credit = Number(e.credit) || 0;
-      // Single clear tag so user instantly knows relation
-      if (src === 'purchase') return 'Purchase (Unko Dena)';
-      if (src === 'sale') return 'Sale (Unse Lena)';
+      if (src === 'purchase') return 'Purchase';
+      if (src === 'sale') return 'Sale';
+      if (src === 'diesel') return e.lineTitle || e.type || 'Expense';
+      if (src === 'stock') return e.type === 'Out' ? 'Stock Out' : 'Stock In';
       if (src === 'payment') {
-        const raw = String(e.customerNarration || e.narration || '').toLowerCase();
-        const fromP = String(e.fromParty || '').toLowerCase();
-        const toP = String(e.toParty || '').toLowerCase();
-        const isMlg = (n) => { const x = String(n||'').toUpperCase(); return x === 'MLG' || x.startsWith('MLG') || x === 'MEER GAS'; };
-        if (raw.includes('transfer') || raw.includes('direct') || (!isMlg(fromP) && !isMlg(toP) && fromP && toP)) {
-          return credit ? 'Transfer (Unko Dena)' : 'Transfer (Unse Lena)';
-        }
-        if (raw.includes('paid') || raw.includes('made') || raw.includes('payment made')) {
-          return debit ? 'Paid (Unse Lena)' : 'Paid (Unko Dena)';
-        }
-        // Received
-        return credit ? 'Received (Unko Dena)' : 'Received (Unse Lena)';
+        if (credit) return 'Payment out';
+        if (debit) return 'Payment in';
+        return 'Payment';
       }
-      const t = String(e.customerNarration || e.narration || '').toLowerCase();
-      if (t.includes('purchase')) return 'Purchase (Unko Dena)';
-      if (t.includes('sale')) return 'Sale (Unse Lena)';
-      if (t.includes('transfer') || t.includes('direct')) {
-        return credit ? 'Transfer (Unko Dena)' : 'Transfer (Unse Lena)';
-      }
-      if (t.includes('paid') || t.includes('made')) {
-        return debit ? 'Paid (Unse Lena)' : 'Paid (Unko Dena)';
-      }
-      if (t.includes('received') || t.includes('payment')) {
-        return credit ? 'Received (Unko Dena)' : 'Received (Unse Lena)';
-      }
-      // Fallback by side
-      if (debit) return 'Entry (Unse Lena)';
-      if (credit) return 'Entry (Unko Dena)';
+      if (debit) return 'Entry';
+      if (credit) return 'Entry';
       return 'Entry';
     },
     customerLedgerNarration(e) {
       return this.shortLedgerWord(e) || 'Entry';
+    },
+    findInventory(idOrName) {
+      const key = String(idOrName || '').trim().toLowerCase();
+      if (!key) return this.inventories[0];
+      return this.inventories.find(i =>
+        String(i.id).toLowerCase() === key ||
+        String(i.name || '').toLowerCase() === key ||
+        String(i.partyName || '').toLowerCase() === key
+      ) || this.inventories[0];
+    },
+    inventoryPartyName(inv) {
+      if (!inv) return '';
+      return inv.partyName || inv.name || '';
+    },
+    ensureInventoryParty(inv) {
+      const name = this.inventoryPartyName(inv);
+      if (!name) return null;
+      let p = this.parties.find(x => String(x.name || '').toLowerCase() === name.toLowerCase());
+      if (!p) {
+        p = { id: 'invp-' + (inv.id || Date.now()), name, city: '', balance: 0, last: '—', ledger: [], isInventory: true };
+        this.parties.push(p);
+      } else {
+        p.isInventory = true;
+      }
+      if (!this.master.party.some(n => String(n).toLowerCase() === name.toLowerCase())) {
+        this.master.party.push(name);
+        this.refreshDatalists();
+      }
+      return p;
+    },
+    slugInvId(name) {
+      return String(name || 'inv').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 24) + '-' + Date.now().toString(36);
+    },
+    refreshInventoryStats(inv) {
+      if (!inv) return;
+      const qty = parseFloat(inv.qty) || 0;
+      inv.qty = Math.round(qty * 1000) / 1000;
+      inv.qtyLabel = '~ ' + inv.qty;
+      inv.amount = Math.round((parseFloat(inv.amount) || 0) * 100) / 100;
+      inv.avgRate = inv.qty > 0 ? Math.round((inv.amount / inv.qty) * 100) / 100 : 0;
+      inv.status = inv.qty > 0 ? 'Available' : 'Empty';
+      inv.statusClass = inv.qty > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500';
+      inv.typeClass = inv.typeClass || 'bg-teal-50 text-teal-700';
+    },
+    addInventory() {
+      const name = String(this.newInvName || '').trim();
+      if (!name) { this.showToast('Inventory name required'); return; }
+      if (this.inventories.some(i => String(i.name).toLowerCase() === name.toLowerCase())) {
+        this.showToast('This inventory already exists');
+        return;
+      }
+      const inv = {
+        id: this.slugInvId(name),
+        name,
+        partyName: name,
+        type: this.newInvType || 'Stock',
+        qty: 0,
+        amount: 0,
+        avgRate: 0,
+        qtyLabel: '~ 0',
+        status: 'Empty',
+        statusClass: 'bg-slate-100 text-slate-500',
+        typeClass: 'bg-teal-50 text-teal-700',
+        movements: []
+      };
+      this.inventories.push(inv);
+      this.ensureInventoryParty(inv);
+      this.selectedInv = inv.id;
+      this.showAddInventory = false;
+      this.newInvName = '';
+      this.refreshInventoryStats(inv);
+      this.recalcTotals();
+      this.saveToStorage();
+      this.showToast('Inventory added — cards updated');
     },
     toggleSaleForm() { this.saleForm.showForm = !this.saleForm.showForm; },
     resetSaleFilters() { this.saleFilter = { q:'', brand:'', bowser:'', party:'', city:'', plant:'', month:'', dealType:'' }; },
@@ -874,8 +1022,8 @@ function createApp() {
       const sumQty = (arr) => (arr || []).reduce((s, r) => s + (parseFloat(r.qty) || 0), 0);
       this.totals.purchased = Math.round(sumQty(this.purchases) * 1000) / 1000;
       this.totals.sold = Math.round(sumQty(this.sales) * 1000) / 1000;
-      const inv = this.inventories[0];
-      this.totals.stock = inv ? (parseFloat(inv.qty) || 0) : 0;
+      (this.inventories || []).forEach(inv => this.refreshInventoryStats(inv));
+      this.totals.stock = Math.round(((this.inventories || []).reduce((s, i) => s + (parseFloat(i.qty) || 0), 0)) * 1000) / 1000;
     },
 
     // ========== Navigation ==========
@@ -922,15 +1070,19 @@ function createApp() {
           payments: this.payments,
           inventories: this.inventories,
           master: this.master,
+          dieselEntries: this.dieselEntries,
+          quotations: this.quotations,
+          settings: this.settings,
           totals: this.totals
         };
+        localStorage.setItem('mlg_erp_v8', JSON.stringify(payload));
         localStorage.setItem('mlg_erp_v7', JSON.stringify(payload));
       } catch (e) { console.warn('Storage save failed', e); }
     },
 
     loadFromStorage() {
       try {
-        const raw = localStorage.getItem('mlg_erp_v7');
+        const raw = localStorage.getItem('mlg_erp_v8') || localStorage.getItem('mlg_erp_v7');
         if (!raw) return;
         const data = JSON.parse(raw);
         if (data.parties) this.parties = data.parties;
@@ -939,7 +1091,16 @@ function createApp() {
         if (data.payments) this.payments = data.payments;
         if (data.inventories) this.inventories = data.inventories;
         if (data.master) this.master = data.master;
+        if (data.dieselEntries) this.dieselEntries = data.dieselEntries;
+        if (data.quotations) this.quotations = data.quotations;
+        if (data.settings) this.settings = Object.assign(this.settings || {}, data.settings);
         if (data.totals) this.totals = data.totals;
+        (this.inventories || []).forEach(inv => {
+          if (!inv.partyName) inv.partyName = inv.name;
+          if (inv.amount == null) inv.amount = 0;
+          this.refreshInventoryStats(inv);
+          this.ensureInventoryParty(inv);
+        });
         this.refreshDatalists();
       } catch (e) { console.warn('Storage load failed', e); }
     },
@@ -1008,11 +1169,12 @@ function createApp() {
       p.last = formatDateDisplay(new Date());
       p.ledger.unshift({
         date: extra.date ? formatDateDisplay(extra.date) : formatDateDisplay(new Date()),
-        voucher: extra.voucher || extra.tid || extra.slip || '',
+        voucher: extra.voucher || extra.tid || extra.slip || extra.voucherNo || '',
         narration: narration || '',
         customerNarration: extra.customerNarration || narration || '',
         bowser: extra.bowser || '',
         tid: extra.tid || '',
+        slip: extra.slip || '',
         fromParty: extra.fromParty || '',
         toParty: extra.toParty || '',
         qty: extra.qty != null && extra.qty !== '' ? String(extra.qty) : '',
@@ -1022,7 +1184,9 @@ function createApp() {
         credit: creditN,
         balance: newBalance,
         sourceType: extra.sourceType || '',
-        sourceId: extra.sourceId || ''
+        sourceId: extra.sourceId || '',
+        showFields: extra.showFields || extra.narrOpts || null,
+        lineTitle: extra.lineTitle || ''
       });
     },
 
@@ -1041,24 +1205,32 @@ function createApp() {
     removeLedgerBySource(sourceType, sourceId) {
       (this.parties || []).forEach(p => {
         const before = (p.ledger || []).length;
-        p.ledger = (p.ledger || []).filter(e => !(e.sourceType === sourceType && String(e.sourceId) === String(sourceId)));
+        p.ledger = (p.ledger || []).filter(e => {
+          if (e.sourceType !== sourceType) return true;
+          const sid = String(e.sourceId || '');
+          const want = String(sourceId);
+          return !(sid === want || sid.indexOf(want + '-') === 0);
+        });
         if (p.ledger.length !== before) this.rebuildPartyBalance(p);
       });
     },
 
     removeStockBySource(sourceId) {
-      const inv = this.inventories[0];
-      if (!inv) return;
-      const hit = (inv.movements || []).filter(m => String(m.sourceId) === String(sourceId));
-      hit.forEach(m => {
-        const q = parseFloat(m.qty) || 0;
-        const cur = parseFloat(inv.qty) || 0;
-        inv.qty = Math.round((m.type === 'Out' ? cur + q : cur - q) * 1000) / 1000;
+      (this.inventories || []).forEach(inv => {
+        const hit = (inv.movements || []).filter(m => String(m.sourceId) === String(sourceId));
+        if (!hit.length) return;
+        hit.forEach(m => {
+          const q = parseFloat(m.qty) || 0;
+          const amt = parseAmount(m.amount);
+          const cur = parseFloat(inv.qty) || 0;
+          const curAmt = parseFloat(inv.amount) || 0;
+          inv.qty = Math.round((m.type === 'Out' ? cur + q : cur - q) * 1000) / 1000;
+          inv.amount = Math.max(0, Math.round((m.type === 'Out' ? curAmt + amt : curAmt - amt) * 100) / 100);
+        });
+        inv.movements = (inv.movements || []).filter(m => String(m.sourceId) !== String(sourceId));
+        this.refreshInventoryStats(inv);
       });
-      inv.movements = (inv.movements || []).filter(m => String(m.sourceId) !== String(sourceId));
-      inv.qtyLabel = '~ ' + inv.qty;
-      inv.status = inv.qty > 0 ? 'Available' : 'Empty';
-      this.totals.stock = inv.qty;
+      this.totals.stock = (this.inventories || []).reduce((s, i) => s + (parseFloat(i.qty) || 0), 0);
     },
 
     confirmDelete(label) {
@@ -1151,6 +1323,8 @@ function createApp() {
         draft.rate = draft.rate || '';
         draft.amount = draft.amount || '';
         draft.city = draft.city || '';
+        draft.narrOpts = Object.assign({}, this.defaultNarrOpts('purchase'), draft.narrOpts || {});
+        draft.inventoryId = draft.inventoryId || this.selectedInv || 'rpg';
       }
       if (kind === 'sale') {
         draft.date = this.toInputDate(draft.date || '');
@@ -1162,6 +1336,11 @@ function createApp() {
         draft.city = draft.city || '';
         draft.plant = draft.plant || '';
         draft.brand = draft.brand || '';
+        draft.narrOpts = Object.assign({}, this.defaultNarrOpts('sale'), draft.narrOpts || {});
+        draft.inventoryId = draft.inventoryId || this.selectedInv || 'rpg';
+      }
+      if (kind === 'payment') {
+        draft.narrOpts = Object.assign({}, this.defaultNarrOpts('payment'), draft.narrOpts || {});
       }
       this.inlineEdit = { kind, id: row.id, draft };
       this.showToast('Row edit mode — change fields then Save');
@@ -1225,6 +1404,8 @@ function createApp() {
       rec.ratePending = !rateNum;
       if (rateNum) rec.rateDate = formatDateDisplay(new Date());
       else rec.rateDate = '';
+      rec.narrOpts = Object.assign({}, this.defaultNarrOpts('purchase'), d.narrOpts || {});
+      rec.inventoryId = d.inventoryId || rec.inventoryId || 'rpg';
 
       // Sync sources array if present
       if (rec.sources && rec.sources.length) {
@@ -1249,14 +1430,19 @@ function createApp() {
 
       // Re-post supplier CREDIT (0 if no rate)
       if (rec.loadedParty) {
-        const narr = 'Purchase (Unko Dena)' + (rateNum ? '' : ' • Rate pending') + (rateNum && rec.rateDate ? ' • Rate set on ' + rec.rateDate : '');
+        const narr = this.rebuildLedgerNarration('Purchase', {
+          bowser: rec.bowser, qty, source: rec.source, loadedParty: rec.loadedParty,
+          brand: rec.brand, city: rec.city, rate: rateStr, remarks: rec.remarks, ratePending: !rateNum
+        }, rec.narrOpts);
         this.postToLedger(rec.loadedParty, narr, 0, parseAmount(amount), {
           qty: qty, rate: rateStr, bowser: rec.bowser, date: rec.date,
-          sourceType: 'purchase', sourceId: rec.id, customerNarration: narr
+          sourceType: 'purchase', sourceId: rec.id, customerNarration: narr, showFields: rec.narrOpts
         });
       }
       if (rec.addToStock || rec.dealType === 'stock') {
-        this.applyStockMove('In', qty, `${rec.bowser} – ${qty}T purchase to stock`, rec.date, rec.id);
+        this.applyStockMove('In', qty, `${rec.bowser} – ${qty}T purchase to stock`, rec.date, rec.id, rec.inventoryId, amount, {
+          bowser: rec.bowser, rate: rateStr, sourceType: 'purchase', date: rec.date, narrOpts: rec.narrOpts
+        });
       }
 
       this.recalcTotals();
@@ -1295,16 +1481,23 @@ function createApp() {
       rec.ratePending = !rateNum;
       if (rateNum) rec.rateDate = formatDateDisplay(new Date());
       else rec.rateDate = '';
+      rec.narrOpts = Object.assign({}, this.defaultNarrOpts('sale'), d.narrOpts || {});
+      rec.inventoryId = d.inventoryId || rec.inventoryId || 'rpg';
 
-      const narr = 'Sale (Unse Lena)' + (rateNum ? '' : ' • Rate pending') + (rateNum && rec.rateDate ? ' • Rate set on ' + rec.rateDate : '');
+      const narr = this.rebuildLedgerNarration('Sale', {
+        bowser: rec.bowser, qty, party: rec.party, plant: rec.plant, brand: rec.brand,
+        city: rec.city, rate: rateStr, remarks: rec.remarks, ratePending: !rateNum
+      }, rec.narrOpts);
       this.postToLedger(rec.party, narr, parseAmount(amount), 0, {
         qty, rate: rateStr, bowser: rec.bowser, date: rec.date,
-        sourceType: 'sale', sourceId: rec.id, customerNarration: narr
+        sourceType: 'sale', sourceId: rec.id, customerNarration: narr, showFields: rec.narrOpts
       });
 
       const fromStock = rec.dealType === 'from_stock' || (rec.plant || '').toUpperCase().includes('RPG') || (rec.plant || '').toUpperCase().includes('STOCK');
       if (fromStock) {
-        this.applyStockMove('Out', qty, `Sale to ${rec.party}`, rec.date, rec.id);
+        this.applyStockMove('Out', qty, `Sale to ${rec.party}`, rec.date, rec.id, rec.inventoryId, amount, {
+          bowser: rec.bowser, rate: rateStr, sourceType: 'sale', date: rec.date, narrOpts: rec.narrOpts
+        });
       }
 
       this.recalcTotals();
@@ -1327,7 +1520,8 @@ function createApp() {
         tid: first.tid || row.tid || '',
         slip: first.slip || row.slip || '',
         amount: first.amount || row.amount || '',
-        remarks: row.remarks || ''
+        remarks: row.remarks || '',
+        narrOpts: Object.assign({}, this.defaultNarrOpts('payment'), row.narrOpts || {})
       };
       this.inlineEdit = { kind: 'payment', id: row.id, draft };
       this.showToast('Payment row edit — Save to update ledgers');
@@ -1390,10 +1584,14 @@ function createApp() {
       rec.remarks = note;
       rec.lines = [{ party: toParty, bank: bankLabel, tid, slip, amount, note }];
 
-      const word = mode + ' Payment';
+      const narrOpts = Object.assign({}, this.defaultNarrOpts('payment'), d.narrOpts || {});
+      rec.narrOpts = narrOpts;
+      const word = this.rebuildLedgerNarration(type === 'Received' ? 'Received' : type === 'Made' ? 'Paid' : 'Transfer', {
+        mode, fromParty, toParty, bank: bankLabel, fromBank, tid, slip, remarks: note
+      }, narrOpts);
       const extraBase = {
-        date: d.date, tid: tid || slip || '', voucher: tid || slip || '',
-        fromParty, toParty, sourceType: 'payment', sourceId: id, customerNarration: word
+        date: d.date, tid: tid || slip || '', voucher: tid || slip || '', slip,
+        fromParty, toParty, sourceType: 'payment', sourceId: id, customerNarration: word, showFields: narrOpts
       };
       this.postToLedger(fromParty, word + ' → ' + toParty, 0, amount, extraBase);
       this.postToLedger(toParty, word + ' ← ' + fromParty, amount, 0, extraBase);
@@ -1422,7 +1620,15 @@ function createApp() {
         unit: row.unit || 'Drum',
         qty: row.qty || '',
         rate: row.rate || '',
-        amount: row.amount || ''
+        amount: row.amount || '',
+        party: row.party || '',
+        inventoryId: row.inventoryId || '',
+        cashAmount: row.cashAmount || '',
+        lainKarcha: row.lainKarcha || '',
+        gadiSabiqa: row.gadiSabiqa || '',
+        extraKarcha: row.extraKarcha || '',
+        remarks: row.remarks || '',
+        narrOpts: Object.assign({}, this.defaultNarrOpts('diesel'), row.narrOpts || {})
       };
       this.inlineEdit = { kind: 'diesel', id: row.id, draft };
       this.showToast('Diesel/Cash row edit — Save when done');
@@ -1451,16 +1657,32 @@ function createApp() {
       rec.qty = d.qty;
       rec.rate = d.rate;
       rec.amount = amount;
+      rec.party = d.party || '';
+      rec.inventoryId = d.inventoryId || '';
+      rec.cashAmount = d.cashAmount || '';
+      rec.lainKarcha = d.lainKarcha || '';
+      rec.gadiSabiqa = d.gadiSabiqa || '';
+      rec.extraKarcha = d.extraKarcha || '';
+      rec.remarks = d.remarks || '';
+      rec.narrOpts = Object.assign({}, this.defaultNarrOpts('diesel'), d.narrOpts || {});
+      rec.costLines = [{ title: rec.type || 'Expense', amount: parseAmount(amount), qty: rec.qty, rate: rec.rate, unit: rec.unit }];
+      if (parseFloat(rec.cashAmount) > 0) rec.costLines.push({ title: 'Cash', amount: parseFloat(rec.cashAmount), unit: 'PKR' });
+      if (parseFloat(rec.lainKarcha) > 0) rec.costLines.push({ title: 'Loading expense', amount: parseFloat(rec.lainKarcha), unit: 'PKR' });
+      if (parseFloat(rec.gadiSabiqa) > 0) rec.costLines.push({ title: 'Previous vehicle expense', amount: parseFloat(rec.gadiSabiqa), unit: 'PKR' });
+      if (parseFloat(rec.extraKarcha) > 0) rec.costLines.push({ title: 'Other expense', amount: parseFloat(rec.extraKarcha), unit: 'PKR' });
 
+      this.removeLedgerBySource('diesel', rec.id);
+      this.postDieselLedgerLines(rec);
       this.saveToStorage();
       this.cancelInlineEdit();
-      this.showToast('Diesel / Cash entry updated');
+      this.showToast('Diesel / Cash updated • ledger refreshed');
     },
     deleteDiesel(row) {
       if (!row || !this.confirmDelete('diesel/cash entry')) return;
+      this.removeLedgerBySource('diesel', row.id);
       this.dieselEntries = this.dieselEntries.filter(x => String(x.id) !== String(row.id));
       this.saveToStorage();
-      this.showToast('Diesel / Cash entry deleted');
+      this.showToast('Diesel / Cash deleted and ledger reversed');
     },
 
     calcPurchase() {
@@ -1534,35 +1756,55 @@ function createApp() {
       return e.voucher || e.tid || e.slip || '—';
     },
 
-    applyStockMove(type, qty, remarks, dateStr, sourceId) {
-      const inv = this.inventories[0];
+    applyStockMove(type, qty, remarks, dateStr, sourceId, invId, amount, extra) {
+      const inv = this.findInventory(invId || this.selectedInv);
       if (!inv) return;
       const q = parseFloat(qty) || 0;
+      const amt = parseAmount(amount);
       const current = parseFloat(inv.qty) || 0;
       const signedType = type === 'Out' ? 'Out' : 'In';
       const next = signedType === 'Out' ? current - q : current + q;
       inv.qty = Math.round(next * 1000) / 1000;
-      inv.qtyLabel = '~ ' + inv.qty;
-      inv.status = inv.qty > 0 ? 'Available' : 'Empty';
-      inv.statusClass = inv.qty > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500';
+      const curAmt = parseFloat(inv.amount) || 0;
+      inv.amount = Math.max(0, Math.round((signedType === 'Out' ? curAmt - amt : curAmt + amt) * 100) / 100);
+      if (!inv.movements) inv.movements = [];
       inv.movements.unshift({
         date: dateStr || formatDateDisplay(new Date()),
         type: signedType,
         qty: String(qty),
+        amount: amt || '',
         remarks: remarks || '',
         sourceId: sourceId || ''
       });
-      this.totals.stock = inv.qty;
-    },
+      this.refreshInventoryStats(inv);
+      this.totals.stock = (this.inventories || []).reduce((s, i) => s + (parseFloat(i.qty) || 0), 0);
 
-    rebuildLedgerNarration(kind) {
-      const k = String(kind || '').toLowerCase();
-      if (k.includes('purchase')) return 'Purchase';
-      if (k.includes('sale')) return 'Sale';
-      if (k.includes('transfer')) return 'Transfer';
-      if (k.includes('made') || k.includes('paid')) return 'Paid';
-      if (k.includes('received') || k.includes('payment')) return 'Received';
-      return kind || 'Entry';
+      const partyName = this.inventoryPartyName(inv);
+      if (partyName && extra && extra.postLedger !== false) {
+        this.ensureInventoryParty(inv);
+        const narr = this.rebuildLedgerNarration(signedType === 'In' ? 'Purchase' : 'Sale', {
+          bowser: extra.bowser || '',
+          qty,
+          source: inv.name,
+          remarks: remarks || '',
+          rate: extra.rate || ''
+        }, extra.narrOpts || { bowser: true, qty: true, loadedFrom: true, remarks: true });
+        this.postToLedger(
+          partyName,
+          narr,
+          signedType === 'In' ? amt : 0,
+          signedType === 'Out' ? amt : 0,
+          {
+            date: dateStr || extra.date,
+            qty,
+            rate: extra.rate || '',
+            bowser: extra.bowser || '',
+            sourceType: extra.sourceType || 'stock',
+            sourceId: sourceId || '',
+            customerNarration: narr
+          }
+        );
+      }
     },
 
     savePurchase() {
@@ -1625,7 +1867,9 @@ function createApp() {
         ratePending: !rate,
         dealType: addToStock ? 'stock' : 'purchase',
         addToStock,
+        inventoryId: f.inventoryId || this.selectedInv || 'rpg',
         tradingParty: f.tradingParty || 'MLG',
+        narrOpts: Object.assign({}, this.defaultNarrOpts('purchase'), f.narrOpts || {}),
         sources,
         splits: []
       };
@@ -1659,7 +1903,8 @@ function createApp() {
           {
             qty: src.qty, rate: srcRate, bowser: src.bowser || f.bowser, date: src.date || f.loadingDate,
             sourceType: 'purchase', sourceId: rec.id,
-            customerNarration: narr
+            customerNarration: narr,
+            showFields: narrOpts
           }
         );
         supplierPosted++;
@@ -1670,12 +1915,18 @@ function createApp() {
       });
 
       if (addToStock) {
+        const inv = this.findInventory(rec.inventoryId);
+        const invName = this.inventoryPartyName(inv);
+        const sameParty = sources.some(s => String(s.loadedParty || '').toLowerCase() === String(invName || '').toLowerCase());
         this.applyStockMove(
           'In',
           loadQty,
           `${f.bowser} – ${loadQty}T purchase to stock` + (f.source ? ` from ${f.source}` : ''),
           formatDateDisplay(f.loadingDate),
-          rec.id
+          rec.id,
+          rec.inventoryId,
+          rec.amount,
+          { bowser: f.bowser, rate, sourceType: 'purchase', date: f.loadingDate, narrOpts, postLedger: !sameParty }
         );
       }
 
@@ -1687,13 +1938,14 @@ function createApp() {
       this.purchaseForm = {
         showForm: true,
         addToStock: false,
+        inventoryId: rec.inventoryId || 'rpg',
         alsoCreateSale: false,
         saleRate: '',
         dealType: 'purchase',
         loadingDate: '', bowser: '', party: '', city: '', plant: '',
         qty: '', rate: '', amount: '', unloadDate: '', source: '', brand: '', remarks: '', editingId: null,
         tradingParty: 'MLG',
-        narrOpts: { bowser: true, qty: true, loadedFrom: true, brand: false, city: false, rate: false, remarks: true },
+        narrOpts: Object.assign({}, this.defaultNarrOpts('purchase')),
         sources: [{ date: '', bowser: '', location: '', loadedParty: '', brand: '', city: '', qty: '', rate: '' }],
         splits: []
       };
@@ -1814,35 +2066,45 @@ function createApp() {
         amount: f.rate ? calcAmount(f.qty, f.rate) : '',
         ratePending: !f.rate,
         dealType: f.dealType || 'direct',
+        inventoryId: f.inventoryId || this.selectedInv || 'rpg',
         linkedPurchaseId: f.linkedPurchaseId || '',
+        narrOpts: Object.assign({}, this.defaultNarrOpts('sale'), f.narrOpts || {}),
         splits: f.splits || []
       };
       this.sales.unshift(rec);
 
+      const saleOpts = rec.narrOpts;
       const saleNarr = this.rebuildLedgerNarration('Sale', {
-        bowser: f.bowser, qty: f.qty, source: f.plant || f.source, brand: f.brand,
-        city: f.city, rate: f.rate, remarks: f.remarks
-      }, { bowser: true, qty: true, loadedFrom: !!f.plant, brand: !!f.brand, city: !!f.city, rate: false, remarks: !!f.remarks });
+        bowser: f.bowser, qty: f.qty, party: f.party, plant: f.plant || f.source, brand: f.brand,
+        city: f.city, rate: f.rate, remarks: f.remarks, ratePending: rec.ratePending
+      }, saleOpts);
       /* Sale = customer DEBIT (they owe us) */
       this.postToLedger(f.party, saleNarr, parseAmount(rec.amount), 0, {
         qty: f.qty, rate: f.rate, bowser: f.bowser, date: f.date,
         sourceType: 'sale', sourceId: rec.id,
-        customerNarration: saleNarr
+        customerNarration: saleNarr,
+        showFields: saleOpts
       });
 
       const fromStock = f.dealType === 'from_stock' || (f.plant || '').toUpperCase().includes('RPG') || (f.plant || '').toUpperCase().includes('STOCK');
       if (fromStock) {
-        this.applyStockMove('Out', f.qty, `Sale to ${f.party}` + (f.remarks ? ' • ' + f.remarks : ''), formatDateDisplay(f.date), rec.id);
+        const inv = this.findInventory(rec.inventoryId);
+        const sameParty = String(this.inventoryPartyName(inv) || '').toLowerCase() === String(f.party || '').toLowerCase();
+        this.applyStockMove('Out', f.qty, `Sale to ${f.party}` + (f.remarks ? ' • ' + f.remarks : ''), formatDateDisplay(f.date), rec.id, rec.inventoryId, rec.amount, {
+          bowser: f.bowser, rate: f.rate, sourceType: 'sale', date: f.date, narrOpts: saleOpts, postLedger: !sameParty
+        });
       }
 
       this.showToast(rec.ratePending ? 'Sale ledger me • Rate pending' : 'Sale saved • Party Ledger auto-updated');
       this.saleForm = {
         showForm: true,
         dealType: f.dealType || 'from_stock',
+        inventoryId: rec.inventoryId || 'rpg',
         date: '', bowser: '', party: '', city: '',
-        plant: fromStock ? 'RPG STOCK - Karachi' : '',
+        plant: fromStock ? (this.findInventory(rec.inventoryId).name || 'RPG STOCK - Karachi') : '',
         qty: '', rate: '', amount: '', remarks: '', brand: '', source: '',
-        linkedPurchaseId: '', editingId: null
+        linkedPurchaseId: '', editingId: null,
+        narrOpts: Object.assign({}, this.defaultNarrOpts('sale'))
       };
       this.recalcTotals();
       this.saveToStorage();
@@ -1866,6 +2128,7 @@ function createApp() {
         slip: '', tid: '', bank: '', fromBank: lastFromBank,
         amount: '', receiveAmount: '',
         remarks: '', proofName: '', proofData: '', editingId: null,
+        narrOpts: Object.assign({}, this.defaultNarrOpts('payment')),
         lines: [this.blankPaymentLine('')]
       };
     },
@@ -2017,6 +2280,7 @@ function createApp() {
         amount,
         note
       }];
+      const narrOpts = Object.assign({}, this.defaultNarrOpts('payment'), f.narrOpts || {});
 
       this.payments.unshift({
         id: payId,
@@ -2034,24 +2298,29 @@ function createApp() {
         remarks: note,
         proofName: f.proofName || '',
         proofData: f.proofData || '',
+        narrOpts,
         lines: filled
       });
 
-      const word = mode + ' Payment';
+      const word = this.rebuildLedgerNarration(type === 'Received' ? 'Received' : type === 'Made' ? 'Paid' : 'Transfer', {
+        mode, fromParty, toParty, bank: bankLabel, fromBank, tid, slip, remarks: note
+      }, narrOpts);
       const extraBase = {
         date: f.date,
         tid: tid || slip || '',
         voucher: tid || slip || '',
+        slip,
         fromParty,
         toParty,
         sourceType: 'payment',
         sourceId: payId,
-        customerNarration: word
+        customerNarration: word,
+        showFields: narrOpts
       };
 
       /* Always update both party ledgers: sender CREDIT, receiver DEBIT */
-      this.postToLedger(fromParty, word + ' → ' + toParty, 0, amount, extraBase);
-      this.postToLedger(toParty, word + ' ← ' + fromParty, amount, 0, extraBase);
+      this.postToLedger(fromParty, word, 0, amount, extraBase);
+      this.postToLedger(toParty, word, amount, 0, extraBase);
 
       /* Master / company cash-bank when MLG is involved */
       const masterAccount = mode === 'Cash'
@@ -2074,20 +2343,24 @@ function createApp() {
     adjustStock() {
       if (!this.stockForm.qty) return;
       const t = this.stockForm.type;
+      const invId = this.stockForm.inventoryId || this.selectedInv;
+      const inv = this.findInventory(invId);
       if (t === 'Adjustment') {
-        const inv = this.inventories[0];
         const target = parseFloat(this.stockForm.qty) || 0;
         const cur = parseFloat(inv.qty) || 0;
         const diff = Math.round((target - cur) * 1000) / 1000;
         if (diff === 0) return;
-        this.applyStockMove(diff > 0 ? 'In' : 'Out', Math.abs(diff), this.stockForm.notes || 'Physical count adjustment', formatDateDisplay(new Date()), 'adj-' + Date.now());
+        this.applyStockMove(diff > 0 ? 'In' : 'Out', Math.abs(diff), this.stockForm.notes || 'Physical count adjustment', formatDateDisplay(new Date()), 'adj-' + Date.now(), invId, 0, { postLedger: true, sourceType: 'stock' });
       } else {
         this.applyStockMove(
           t === 'Out' ? 'Out' : 'In',
           this.stockForm.qty,
           this.stockForm.notes || 'Manual exception (use only for count variance)',
           formatDateDisplay(new Date()),
-          'adj-' + Date.now()
+          'adj-' + Date.now(),
+          invId,
+          0,
+          { postLedger: true, sourceType: 'stock' }
         );
       }
       this.showToast('Exception stock movement posted');
@@ -2097,25 +2370,118 @@ function createApp() {
       this.saveToStorage();
     },
 
+    dieselLineAmount(f) {
+      const qty = parseFloat(f.qty) || 0;
+      const rate = parseFloat(f.rate) || 0;
+      if (qty && rate) return Math.round(qty * rate);
+      if (String(f.type || '').toLowerCase() === 'cash' && f.qty) return parseFloat(f.qty) || 0;
+      return parseFloat(f.amount) || 0;
+    },
+    postDieselLedgerLines(rec) {
+      const opts = rec.narrOpts || this.defaultNarrOpts('diesel');
+      const targets = [];
+      const party = String(rec.party || '').trim();
+      if (party) targets.push(party);
+      if (rec.inventoryId) {
+        const inv = this.findInventory(rec.inventoryId);
+        const invParty = this.inventoryPartyName(inv);
+        if (invParty && !targets.some(t => t.toLowerCase() === invParty.toLowerCase())) {
+          this.ensureInventoryParty(inv);
+          targets.push(invParty);
+        }
+      }
+      if (!targets.length) targets.push('MLG • Trip Expense');
+      const lines = rec.costLines && rec.costLines.length ? rec.costLines : [{
+        title: rec.type || 'Expense', amount: parseAmount(rec.amount), qty: rec.qty, rate: rec.rate, unit: rec.unit
+      }];
+      lines.forEach((line, idx) => {
+        const amt = parseAmount(line.amount);
+        if (!(amt > 0)) return;
+        const narr = this.rebuildLedgerNarration('diesel', {
+          lineTitle: line.title,
+          type: line.title || rec.type,
+          bowser: rec.bowser,
+          qty: line.qty || rec.qty,
+          unit: line.unit || rec.unit,
+          rate: line.rate || rec.rate,
+          boarder: rec.boarder,
+          description: rec.description,
+          party: rec.party,
+          remarks: rec.remarks
+        }, opts);
+        targets.forEach(name => {
+          this.postToLedger(name, narr, amt, 0, {
+            date: rec.date,
+            bowser: rec.bowser,
+            qty: line.qty || rec.qty,
+            rate: line.rate || rec.rate,
+            sourceType: 'diesel',
+            sourceId: rec.id + (idx ? ('-' + idx) : ''),
+            customerNarration: narr,
+            showFields: opts,
+            lineTitle: line.title
+          });
+        });
+      });
+    },
     saveDiesel() {
       const f = this.dieselForm;
       if (!f.date) { this.showToast('Date required'); return; }
-      const qty = parseFloat(f.qty) || 0;
-      const rate = parseFloat(f.rate) || 0;
-      const amount = f.amount || (qty && rate ? String(qty * rate) : (f.type==='Cash' ? f.qty : ''));
+      if (!f.bowser) { this.showToast('Bowser is required'); return; }
+      const narrOpts = Object.assign({}, this.defaultNarrOpts('diesel'), f.narrOpts || {});
+      const dieselAmt = this.dieselLineAmount(f);
+      const cashAmt = parseFloat(f.cashAmount) || 0;
+      const lain = parseFloat(f.lainKarcha) || 0;
+      const gadi = parseFloat(f.gadiSabiqa) || 0;
+      const extraK = parseFloat(f.extraKarcha) || 0;
+      const costLines = [];
+      if (dieselAmt > 0) costLines.push({ title: f.type || 'Diesel', amount: dieselAmt, qty: f.qty, rate: f.rate, unit: f.unit });
+      if (cashAmt > 0) costLines.push({ title: 'Cash', amount: cashAmt, qty: cashAmt, unit: 'PKR' });
+      if (lain > 0) costLines.push({ title: 'Loading expense', amount: lain, unit: 'PKR' });
+      if (gadi > 0) costLines.push({ title: 'Previous vehicle expense', amount: gadi, unit: 'PKR' });
+      if (extraK > 0) costLines.push({ title: 'Other expense', amount: extraK, unit: 'PKR' });
+      if (!costLines.length) { this.showToast('Enter diesel qty/rate, cash, or an expense amount'); return; }
+      const amount = costLines.reduce((s, l) => s + (parseFloat(l.amount) || 0), 0);
       const prev = (this.dieselEntries[0] && parseFloat(this.dieselEntries[0].gross)) || 0;
-      const gross = prev + (parseFloat(amount) || 0);
-      this.dieselEntries.unshift({
+      const gross = prev + amount;
+      const rec = {
         id: Date.now(),
-        date: f.date, bowser: f.bowser, type: f.type,
+        date: f.date,
+        bowser: f.bowser,
+        type: f.type,
         description: f.description || f.type,
         boarder: f.boarder || f.location || '',
         location: f.boarder || f.location || '',
-        unit: f.unit || (f.type==='Cash' ? 'PKR' : 'Drum'),
-        qty: f.qty, rate: f.rate, amount, gross
-      });
-      this.showToast('Diesel / Cash saved');
-      this.dieselForm = { showForm: true, date: f.date, bowser: '', type: f.type, description: '', boarder: f.boarder || 'Mand', unit: f.unit, qty: '', rate: '', amount: '', remarks: '' };
+        unit: f.unit || (f.type === 'Cash' ? 'PKR' : 'Drum'),
+        qty: f.qty,
+        rate: f.rate,
+        amount,
+        cashAmount: f.cashAmount || '',
+        lainKarcha: f.lainKarcha || '',
+        gadiSabiqa: f.gadiSabiqa || '',
+        extraKarcha: f.extraKarcha || '',
+        party: f.party || '',
+        inventoryId: f.inventoryId || '',
+        remarks: f.remarks || '',
+        narrOpts,
+        costLines,
+        gross
+      };
+      if (f.editingId) {
+        this.removeLedgerBySource('diesel', f.editingId);
+        this.dieselEntries = this.dieselEntries.filter(x => String(x.id) !== String(f.editingId));
+        rec.id = f.editingId;
+      }
+      this.dieselEntries.unshift(rec);
+      this.postDieselLedgerLines(rec);
+      this.showToast('Diesel / Cash saved • ledger updated');
+      this.dieselForm = {
+        showForm: true, date: f.date, bowser: '', type: f.type, description: '',
+        boarder: f.boarder || 'Mand', unit: f.unit, qty: '', rate: '', amount: '', remarks: '',
+        party: f.party || '', inventoryId: f.inventoryId || '',
+        cashAmount: '', lainKarcha: '', gadiSabiqa: '', extraKarcha: '',
+        narrOpts: Object.assign({}, this.defaultNarrOpts('diesel'))
+      };
       this.saveToStorage();
     },
     dieselGross(rows) {
@@ -2539,6 +2905,11 @@ function createApp() {
       return { contentTop, contentBottom, pageW, pageH, HEADER_H, FOOTER_H, useHeader, useFooter, useLogo, useWatermark, anyChrome };
     },
 
+    ledgerDateRange(party) {
+      const rows = [...(party && party.ledger || [])].reverse();
+      if (!rows.length) return { from: '—', to: '—' };
+      return { from: rows[0].date || '—', to: rows[rows.length - 1].date || '—' };
+    },
     async downloadPartyLedgerPDF(party, opts, mode) {
       if (!party) return;
       this.showToast('Generating PDF...');
@@ -2553,111 +2924,143 @@ function createApp() {
         await this.loadAssetImage('logo.png');
 
         let chrome = await this.applyPageChrome(doc, optsSafe, 1, 'all');
-        let y = chrome.contentTop;
+        const left = 12;
+        const right = chrome.pageW - 12;
+        let y = chrome.contentTop + 1;
+        const company = (this.settings && this.settings.company) || 'Meer Logistics & Gas Energy';
+        const range = this.ledgerDateRange(party);
+        const now = new Date();
+        const stamp = now.toLocaleDateString('en-GB').replace(/\//g, '-') + ' ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(13);
         doc.setTextColor(15, 23, 42);
-        doc.text('PARTY LEDGER', 8, y);
-
-        y += 6;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(71, 85, 105);
-        doc.text((party.name || '') + (party.city ? '  •  ' + party.city : ''), 8, y);
-
-        y += 8;
+        doc.text('Company :  ' + company, left, y);
+        y += 7;
+        doc.setFontSize(11);
+        doc.text('Title :', left, y);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(10);
-        doc.setTextColor(15, 23, 42);
-        doc.text('Outstanding Balance:', 8, y);
-
-        const bal = Number(party.balance || 0);
-        doc.setTextColor(bal > 0 ? 220 : 5, bal > 0 ? 38 : 150, bal > 0 ? 38 : 105);
-        doc.text(this.fmtMoney(bal) + ' PKR', 56, y);
+        doc.text('General Ledger   From: ' + range.from + '   To: ' + range.to, left + 18, y);
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.setTextColor(100, 116, 139);
-        doc.text('Generated: ' + new Date().toLocaleString('en-GB'), chrome.pageW - 8, y, { align: 'right' });
+        doc.setTextColor(71, 85, 105);
+        doc.text('Date & Time  :  ' + stamp, right, chrome.contentTop + 1, { align: 'right' });
+
+        y += 7;
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(15, 23, 42);
+        doc.text('Accounts :', left, y);
+        doc.setFont('helvetica', 'bold');
+        doc.text((party.name || '') + (party.city ? '    (' + party.city + ')' : ''), left + 24, y);
+
+        const bal = Number(party.balance || 0);
+        y += 8;
+        doc.setDrawColor(15, 23, 42);
+        doc.setLineWidth(0.35);
+        doc.line(left, y - 3.5, right, y - 3.5);
+        doc.setFontSize(10);
+        doc.text('Net Balance', left, y + 2);
+        doc.setTextColor(bal > 0 ? 185 : 5, bal > 0 ? 28 : 122, bal > 0 ? 28 : 85);
+        doc.text(this.fmtMoney(bal) + ' PKR', right, y + 2, { align: 'right' });
+        doc.setTextColor(15, 23, 42);
 
         const ledgerChrono = [...(party.ledger || [])].reverse();
-        const rows = ledgerChrono.map((e, i) => {
-          const desc = this.formatLedgerDesc(e);
-          /* Append bowser/qty only if not already in short desc — keep one clean line */
-          const extra = [];
-          if (e.bowser && !desc.toUpperCase().includes(String(e.bowser).toUpperCase())) extra.push(String(e.bowser));
-          if (e.qty && !desc.includes(String(e.qty))) extra.push(String(e.qty) + ' MT');
-          const fullDesc = extra.length ? (desc + ' • ' + extra.join(' • ')) : desc;
-          return [
-            String(i + 1),
-            e.date || '',
-            this.ledgerVoucher(e),
-            fullDesc,
+        const opening = ledgerChrono.length
+          ? (Number(ledgerChrono[0].balance) || 0) - (Number(ledgerChrono[0].debit) || 0) + (Number(ledgerChrono[0].credit) || 0)
+          : 0;
+        const body = [];
+        body.push(['', 'Opening Balance', '', '', this.fmtMoney(opening)]);
+        ledgerChrono.forEach((e) => {
+          const desc = this.customerLedgerNarration(e);
+          const dateV = (e.date || '') + (e.voucher || e.tid ? '\n' + (e.voucher || e.tid) : '');
+          body.push([
+            dateV,
+            desc,
             e.debit ? this.fmtMoney(e.debit) : '',
             e.credit ? this.fmtMoney(e.credit) : '',
             this.fmtMoney(e.balance)
-          ];
+          ]);
         });
+        const debitTotal = ledgerChrono.reduce((s, e) => s + (Number(e.debit) || 0), 0);
+        const creditTotal = ledgerChrono.reduce((s, e) => s + (Number(e.credit) || 0), 0);
+        body.push(['', 'Total Amount', this.fmtMoney(debitTotal), this.fmtMoney(creditTotal), this.fmtMoney(bal)]);
 
         const bottomMargin = chrome.pageH - chrome.contentBottom;
         const self = this;
-        /* A4 usable width ~194mm with 8mm margins */
         doc.autoTable({
           startY: y + 6,
-          head: [['S#', 'Date', 'Voucher', 'Description', 'Debit (Unse Lena)', 'Credit (Unko Dena)', 'Balance']],
-          body: rows.length ? rows : [['—', '—', '—', 'No entries yet', '', '', '']],
-          theme: 'plain',
+          head: [['Date & Voucher', 'Description', 'Debit', 'Credit', 'Balance']],
+          body,
+          theme: 'grid',
           styles: {
             font: 'helvetica',
-            fontSize: 7.5,
-            cellPadding: { top: 2, bottom: 2, left: 1.5, right: 1.5 },
+            fontSize: 8,
+            cellPadding: { top: 2.2, bottom: 2.2, left: 2, right: 2 },
             overflow: 'linebreak',
-            cellWidth: 'wrap',
-            valign: 'top',
-            textColor: [30, 41, 59],
-            lineColor: [200, 210, 220],
-            lineWidth: 0.15,
-            fillColor: false
-          },
-          didParseCell: function (data) {
-            if (data.section === 'body') {
-              if (data.column.index === 4 && data.cell.raw) {
-                data.cell.styles.textColor = [220, 38, 38];
-              }
-              if (data.column.index === 5 && data.cell.raw) {
-                data.cell.styles.textColor = [5, 150, 105];
-              }
-            }
+            valign: 'middle',
+            textColor: [15, 23, 42],
+            lineColor: [15, 23, 42],
+            lineWidth: 0.18,
+            fillColor: [255, 255, 255]
           },
           headStyles: {
             fillColor: [15, 23, 42],
             textColor: [255, 255, 255],
             fontStyle: 'bold',
-            fontSize: 7.5,
-            lineWidth: 0,
-            overflow: 'linebreak',
+            fontSize: 8.2,
+            halign: 'center',
             valign: 'middle'
           },
-          alternateRowStyles: {
-            fillColor: false
-          },
           columnStyles: {
-            0: { cellWidth: 8, halign: 'center' },
-            1: { cellWidth: 18, overflow: 'linebreak' },
-            2: { cellWidth: 18, overflow: 'linebreak' },
-            3: { cellWidth: 78, overflow: 'linebreak' },
-            4: { cellWidth: 22, halign: 'right', overflow: 'linebreak' },
-            5: { cellWidth: 22, halign: 'right', overflow: 'linebreak' },
-            6: { cellWidth: 24, halign: 'right', fontStyle: 'bold', overflow: 'linebreak' }
+            0: { cellWidth: 32, valign: 'top' },
+            1: { cellWidth: 78, valign: 'top' },
+            2: { cellWidth: 26, halign: 'right' },
+            3: { cellWidth: 26, halign: 'right' },
+            4: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }
           },
-          margin: { left: 8, right: 8, top: chrome.contentTop, bottom: Math.max(bottomMargin, 14) },
-          willDrawPage: function (data) {
-            if (data.pageNumber > 1 && optsSafe.watermark !== false) {
-              self.drawWatermark(doc);
+          didParseCell: function (data) {
+            if (data.section !== 'body') return;
+            const last = data.table.body.length - 1;
+            if (data.row.index === 0 || data.row.index === last) {
+              data.cell.styles.fontStyle = 'bold';
+              data.cell.styles.fillColor = [248, 250, 252];
             }
+            if (data.column.index === 2 && data.cell.raw) data.cell.styles.textColor = [15, 23, 42];
+            if (data.column.index === 3 && data.cell.raw) data.cell.styles.textColor = [15, 23, 42];
+          },
+          margin: { left: 12, right: 12, top: chrome.contentTop, bottom: Math.max(bottomMargin, 18) },
+          willDrawPage: function (data) {
+            if (data.pageNumber > 1 && optsSafe.watermark !== false) self.drawWatermark(doc);
+          },
+          didDrawPage: function (data) {
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(71, 85, 105);
+            doc.text('Page #  :  ' + data.pageNumber, right, chrome.contentTop + 8, { align: 'right' });
           }
         });
+
+        let fy = (doc.lastAutoTable && doc.lastAutoTable.finalY ? doc.lastAutoTable.finalY : y) + 6;
+        if (fy > chrome.contentBottom - 28) fy = chrome.contentBottom - 28;
+        doc.setDrawColor(15, 23, 42);
+        doc.setLineWidth(0.25);
+        const boxW = 78;
+        const boxX = right - boxW;
+        doc.rect(boxX, fy, boxW, 22);
+        doc.line(boxX, fy + 7.3, boxX + boxW, fy + 7.3);
+        doc.line(boxX, fy + 14.6, boxX + boxW, fy + 14.6);
+        doc.line(boxX + 50, fy, boxX + 50, fy + 22);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(15, 23, 42);
+        doc.text('Post Dated Cheque', boxX + 2, fy + 5);
+        doc.text('0', boxX + boxW - 2, fy + 5, { align: 'right' });
+        doc.text('Clearing & Outstanding', boxX + 2, fy + 12.3);
+        doc.text('0', boxX + boxW - 2, fy + 12.3, { align: 'right' });
+        doc.text('Net Balance', boxX + 2, fy + 19.6);
+        doc.text(this.fmtMoney(bal), boxX + boxW - 2, fy + 19.6, { align: 'right' });
 
         const totalPages = doc.internal.getNumberOfPages();
         for (let p = 2; p <= totalPages; p++) {
