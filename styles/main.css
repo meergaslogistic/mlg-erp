@@ -494,3 +494,83 @@ tr:hover td { background: #f8fafd; }
 select.entry-field {
   cursor: pointer;
 }
+
+/* Field + ledger visibility checkbox */
+.field-box {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.field-box-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 16px;
+}
+.field-box-top span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: #64748b;
+  text-transform: uppercase;
+}
+.led-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: #0f766e;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.led-check input {
+  width: 12px;
+  height: 12px;
+  accent-color: #0d9488;
+}
+.entry-type-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #0c2a52, #134e4a);
+  color: #fff;
+}
+.entry-type-banner h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 800;
+}
+.entry-type-banner p {
+  margin: 2px 0 0;
+  font-size: 11px;
+  opacity: .82;
+}
+.led-hint {
+  font-size: 10px;
+  color: #64748b;
+}
+.inv-card-scroll {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+.inv-card-scroll::-webkit-scrollbar { height: 8px; }
+.inv-mini {
+  min-width: 220px;
+  flex: 0 0 220px;
+}
+.inline-led-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 6px 8px 8px;
+  background: #fffbeb;
+  border-top: 1px dashed #f59e0b;
+}
