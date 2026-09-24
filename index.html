@@ -155,8 +155,8 @@
           </div>
           <div class="card-vip accent-sky p-5 pl-6">
             <p class="vip-label">Available Stock</p>
-            <p class="vip-value mt-1 text-teal-700" x-text="'~ ' + fmt(totals.stock) + ' Ton'"></p>
-            <p class="vip-sub">RPG Plant – STOCK</p>
+            <p class="vip-value mt-1 text-teal-700" x-text="'~ ' + fmt(inventorySummary.qty) + ' Ton'"></p>
+            <p class="vip-sub" x-text="inventorySummary.count + ' inventory location(s)'"></p>
           </div>
           <div class="card-vip accent-rose p-5 pl-6">
             <p class="vip-label">Sold Out</p>
@@ -186,14 +186,15 @@
               <h3 class="font-bold text-sm">Stock Snapshot</h3>
               <button type="button" @click="go('inventory')" class="text-[11px] text-teal-600 font-medium hover:underline">View all →</button>
             </div>
-            <div class="flex justify-between items-center mb-2">
-              <span class="text-sm text-slate-600">RPG Plant – STOCK</span>
-              <span class="font-bold" x-text="'~ ' + fmt(totals.stock) + ' Ton'"></span>
+            <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
+              <template x-for="inv in inventories" :key="'dash'+inv.id">
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-slate-600 truncate pr-2" x-text="inv.name"></span>
+                  <span class="font-bold text-sm whitespace-nowrap" x-text="fmt(inv.qty) + ' T'"></span>
+                </div>
+              </template>
             </div>
-            <div class="w-full bg-slate-100 rounded-full h-2 mb-3">
-              <div class="bg-teal-500 h-2 rounded-full" style="width:100%"></div>
-            </div>
-            <p class="text-xs text-slate-500">Only active inventory • Multi-ready</p>
+            <p class="text-xs text-slate-500 mt-3">Cards update automatically when a new inventory is added.</p>
           </div>
         </div>
       </section>
@@ -542,23 +543,41 @@
       <!-- ==================== INVENTORY ==================== -->
       <section x-show="section === 'inventory'">
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+          <div class="card-vip accent-indigo p-5 pl-6"><p class="vip-label">Inventories</p><p class="vip-value mt-1" x-text="inventorySummary.count"></p><p class="vip-sub">Locations</p></div>
           <div class="card-vip accent-teal p-5 pl-6"><p class="vip-label">Total Purchased</p><p class="vip-value mt-1" x-text="fmt(totals.purchased)+' Ton'"></p></div>
-          <div class="card-vip accent-emerald p-5 pl-6"><p class="vip-label">Total Sold</p><p class="vip-value mt-1" x-text="fmt(totals.sold)+' Ton'"></p></div>
-          <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">Available Stock</p><p class="vip-value mt-1" x-text="fmt(totals.stock)+' Ton'"></p><p class="vip-sub">RPG Plant – STOCK</p></div>
-          <div class="card-vip accent-rose p-5 pl-6"><p class="vip-label">Movements</p><p class="vip-value mt-1" x-text="(currentInv?.movements||[]).length"></p></div>
+          <div class="card-vip accent-sky p-5 pl-6"><p class="vip-label">All Stock Qty</p><p class="vip-value mt-1" x-text="fmt(inventorySummary.qty)+' Ton'"></p></div>
+          <div class="card-vip accent-amber p-5 pl-6"><p class="vip-label">Stock Value</p><p class="vip-value mt-1" x-text="fmtMoney(inventorySummary.amount)"></p><p class="vip-sub">From rated purchases</p></div>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div><button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','inventory')"><i class="fas fa-file-pdf"></i> Download PDF</button><h2 class="text-base font-bold">Inventory</h2><p class="text-xs text-slate-500">IN from purchase-to-stock. OUT from sale-from-stock.</p></div>
-          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="stockForm.showForm = !stockForm.showForm">Adjustment Entry</button>
+          <div><button type="button" class="mb-2 inline-flex items-center gap-1 px-3 py-1.5 text-xs border border-rose-200 text-rose-700 rounded-lg bg-white" @click="openPdfOptions('register','inventory')"><i class="fas fa-file-pdf"></i> Download PDF</button><h2 class="text-base font-bold">Inventory</h2><p class="text-xs text-slate-500">Add more stock locations anytime. Cards update by themselves.</p></div>
+          <div class="flex gap-2">
+            <button type="button" class="px-4 py-2.5 text-sm border border-slate-200 rounded-lg bg-white" @click="showAddInventory = !showAddInventory">Add Inventory</button>
+            <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="stockForm.showForm = !stockForm.showForm">Adjustment Entry</button>
+          </div>
         </div>
 
-        <!-- Multi-inventory selector (shows only when >1) -->
-        <div x-show="inventories.length > 1" class="mb-6">
-          <h3 class="font-bold text-sm mb-3">Select Inventory / Location</h3>
-          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="card p-4 mb-5 rounded-2xl" x-show="showAddInventory">
+          <p class="text-sm font-bold mb-2">New inventory / stock location</p>
+          <div class="flex flex-wrap gap-2 items-end">
+            <div class="field-box flex-1 min-w-[12rem]">
+              <div class="field-box-top"><span>Inventory name</span></div>
+              <input class="entry-field w-full" x-model="newInvName" placeholder="e.g. Gwadar Stock">
+            </div>
+            <div class="field-box w-[9rem]">
+              <div class="field-box-top"><span>Type</span></div>
+              <select class="entry-field w-full" x-model="newInvType"><option>Stock</option><option>Plant</option><option>Yard</option></select>
+            </div>
+            <button type="button" class="btn-primary px-4 py-2 text-sm" @click="addInventory()">Save inventory</button>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-2">A matching party ledger is created so purchase, sale, payment and diesel/cash can post here too.</p>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="font-bold text-sm mb-3">Stock cards</h3>
+          <div class="inv-card-scroll">
             <template x-for="inv in inventories" :key="inv.id">
-              <button type="button" @click="selectedInv = inv.id"
-                      class="card p-4 text-left border-2 transition w-full"
+              <button type="button" @click="selectedInv = inv.id; stockForm.inventoryId = inv.id"
+                      class="card p-4 text-left border-2 transition inv-mini"
                       :class="selectedInv === inv.id ? 'border-teal-400 ring-2 ring-teal-100' : 'border-slate-100 hover:border-teal-200'">
                 <div class="flex justify-between items-start gap-2">
                   <div>
@@ -567,7 +586,9 @@
                   </div>
                   <span class="badge" :class="inv.statusClass" x-text="inv.status"></span>
                 </div>
-                <p class="text-lg font-extrabold mt-3" x-text="inv.qtyLabel + ' Ton'"></p>
+                <p class="text-lg font-extrabold mt-3" x-text="fmt(inv.qty) + ' Ton'"></p>
+                <p class="text-[11px] text-slate-500 mt-1">Value <span class="font-semibold text-slate-700" x-text="fmtMoney(inv.amount || 0)"></span></p>
+                <p class="text-[11px] text-slate-400" x-show="inv.avgRate">Avg rate <span x-text="fmtMoney(inv.avgRate)"></span></p>
               </button>
             </template>
           </div>
@@ -604,8 +625,12 @@
             <p class="text-[11px] text-slate-500 mb-4">Daily stock should move from Purchase (IN) and Sale from stock (OUT). Use this panel only for a physical-count variance.</p>
             <form @submit.prevent="adjustStock" class="space-y-3">
               <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Location</label>
-                <input type="text" x-model="stockForm.location" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm" required>
+                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Inventory</label>
+                <select x-model="stockForm.inventoryId" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white">
+                  <template x-for="inv in inventories" :key="'st'+inv.id">
+                    <option :value="inv.id" x-text="inv.name"></option>
+                  </template>
+                </select>
               </div>
               <div>
                 <label class="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
@@ -704,22 +729,37 @@
 
         <div class="card p-4 mb-5 rounded-2xl border border-slate-200 bg-slate-50/40" x-show="purchaseForm.showForm">
           <form @submit.prevent="savePurchase" class="space-y-3">
+            <div class="entry-type-banner">
+              <div>
+                <h4>Purchase Entry</h4>
+                <p>Goods received from a supplier. Tick Ledger next to any field you want printed on the party ledger.</p>
+              </div>
+              <p class="led-hint text-white/80">Ledger box ON = show this detail</p>
+            </div>
             <template x-for="(src, si) in purchaseForm.sources" :key="'src'+si">
               <div class="flex flex-wrap items-end gap-2">
-                <input type="date" x-model="src.date" class="entry-field w-[9.5rem]" title="Loading Date" required>
-                <input list="bowserList" x-model="src.bowser" class="entry-field w-[7rem]" placeholder="Bowser *" required>
-                <input list="loadFromList" x-model="src.location" class="entry-field w-[8rem]" placeholder="Loaded From *">
-                <input list="partyList" x-model="src.loadedParty" class="entry-field w-[9rem]" placeholder="Loaded Party">
-                <input list="sourceList" x-model="src.brand" class="entry-field w-[8rem]" placeholder="Brand / Origin">
-                <input list="cityList" x-model="src.city" class="entry-field w-[6rem]" placeholder="City">
-                <input type="number" step="0.001" x-model="src.qty" @input="recalcPurchaseFromSources()" class="entry-field w-[5.5rem]" placeholder="Qty *" required>
-                <input type="number" step="0.01" x-model="src.rate" @input="recalcPurchaseFromSources()" class="entry-field w-[6rem]" placeholder="Rate">
-                <input type="text" class="entry-field w-[7rem] bg-slate-100 font-semibold" :value="sourceLineAmount(src)" placeholder="Amount" readonly>
-                <input type="text" x-model="purchaseForm.remarks" class="entry-field min-w-[8rem] flex-1" placeholder="Note">
-                <label class="inline-flex items-center gap-1.5 text-xs text-slate-600 whitespace-nowrap px-1">
-                  <input type="checkbox" x-model="purchaseForm.addToStock" class="rounded"> RPG Stock
-                </label>
-                <button type="submit" class="btn-primary px-4 py-2 text-sm whitespace-nowrap"><i class="fas fa-save mr-1"></i> Save</button>
+                <div class="field-box w-[10rem]"><div class="field-box-top"><span>Loading date *</span><label class="led-check"><input type="checkbox" x-model="purchaseForm.narrOpts.date"> Ledger</label></div><input type="date" x-model="src.date" class="entry-field w-full" required></div>
+                <div class="field-box w-[8rem]"><div class="field-box-top"><span>Bowser *</span><label class="led-check"><input type="checkbox" x-model="purchaseForm.narrOpts.bowser"> Ledger</label></div><input list="bowserList" x-model="src.bowser" class="entry-field w-full" placeholder="TMV 039" required></div>
+                <div class="field-box w-[9rem]"><div class="field-box-top"><span>Loaded from</span><label class="led-check"><input type="checkbox" x-model="purchaseForm.narrOpts.loadedFrom"> Ledger</label></div><input list="loadFromList" x-model="src.location" class="entry-field w-full" placeholder="Mand"></div>
+                <div class="field-box w-[10rem]"><div class="field-box-top"><span>Supplier party</span><label class="led-check"><input type="checkbox" x-model="purchaseForm.narrOpts.loadedParty"> Ledger</label></div><input list="partyList" x-model="src.loadedParty" class="entry-field w-full" placeholder="Loaded party"></div>
+                <div class="field-box w-[8rem]"><div class="field-box-top"><span>Brand</span><label class="led-check"><input type="checkbox" x-model="purchaseForm.narrOpts.brand"> Ledger</label></div><input list="sourceList" x-model="src.brand" class="entry-field w-full"></div>
+                <div class="field-box w-[7rem]"><div class="field-box-top"><span>City</span><label class="led-check"><input type="checkbox" x-model="purchaseForm.narrOpts.city"> Ledger</label></div><input list="cityList" x-model="src.city" class="entry-field w-full"></div>
+                <div class="field-box w-[6.5rem]"><div class="field-box-top"><span>Qty ton *</span><label class="led-check"><input type="checkbox" x-model="purchaseForm.narrOpts.qty"> Ledger</label></div><input type="number" step="0.001" x-model="src.qty" @input="recalcPurchaseFromSources()" class="entry-field w-full" required></div>
+                <div class="field-box w-[7rem]"><div class="field-box-top"><span>Rate</span><label class="led-check"><input type="checkbox" x-model="purchaseForm.narrOpts.rate"> Ledger</label></div><input type="number" step="0.01" x-model="src.rate" @input="recalcPurchaseFromSources()" class="entry-field w-full"></div>
+                <div class="field-box w-[7.5rem]"><div class="field-box-top"><span>Amount</span></div><input type="text" class="entry-field w-full bg-slate-100 font-semibold" :value="sourceLineAmount(src)" readonly></div>
+                <div class="field-box min-w-[8rem] flex-1"><div class="field-box-top"><span>Note</span><label class="led-check"><input type="checkbox" x-model="purchaseForm.narrOpts.remarks"> Ledger</label></div><input type="text" x-model="purchaseForm.remarks" class="entry-field w-full"></div>
+                <div class="field-box w-[11rem]"><div class="field-box-top"><span>Put into stock</span></div>
+                  <label class="inline-flex items-center gap-1.5 text-xs h-[2.15rem] px-2 border border-slate-200 rounded-lg bg-white">
+                    <input type="checkbox" x-model="purchaseForm.addToStock" class="rounded"> Add to inventory
+                  </label>
+                </div>
+                <div class="field-box w-[12rem]" x-show="purchaseForm.addToStock">
+                  <div class="field-box-top"><span>Which inventory</span></div>
+                  <select class="entry-field w-full" x-model="purchaseForm.inventoryId">
+                    <template x-for="inv in inventories" :key="'pinv'+inv.id"><option :value="inv.id" x-text="inv.name"></option></template>
+                  </select>
+                </div>
+                <button type="submit" class="btn-primary px-4 py-2 text-sm whitespace-nowrap h-[2.15rem] mt-[18px]"><i class="fas fa-save mr-1"></i> Save</button>
               </div>
             </template>
           </form>
@@ -824,6 +864,21 @@
                       </template>
                     </td>
                   </tr>
+                  <tr x-show="isInlineEditing('purchase', r.id)">
+                    <td colspan="13" class="p-0">
+                      <div class="inline-led-bar text-[11px]">
+                        <span class="font-semibold text-amber-800">Show on ledger:</span>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.bowser"> Bowser</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.qty"> Qty</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.loadedFrom"> Loaded from</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.loadedParty"> Supplier</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.brand"> Brand</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.city"> City</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.rate"> Rate</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.remarks"> Note</label>
+                      </div>
+                    </td>
+                  </tr>
                 </template>
               </tbody>
             </table>
@@ -869,30 +924,44 @@
         </div>
 
         <div class="card p-4 mb-5 rounded-2xl border border-slate-200 bg-slate-50/40" x-show="saleForm.showForm">
-          <form @submit.prevent="saveSale" class="space-y-2">
+          <form @submit.prevent="saveSale" class="space-y-3">
+            <div class="entry-type-banner">
+              <div>
+                <h4>Sale Entry</h4>
+                <p>Goods sold to a customer. Tick Ledger on fields that should appear in the buyer ledger description.</p>
+              </div>
+            </div>
             <div class="flex flex-wrap items-end gap-2">
-              <select class="entry-field w-[9rem]" x-model="saleForm.dealType" @change="setSaleDeal(saleForm.dealType)">
-                <option value="from_stock">From Stock</option>
-                <option value="direct">Direct / Linked</option>
-              </select>
+              <div class="field-box w-[10rem]"><div class="field-box-top"><span>Sale type</span></div>
+                <select class="entry-field w-full" x-model="saleForm.dealType" @change="setSaleDeal(saleForm.dealType)">
+                  <option value="from_stock">From Stock</option>
+                  <option value="direct">Direct / Linked</option>
+                </select>
+              </div>
+              <div class="field-box w-[12rem]" x-show="saleForm.dealType === 'from_stock'">
+                <div class="field-box-top"><span>From inventory</span></div>
+                <select class="entry-field w-full" x-model="saleForm.inventoryId">
+                  <template x-for="inv in inventories" :key="'sinv'+inv.id"><option :value="inv.id" x-text="inv.name"></option></template>
+                </select>
+              </div>
               <select class="entry-field min-w-[12rem] flex-1" x-model="saleForm.linkedPurchaseId" @change="applyLinkedPurchase()" x-show="linkablePurchases().length">
                 <option value="">Link purchase trip…</option>
                 <template x-for="p in linkablePurchases()" :key="'lp'+p.id">
                   <option :value="p.id" x-text="(p.date||'') + ' · ' + (p.bowser||'') + ' · ' + (p.party||'') + ' · ' + (p.qty||'') + 'T'"></option>
                 </template>
               </select>
-              <input type="date" x-model="saleForm.date" class="entry-field w-[9.5rem]" title="Sale Date" required>
-              <input list="bowserList" x-model="saleForm.bowser" class="entry-field w-[7rem]" placeholder="Bowser *" required>
-              <input list="partyList" x-model="saleForm.party" class="entry-field w-[9rem]" placeholder="Party *" required>
-              <input list="cityList" x-model="saleForm.city" class="entry-field w-[6rem]" placeholder="City">
-              <input list="plantList" x-model="saleForm.plant" class="entry-field w-[8rem]" placeholder="Plant">
-              <input list="sourceList" x-model="saleForm.brand" class="entry-field w-[7rem]" placeholder="Brand">
-              <input type="number" step="0.001" x-model="saleForm.qty" @input="calcSale" class="entry-field w-[5.5rem]" placeholder="Qty *" required>
-              <input type="number" step="0.01" x-model="saleForm.rate" @input="calcSale" class="entry-field w-[6rem]" placeholder="Sale Rate">
-              <input type="number" step="0.01" x-model="saleForm.baseRate" class="entry-field w-[6rem]" placeholder="Base Rate">
-              <input type="text" x-model="saleForm.amount" class="entry-field w-[7rem] bg-slate-100 font-semibold" placeholder="Amount" readonly>
-              <input type="text" x-model="saleForm.remarks" class="entry-field min-w-[7rem] flex-1" placeholder="Note">
-              <button type="submit" class="btn-primary px-4 py-2 text-sm whitespace-nowrap"><i class="fas fa-save mr-1"></i> Save</button>
+              <div class="field-box w-[10rem]"><div class="field-box-top"><span>Sale date *</span><label class="led-check"><input type="checkbox" x-model="saleForm.narrOpts.date"> Ledger</label></div><input type="date" x-model="saleForm.date" class="entry-field w-full" required></div>
+              <div class="field-box w-[8rem]"><div class="field-box-top"><span>Bowser *</span><label class="led-check"><input type="checkbox" x-model="saleForm.narrOpts.bowser"> Ledger</label></div><input list="bowserList" x-model="saleForm.bowser" class="entry-field w-full" required></div>
+              <div class="field-box w-[10rem]"><div class="field-box-top"><span>Customer *</span><label class="led-check"><input type="checkbox" x-model="saleForm.narrOpts.party"> Ledger</label></div><input list="partyList" x-model="saleForm.party" class="entry-field w-full" required></div>
+              <div class="field-box w-[7rem]"><div class="field-box-top"><span>City</span><label class="led-check"><input type="checkbox" x-model="saleForm.narrOpts.city"> Ledger</label></div><input list="cityList" x-model="saleForm.city" class="entry-field w-full"></div>
+              <div class="field-box w-[9rem]"><div class="field-box-top"><span>Plant</span><label class="led-check"><input type="checkbox" x-model="saleForm.narrOpts.plant"> Ledger</label></div><input list="plantList" x-model="saleForm.plant" class="entry-field w-full"></div>
+              <div class="field-box w-[8rem]"><div class="field-box-top"><span>Brand</span><label class="led-check"><input type="checkbox" x-model="saleForm.narrOpts.brand"> Ledger</label></div><input list="sourceList" x-model="saleForm.brand" class="entry-field w-full"></div>
+              <div class="field-box w-[6.5rem]"><div class="field-box-top"><span>Qty *</span><label class="led-check"><input type="checkbox" x-model="saleForm.narrOpts.qty"> Ledger</label></div><input type="number" step="0.001" x-model="saleForm.qty" @input="calcSale" class="entry-field w-full" required></div>
+              <div class="field-box w-[7rem]"><div class="field-box-top"><span>Sale rate</span><label class="led-check"><input type="checkbox" x-model="saleForm.narrOpts.rate"> Ledger</label></div><input type="number" step="0.01" x-model="saleForm.rate" @input="calcSale" class="entry-field w-full"></div>
+              <div class="field-box w-[7rem]"><div class="field-box-top"><span>Base rate</span></div><input type="number" step="0.01" x-model="saleForm.baseRate" class="entry-field w-full"></div>
+              <div class="field-box w-[7.5rem]"><div class="field-box-top"><span>Amount</span></div><input type="text" x-model="saleForm.amount" class="entry-field w-full bg-slate-100 font-semibold" readonly></div>
+              <div class="field-box min-w-[8rem] flex-1"><div class="field-box-top"><span>Note</span><label class="led-check"><input type="checkbox" x-model="saleForm.narrOpts.remarks"> Ledger</label></div><input type="text" x-model="saleForm.remarks" class="entry-field w-full"></div>
+              <button type="submit" class="btn-primary px-4 py-2 text-sm whitespace-nowrap h-[2.15rem] mt-[18px]"><i class="fas fa-save mr-1"></i> Save</button>
             </div>
           </form>
         </div>
@@ -979,6 +1048,21 @@
                       </template>
                     </td>
                   </tr>
+                  <tr x-show="isInlineEditing('sale', s.id)">
+                    <td colspan="13" class="p-0">
+                      <div class="inline-led-bar text-[11px]">
+                        <span class="font-semibold text-amber-800">Show on ledger:</span>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.bowser"> Bowser</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.qty"> Qty</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.party"> Customer</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.plant"> Plant</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.brand"> Brand</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.city"> City</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.rate"> Rate</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.remarks"> Note</label>
+                      </div>
+                    </td>
+                  </tr>
                 </template>
               </tbody>
             </table>
@@ -1022,25 +1106,30 @@
           </button>
         </div>
         <div class="card p-4 mb-5 rounded-2xl border border-slate-200 bg-slate-50/40" x-show="paymentForm.showForm">
-          <form @submit.prevent="savePayment" class="space-y-2">
+          <form @submit.prevent="savePayment" class="space-y-3">
+            <div class="entry-type-banner">
+              <div>
+                <h4>Payment Entry</h4>
+                <p>Money moving from one party to another. Tick Ledger on fields you want in both ledgers.</p>
+              </div>
+            </div>
             <div class="flex flex-wrap items-end gap-2">
-              <input type="date" x-model="paymentForm.date" class="entry-field w-[9.5rem]" title="Date" required>
-              <select x-model="paymentForm.mode" class="entry-field w-[6rem]">
-                <option value="Cash">Cash</option>
-                <option value="Bank">Bank</option>
-              </select>
-              <input list="partyList" x-model="paymentForm.fromParty" class="entry-field w-[9rem]" placeholder="Sender *" required>
-              <input list="bankList" x-model="paymentForm.fromBank" class="entry-field w-[9rem]" placeholder="Sender Bank">
-              <input type="text" x-model="paymentForm.tid" class="entry-field w-[7rem]" placeholder="TID">
-              <input list="partyList" x-model="paymentForm.toParty" class="entry-field w-[9rem]" placeholder="Receiver *" required>
-              <input list="bankList" x-model="paymentForm.bank" class="entry-field w-[9rem]" placeholder="Receiver Bank">
-              <input type="number" step="any" x-model="paymentForm.amount" class="entry-field w-[7rem]" placeholder="Amount *" required>
-              <input type="text" x-model="paymentForm.slip" class="entry-field w-[6rem]" placeholder="Slip">
-              <input type="text" x-model="paymentForm.remarks" class="entry-field min-w-[6rem] flex-1" placeholder="Note">
-              <label class="text-xs text-slate-500 whitespace-nowrap">
+              <div class="field-box w-[10rem]"><div class="field-box-top"><span>Date *</span><label class="led-check"><input type="checkbox" x-model="paymentForm.narrOpts.date"> Ledger</label></div><input type="date" x-model="paymentForm.date" class="entry-field w-full" required></div>
+              <div class="field-box w-[7rem]"><div class="field-box-top"><span>Mode</span><label class="led-check"><input type="checkbox" x-model="paymentForm.narrOpts.mode"> Ledger</label></div>
+                <select x-model="paymentForm.mode" class="entry-field w-full"><option value="Cash">Cash</option><option value="Bank">Bank</option></select>
+              </div>
+              <div class="field-box w-[10rem]"><div class="field-box-top"><span>Sender *</span><label class="led-check"><input type="checkbox" x-model="paymentForm.narrOpts.fromParty"> Ledger</label></div><input list="partyList" x-model="paymentForm.fromParty" class="entry-field w-full" required></div>
+              <div class="field-box w-[10rem]"><div class="field-box-top"><span>Sender bank</span><label class="led-check"><input type="checkbox" x-model="paymentForm.narrOpts.bank"> Ledger</label></div><input list="bankList" x-model="paymentForm.fromBank" class="entry-field w-full"></div>
+              <div class="field-box w-[8rem]"><div class="field-box-top"><span>TID</span><label class="led-check"><input type="checkbox" x-model="paymentForm.narrOpts.tid"> Ledger</label></div><input type="text" x-model="paymentForm.tid" class="entry-field w-full"></div>
+              <div class="field-box w-[10rem]"><div class="field-box-top"><span>Receiver *</span><label class="led-check"><input type="checkbox" x-model="paymentForm.narrOpts.toParty"> Ledger</label></div><input list="partyList" x-model="paymentForm.toParty" class="entry-field w-full" required></div>
+              <div class="field-box w-[10rem]"><div class="field-box-top"><span>Receiver bank</span></div><input list="bankList" x-model="paymentForm.bank" class="entry-field w-full"></div>
+              <div class="field-box w-[8rem]"><div class="field-box-top"><span>Amount *</span></div><input type="number" step="any" x-model="paymentForm.amount" class="entry-field w-full" required></div>
+              <div class="field-box w-[7rem]"><div class="field-box-top"><span>Slip</span><label class="led-check"><input type="checkbox" x-model="paymentForm.narrOpts.slip"> Ledger</label></div><input type="text" x-model="paymentForm.slip" class="entry-field w-full"></div>
+              <div class="field-box min-w-[8rem] flex-1"><div class="field-box-top"><span>Note</span><label class="led-check"><input type="checkbox" x-model="paymentForm.narrOpts.remarks"> Ledger</label></div><input type="text" x-model="paymentForm.remarks" class="entry-field w-full"></div>
+              <label class="text-xs text-slate-500 whitespace-nowrap mt-[18px]">
                 <input type="file" accept="image/*,.pdf" @change="onProofFile($event)" class="text-[10px] max-w-[7rem]">
               </label>
-              <button type="submit" class="btn-info px-4 py-2 text-sm whitespace-nowrap"><i class="fas fa-save mr-1"></i> Save</button>
+              <button type="submit" class="btn-info px-4 py-2 text-sm whitespace-nowrap h-[2.15rem] mt-[18px]"><i class="fas fa-save mr-1"></i> Save</button>
               <span class="text-xs text-amber-700" x-show="paymentForm.editingId">Edit</span>
             </div>
             <div class="flex items-center gap-2" x-show="paymentForm.proofData">
@@ -1134,6 +1223,20 @@
                           <button type="button" @click.stop="cancelInlineEdit()" class="text-slate-500 text-xs">Cancel</button>
                         </span>
                       </template>
+                    </td>
+                  </tr>
+                  <tr x-show="isInlineEditing('payment', p.id)">
+                    <td colspan="10" class="p-0">
+                      <div class="inline-led-bar text-[11px]">
+                        <span class="font-semibold text-amber-800">Show on ledger:</span>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.mode"> Mode</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.fromParty"> Sender</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.toParty"> Receiver</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.bank"> Bank</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.tid"> TID</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.slip"> Slip</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.remarks"> Note</label>
+                      </div>
                     </td>
                   </tr>
                 </template>
@@ -1267,18 +1370,39 @@
           <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="dieselForm.showForm = !dieselForm.showForm">Diesel / Cash Entry</button>
         </div>
         <div class="card p-4 mb-5 rounded-2xl border border-slate-200 bg-slate-50/40" x-show="dieselForm.showForm">
-          <form @submit.prevent="saveDiesel" class="flex flex-wrap items-end gap-2">
-            <input type="date" x-model="dieselForm.date" class="entry-field w-[9.5rem]" title="Date" required>
-            <input list="bowserList" x-model="dieselForm.bowser" class="entry-field w-[7rem]" placeholder="Bowser">
-            <select x-model="dieselForm.type" @change="dieselForm.unit = dieselForm.type==='Cash' ? 'PKR' : (dieselForm.type==='Diesel' ? 'Drum' : 'PKR')" class="entry-field w-[6.5rem]">
-              <option>Diesel</option><option>Cash</option><option>Salary</option><option>Washil</option><option>Other</option>
-            </select>
-            <input x-model="dieselForm.description" class="entry-field min-w-[8rem] flex-1" placeholder="Description">
-            <input x-model="dieselForm.boarder" class="entry-field w-[7rem]" placeholder="Boarder">
-            <select x-model="dieselForm.unit" class="entry-field w-[5rem]"><option>Drum</option><option>Ltr</option><option>PKR</option></select>
-            <input type="number" step="any" x-model="dieselForm.qty" class="entry-field w-[5.5rem]" placeholder="Qty">
-            <input type="number" step="any" x-model="dieselForm.rate" class="entry-field w-[5.5rem]" placeholder="Rate">
-            <button class="btn-primary px-4 py-2 text-sm whitespace-nowrap" type="submit"><i class="fas fa-save mr-1"></i> Save</button>
+          <form @submit.prevent="saveDiesel" class="space-y-3">
+            <div class="entry-type-banner">
+              <div>
+                <h4>Diesel &amp; Cash Expense</h4>
+                <p>Trip cost: diesel drums, cash, loading expense, previous vehicle expense. Each filled amount becomes its own ledger row.</p>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-end gap-2">
+              <div class="field-box w-[10rem]"><div class="field-box-top"><span>Date *</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.date"> Ledger</label></div><input type="date" x-model="dieselForm.date" class="entry-field w-full" required></div>
+              <div class="field-box w-[8rem]"><div class="field-box-top"><span>Bowser *</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.bowser"> Ledger</label></div><input list="bowserList" x-model="dieselForm.bowser" class="entry-field w-full" required></div>
+              <div class="field-box w-[7.5rem]"><div class="field-box-top"><span>Type</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.type"> Ledger</label></div>
+                <select x-model="dieselForm.type" @change="dieselForm.unit = dieselForm.type==='Cash' ? 'PKR' : (dieselForm.type==='Diesel' ? 'Drum' : 'PKR')" class="entry-field w-full">
+                  <option>Diesel</option><option>Cash</option><option>Salary</option><option>Washil</option><option>Other</option>
+                </select>
+              </div>
+              <div class="field-box min-w-[8rem] flex-1"><div class="field-box-top"><span>Description</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.description"> Ledger</label></div><input x-model="dieselForm.description" class="entry-field w-full" placeholder="Diesel / cash note"></div>
+              <div class="field-box w-[8rem]"><div class="field-box-top"><span>Boarder</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.boarder"> Ledger</label></div><input x-model="dieselForm.boarder" class="entry-field w-full" placeholder="Mand"></div>
+              <div class="field-box w-[5.5rem]"><div class="field-box-top"><span>Unit</span></div><select x-model="dieselForm.unit" class="entry-field w-full"><option>Drum</option><option>Ltr</option><option>PKR</option></select></div>
+              <div class="field-box w-[6rem]"><div class="field-box-top"><span>Diesel qty</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.qty"> Ledger</label></div><input type="number" step="any" x-model="dieselForm.qty" class="entry-field w-full" placeholder="5"></div>
+              <div class="field-box w-[7rem]"><div class="field-box-top"><span>Diesel rate</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.rate"> Ledger</label></div><input type="number" step="any" x-model="dieselForm.rate" class="entry-field w-full" placeholder="63500"></div>
+              <div class="field-box w-[8rem]"><div class="field-box-top"><span>Cash</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.cash"> Ledger</label></div><input type="number" step="any" x-model="dieselForm.cashAmount" class="entry-field w-full" placeholder="100000"></div>
+              <div class="field-box w-[8.5rem]"><div class="field-box-top"><span>Loading expense</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.lainKarcha"> Ledger</label></div><input type="number" step="any" x-model="dieselForm.lainKarcha" class="entry-field w-full" placeholder="Lain karcha"></div>
+              <div class="field-box w-[9rem]"><div class="field-box-top"><span>Prev. vehicle exp.</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.gadiSabiqa"> Ledger</label></div><input type="number" step="any" x-model="dieselForm.gadiSabiqa" class="entry-field w-full" placeholder="Gadi sabiqa"></div>
+              <div class="field-box w-[8rem]"><div class="field-box-top"><span>Other expense</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.extraKarcha"> Ledger</label></div><input type="number" step="any" x-model="dieselForm.extraKarcha" class="entry-field w-full" placeholder="Karcha"></div>
+              <div class="field-box w-[10rem]"><div class="field-box-top"><span>Charge to party</span><label class="led-check"><input type="checkbox" x-model="dieselForm.narrOpts.party"> Ledger</label></div><input list="partyList" x-model="dieselForm.party" class="entry-field w-full" placeholder="Party ledger"></div>
+              <div class="field-box w-[12rem]"><div class="field-box-top"><span>Inventory ledger</span></div>
+                <select class="entry-field w-full" x-model="dieselForm.inventoryId">
+                  <option value="">None</option>
+                  <template x-for="inv in inventories" :key="'dinv'+inv.id"><option :value="inv.id" x-text="inv.name"></option></template>
+                </select>
+              </div>
+              <button class="btn-primary px-4 py-2 text-sm whitespace-nowrap h-[2.15rem] mt-[18px]" type="submit"><i class="fas fa-save mr-1"></i> Save</button>
+            </div>
           </form>
         </div>
         <div class="card p-4 mb-4 rounded-2xl">
@@ -1354,6 +1478,20 @@
                           <button type="button" @click.stop="cancelInlineEdit()" class="text-slate-500 text-xs">Cancel</button>
                         </span>
                       </template>
+                    </td>
+                  </tr>
+                  <tr x-show="isInlineEditing('diesel', d.id)">
+                    <td colspan="11" class="p-0">
+                      <div class="inline-led-bar text-[11px]">
+                        <span class="font-semibold text-amber-800">Show on ledger:</span>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.bowser"> Bowser</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.type"> Type</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.qty"> Qty</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.rate"> Rate</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.boarder"> Boarder</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.description"> Description</label>
+                        <label class="led-check"><input type="checkbox" x-model="inlineEdit.draft.narrOpts.party"> Party</label>
+                      </div>
                     </td>
                   </tr>
                 </template>
