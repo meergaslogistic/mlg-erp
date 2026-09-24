@@ -7,11 +7,24 @@ const initialMaster = {
   bank: ['MLG HBL Account','MBL Pak Rice Commission Agent','HBL Wakeel Ahmed Enterprises','UBL Ibadat LPG PVT LTD.','ASK Bank Wakeel Ahmed Enterprises','ABL Pak Rice Commission Agent','BALH Ibadat Rice Mills','BALF Ibadat Rice Mills','MCB Shabeer Ahmed Enterprises','FB Saddam Enterprises','Meezan - Naik Muhammad Enterprises'],
   source: ['Mehman bandar - Meer Gas','Bandar - Meer Gas','Aftab - Meer Gas','bandar Abbas - Meer Gas','Asloia Aftab - Meer Gas','Bandar Asloia - Meer Gas','Botan - Meer Gas','Jamshoro - Meer Gas','Allanaz - Karachi','Makran','Mehman bandar']
 };
-const initialInventories = [{ id:'rpg', name:'RPG Plant – STOCK', type:'Stock', qty:312.0, qtyLabel:'~ 312.0', status:'Available', statusClass:'bg-emerald-50 text-emerald-700', typeClass:'bg-teal-50 text-teal-700', movements:[
-  { date:'24-Jun-26', type:'In', qty:'52.320', remarks:'TMQ 013 Bandar Botan' },
-  { date:'22-Jun-26', type:'In', qty:'48.240', remarks:'TMP 010 bandar Abbas' },
-  { date:'18-Jun-26', type:'In', qty:'47.750', remarks:'TMQ 588 Bandar Asloia' }
-]}];
+const initialInventories = [{
+  id:'rpg',
+  name:'RPG Plant – STOCK',
+  partyName:'RPG Plant - STOCK',
+  type:'Stock',
+  qty:312.0,
+  amount:0,
+  avgRate:0,
+  qtyLabel:'~ 312.0',
+  status:'Available',
+  statusClass:'bg-emerald-50 text-emerald-700',
+  typeClass:'bg-teal-50 text-teal-700',
+  movements:[
+    { date:'24-Jun-26', type:'In', qty:'52.320', remarks:'TMQ 013 Bandar Botan' },
+    { date:'22-Jun-26', type:'In', qty:'48.240', remarks:'TMP 010 bandar Abbas' },
+    { date:'18-Jun-26', type:'In', qty:'47.750', remarks:'TMQ 588 Bandar Asloia' }
+  ]
+}];
 const samplePurchases = [
 { id:1, date:'1-Jun-26', brand:'Mehman bandar - Meer Gas', unloadDate:'5-Jun-26', bowser:'TMQ 013', party:'Bugti Plant', city:'Jamshoro', plant:'Mand', unit:'Ton', qty:'47.490', loadQty:'47.490', unloadQty:'47.490', baseRate:'', rate:'312200', amount:'14,826,378', status:'Delivered', rowType:'trip' },
 { id:2, date:'1-Jun-26', brand:'Bandar - Meer Gas', unloadDate:'4-Jun-26', bowser:'JU 3050', party:'VTR Gas', city:'Qazi Ahmed', plant:'Mand', unit:'Ton', qty:'48.470', loadQty:'48.470', unloadQty:'48.470', baseRate:'', rate:'312200', amount:'15,132,334', status:'Delivered', rowType:'trip' },
