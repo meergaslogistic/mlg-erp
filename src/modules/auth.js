@@ -88,11 +88,17 @@
     return { ok: true, session: s, firstAdmin: !hasAdmin };
   }
 
-  async function login(username, password) {
+  async function login(username, password, role) {
     const u = String(username || '').trim().toLowerCase();
+    const want = role === 'admin' ? 'admin' : 'operator';
     const db = loadUsers();
     const rec = db.users.find(x => x.username.toLowerCase() === u || String(x.email || '').toLowerCase() === u);
-    if (!rec) return { ok: false, msg: 'Account not found' };
+    if (!rec) return { ok: false, msg: 'Account not found on this desk' };
+    if (rec.role !== want) {
+      return { ok: false, msg: want === 'admin'
+        ? 'This account is Entry Operator. Open the Operator desk.'
+        : 'This account is Admin. Open the Admin desk.' };
+    }
     const h = await hashPin(password);
     if (h !== rec.passwordHash) return { ok: false, msg: 'Incorrect password' };
     const s = { userId: rec.id, username: rec.username, displayName: rec.displayName, role: rec.role, email: rec.email };

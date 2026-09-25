@@ -32,7 +32,7 @@ function createApp() {
     greetIcon: '☀️',
     pdfOptions: { show: false, header: false, footer: false, watermark: false, type: null, data: null },
     session: null,
-    authView: 'login',
+    authView: 'gate',
     authBusy: false,
     authMsg: '',
     authForm: { username: '', password: '', confirm: '', displayName: '', email: '', role: 'operator', currentPassword: '', otp: '', identity: '' },
@@ -260,8 +260,9 @@ function createApp() {
     },
 
     can(moduleId, action) {
-      if (this.isAdmin) return true;
       if (!this.session) return false;
+      if (moduleId === 'admin') return this.isAdmin;
+      if (this.isAdmin) return true;
       const acl = this.operatorAcl || {};
       const row = acl[moduleId] || {};
       if (action === 'view') return row.view !== false;
@@ -294,12 +295,14 @@ function createApp() {
     },
     async submitLogin() {
       this.authBusy = true; this.authMsg = '';
-      const res = await window.MLGAuth.login(this.authForm.username, this.authForm.password);
+      const desk = this.authForm.role === 'admin' ? 'admin' : 'operator';
+      const res = await window.MLGAuth.login(this.authForm.username, this.authForm.password, desk);
       this.authBusy = false;
       if (!res.ok) { this.authMsg = res.msg; return; }
       this.session = res.session;
+      this.section = 'dashboard';
       this.playWelcome();
-      this.showToast('Welcome back, ' + this.displayName);
+      this.showToast(desk === 'admin' ? 'Admin desk opened' : 'Operator desk opened');
     },
     async submitSignup() {
       this.authBusy = true; this.authMsg = '';
@@ -335,7 +338,7 @@ function createApp() {
       });
       this.authBusy = false;
       if (!res.ok) { this.authMsg = res.msg; return; }
-      this.authView = 'login';
+      this.authView = 'gate';
       this.authMsg = 'Account updated. Please login.';
     },
     async saveMyAccount() {
@@ -357,7 +360,7 @@ function createApp() {
       window.MLGAuth.logout();
       this.session = null;
       this.welcomePlayed = false;
-      this.authView = 'login';
+      this.authView = 'gate';
       this.authForm = { username: '', password: '', confirm: '', displayName: '', email: '', role: 'operator', currentPassword: '', otp: '', identity: '' };
     },
     saveAcl() {
