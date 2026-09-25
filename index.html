@@ -33,7 +33,60 @@
 
 <body class="text-slate-800" x-data="app" x-cloak>
 
-  <div class="app-frame">
+  <!-- AUTH GATE -->
+  <div x-show="!session" class="auth-shell" x-cloak>
+    <div class="auth-card">
+      <img src="./assets/logo.png" alt="MLG" class="auth-logo">
+      <p class="auth-brand">Meer Logistics &amp; Gas Energy</p>
+      <h2 class="auth-title" x-text="authView === 'signup' ? 'Create account' : (authView === 'forgot' || authView === 'otp' ? 'Recover account' : 'Welcome back')"></h2>
+      <p class="auth-sub">Admin panel and Entry Operator — sign in to the live workspace.</p>
+      <p class="auth-msg" x-show="authMsg" x-text="authMsg"></p>
+
+      <form x-show="authView === 'login'" class="auth-form" @submit.prevent="submitLogin()">
+        <label>Username or email<input type="text" x-model="authForm.username" required autocomplete="username"></label>
+        <label>Password<input type="password" x-model="authForm.password" required autocomplete="current-password"></label>
+        <button type="submit" class="auth-btn" :disabled="authBusy" x-text="authBusy ? 'Please wait…' : 'Login'"></button>
+        <div class="auth-links">
+          <button type="button" @click="authView='signup'; authMsg=''">Create account</button>
+          <button type="button" @click="authView='forgot'; authMsg=''">Forgot username / password</button>
+        </div>
+      </form>
+
+      <form x-show="authView === 'signup'" class="auth-form" @submit.prevent="submitSignup()">
+        <label>Full name<input type="text" x-model="authForm.displayName" required></label>
+        <label>Username<input type="text" x-model="authForm.username" required minlength="3"></label>
+        <label>Recovery email<input type="email" x-model="authForm.email" required></label>
+        <label>Password<input type="password" x-model="authForm.password" required minlength="4"></label>
+        <label>Confirm password<input type="password" x-model="authForm.confirm" required></label>
+        <label>Panel
+          <select x-model="authForm.role">
+            <option value="operator">Entry Operator</option>
+            <option value="admin">Admin</option>
+          </select>
+        </label>
+        <p class="auth-hint">First account on this workspace becomes Admin automatically.</p>
+        <button type="submit" class="auth-btn" :disabled="authBusy" x-text="authBusy ? 'Creating…' : 'Sign up'"></button>
+        <div class="auth-links"><button type="button" @click="authView='login'; authMsg=''">Back to login</button></div>
+      </form>
+
+      <form x-show="authView === 'forgot'" class="auth-form" @submit.prevent="submitForgot()">
+        <label>Username or recovery email<input type="text" x-model="authForm.identity" required></label>
+        <button type="submit" class="auth-btn" :disabled="authBusy" x-text="authBusy ? 'Sending…' : 'Send recovery code'"></button>
+        <div class="auth-links"><button type="button" @click="authView='login'; authMsg=''">Back to login</button></div>
+      </form>
+
+      <form x-show="authView === 'otp'" class="auth-form" @submit.prevent="submitReset()">
+        <label>6-digit code<input type="text" x-model="authForm.otp" required maxlength="6"></label>
+        <label>New username (optional)<input type="text" x-model="authForm.username"></label>
+        <label>New password<input type="password" x-model="authForm.password" minlength="4"></label>
+        <label>Confirm new password<input type="password" x-model="authForm.confirm"></label>
+        <button type="submit" class="auth-btn" :disabled="authBusy">Update account</button>
+        <div class="auth-links"><button type="button" @click="authView='forgot'; authMsg=''">Resend code</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="app-frame" x-show="session">
   <div class="shell">
 
   <aside class="sidebar"
@@ -46,7 +99,7 @@
       </div>
     </div>
     <nav class="nav-list">
-      <template x-for="item in nav" :key="item.id">
+      <template x-for="item in visibleNav" :key="item.id">
         <button type="button" @click="go(item.id)" class="nav-item"
                 :class="section === item.id ? 'active' : ''">
           <i :class="item.icon"></i>
@@ -55,9 +108,9 @@
       </template>
     </nav>
     <div class="sidebar-foot">
-      Operations desk<br>
-      <b>MLG Advanced ERP</b>
-      <span class="role-tag">Auto Party Ledger</span>
+      <span x-text="isAdmin ? 'Admin desk' : 'Operator desk'"></span><br>
+      <b x-text="displayName"></b>
+      <span class="role-tag" x-text="isAdmin ? 'Full access' : 'Entry operator'"></span>
     </div>
   </aside>
 
@@ -81,8 +134,11 @@
             </template>
           </div>
         </div>
-        <button type="button" class="btn-ghost-sm" @click="openBusinessProfile()">
-          <i class="fas fa-building"></i> Business Profile
+        <button type="button" class="btn-ghost-sm" @click="go('settings')">
+          <i class="fas fa-user-cog"></i> <span x-text="displayName"></span>
+        </button>
+        <button type="button" class="btn-ghost-sm" @click="logoutUser()">
+          <i class="fas fa-right-from-bracket"></i> Logout
         </button>
         <div class="topbar-date" x-text="clockDate"></div>
       </div>
@@ -95,7 +151,7 @@
         <div>
           <h2>
             <span class="greet-icon" x-text="greetIcon"></span>
-            <span x-text="greeting + ', Meer Gas!'"></span>
+            <span x-text="greeting + ', ' + displayName + '!'"></span>
           </h2>
           <p x-text="'Today’s logistics overview — ' + clockDate"></p>
         </div>
@@ -721,10 +777,13 @@
             <h2 class="text-base font-bold">LPG Purchase / Loading</h2>
             <p class="text-xs text-slate-500">Trip ya month-end adjustment. Rate loading line par.</p>
           </div>
-          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="togglePurchaseForm()">
-            <i class="fas fa-plus mr-1.5"></i>
-            <span x-text="purchaseForm.showForm ? 'Hide purchase entry' : 'Purchase Entry'"></span>
-          </button>
+          <div class="flex gap-2">
+            <button type="button" class="px-4 py-2.5 text-sm border border-rose-200 text-rose-700 rounded-lg bg-white" x-show="can('purchase','delete')" @click="openDeleteModal('purchase')">Delete selected</button>
+            <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="togglePurchaseForm()" x-show="can('purchase','create')">
+              <i class="fas fa-plus mr-1.5"></i>
+              <span x-text="purchaseForm.showForm ? 'Hide purchase entry' : 'Purchase Entry'"></span>
+            </button>
+          </div>
         </div>
 
         <div class="card p-4 mb-5 rounded-2xl border border-slate-200 bg-slate-50/40" x-show="purchaseForm.showForm">
@@ -791,6 +850,7 @@
             <table class="w-full text-sm sheet-table">
               <thead>
                 <tr class="text-left text-[11px] text-slate-700 uppercase bg-slate-100">
+                  <th class="px-3 py-3 font-bold"><input type="checkbox" @click="toggleSelectAll('purchase', filteredPurchaseRows())"></th>
                   <th class="px-3 py-3 font-bold">No</th>
                   <th class="px-3 py-3 font-bold">Loading Date</th>
                   <th class="px-3 py-3 font-bold">LPG/GAS Quality</th>
@@ -809,6 +869,7 @@
               <tbody class="divide-y divide-slate-100">
                 <template x-for="(r, idx) in filteredPurchaseRows()" :key="r.id">
                   <tr class="hover:bg-slate-50" :class="isInlineEditing('purchase', r.id) ? 'bg-amber-50 ring-1 ring-amber-200' : ''">
+                    <td class="px-3 py-2.5"><input type="checkbox" :checked="isSelected('purchase', r.id)" @click.stop="toggleSelect('purchase', r.id)"></td>
                     <td class="px-3 py-2.5" x-text="idx + 1"></td>
                     <td class="px-1 py-1.5 whitespace-nowrap">
                       <span x-show="!isInlineEditing('purchase', r.id)" x-text="sheetDate(r.date || r.loadDate)"></span>
@@ -851,9 +912,9 @@
                     <td class="px-1 py-1.5 text-right whitespace-nowrap">
                       <template x-if="!isInlineEditing('purchase', r.id)">
                         <span>
-                          <button type="button" @click.stop="editPurchase(r)" class="text-slate-600 text-xs mr-2">Edit</button>
-                          <button type="button" @click.stop="deletePurchase(r)" class="text-rose-600 text-xs mr-2">Delete</button>
-                          <button type="button" @click.stop="openPdfOptions('purchase', r)" class="text-rose-600 text-xs" title="Download PDF"><i class="fas fa-file-pdf"></i></button>
+                          <button type="button" @click.stop="editPurchase(r)" class="text-slate-600 text-xs mr-2" x-show="can('purchase','edit')">Edit</button>
+                          <button type="button" @click.stop="deletePurchase(r)" class="text-rose-600 text-xs mr-2" x-show="can('purchase','delete')">Delete</button>
+                          <button type="button" @click.stop="openPdfOptions('purchase', r)" class="text-rose-600 text-xs" title="Download PDF" x-show="can('purchase','pdf')"><i class="fas fa-file-pdf"></i></button>
                         </span>
                       </template>
                       <template x-if="isInlineEditing('purchase', r.id)">
@@ -917,7 +978,8 @@
             <h2 class="text-base font-bold">LPG Sale</h2>
             <p class="text-xs text-slate-500">Stock sale inventory kat-ti hai. Direct / linked sale sirf buyer bill banati hai.</p>
           </div>
-          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="toggleSaleForm()">
+          <button type="button" class="px-4 py-2.5 text-sm border border-rose-200 text-rose-700 rounded-lg bg-white mr-2" x-show="can('sale','delete')" @click="openDeleteModal('sale')">Delete selected</button>
+          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="toggleSaleForm()" x-show="can('sale','create')">
             <i class="fas fa-plus mr-1.5"></i>
             <span x-text="saleForm.showForm ? 'Hide sale entry' : 'Sale Entry'"></span>
           </button>
@@ -990,12 +1052,13 @@
             <table class="w-full text-sm sheet-table">
               <thead>
                 <tr>
-                  <th>No</th><th>Date</th><th>Bowser</th><th>Party</th><th>City</th><th>Filling Plant</th><th>Unit</th><th>Quantity</th><th>Base Rate</th><th>Rate</th><th>Amount</th><th>Profit &amp; Loss</th><th class="text-right">Actions</th>
+                  <th><input type="checkbox" @click="toggleSelectAll('sale', filteredSaleRows())"></th><th>No</th><th>Date</th><th>Bowser</th><th>Party</th><th>City</th><th>Filling Plant</th><th>Unit</th><th>Quantity</th><th>Base Rate</th><th>Rate</th><th>Amount</th><th>Profit &amp; Loss</th><th class="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <template x-for="(s, idx) in filteredSaleRows()" :key="s.id">
                   <tr :class="isInlineEditing('sale', s.id) ? 'bg-amber-50 ring-1 ring-amber-200' : ''">
+                    <td><input type="checkbox" :checked="isSelected('sale', s.id)" @click.stop="toggleSelect('sale', s.id)"></td>
                     <td x-text="idx+1"></td>
                     <td class="px-1 py-1">
                       <span x-show="!isInlineEditing('sale', s.id)" x-text="sheetDate(s.date)"></span>
@@ -1035,9 +1098,9 @@
                     <td class="text-right whitespace-nowrap px-1">
                       <template x-if="!isInlineEditing('sale', s.id)">
                         <span>
-                          <button type="button" class="text-slate-600 text-xs mr-2" @click="editSale(s)">Edit</button>
-                          <button type="button" class="text-rose-600 text-xs mr-2" @click="deleteSale(s)">Delete</button>
-                          <button type="button" class="text-rose-600 text-xs" @click="openPdfOptions('sale', s)"><i class="fas fa-file-pdf"></i></button>
+                          <button type="button" class="text-slate-600 text-xs mr-2" @click="editSale(s)" x-show="can('sale','edit')">Edit</button>
+                          <button type="button" class="text-rose-600 text-xs mr-2" @click="deleteSale(s)" x-show="can('sale','delete')">Delete</button>
+                          <button type="button" class="text-rose-600 text-xs" @click="openPdfOptions('sale', s)" x-show="can('sale','pdf')"><i class="fas fa-file-pdf"></i></button>
                         </span>
                       </template>
                       <template x-if="isInlineEditing('sale', s.id)">
@@ -1100,7 +1163,8 @@
             <h2 class="text-base font-bold">Payments</h2>
             <p class="text-xs text-slate-500">Simple entry: sender → receiver. Save updates party ledger + master ledger automatically.</p>
           </div>
-          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="togglePaymentForm()">
+          <button type="button" class="px-4 py-2.5 text-sm border border-rose-200 text-rose-700 rounded-lg bg-white mr-2" x-show="can('payment','delete')" @click="openDeleteModal('payment')">Delete selected</button>
+          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="togglePaymentForm()" x-show="can('payment','create')">
             <i class="fas fa-plus mr-1.5"></i>
             <span x-text="paymentForm.showForm ? 'Hide payment entry' : 'Payment Entry'"></span>
           </button>
@@ -1160,6 +1224,7 @@
             <table class="w-full text-sm sheet-table">
               <thead>
                 <tr>
+                  <th class="px-3 py-3"><input type="checkbox" @click="toggleSelectAll('payment', filteredPaymentRows())"></th>
                   <th class="px-4 py-3">Date</th>
                   <th class="px-4 py-3">Mode</th>
                   <th class="px-4 py-3">Sender</th>
@@ -1173,6 +1238,7 @@
               <tbody class="divide-y divide-slate-100">
                 <template x-for="p in filteredPaymentRows()" :key="p.id">
                   <tr :class="isInlineEditing('payment', p.id) ? 'bg-amber-50 ring-1 ring-amber-200' : ''">
+                    <td class="px-3 py-1.5"><input type="checkbox" :checked="isSelected('payment', p.id)" @click.stop="toggleSelect('payment', p.id)"></td>
                     <td class="px-1 py-1.5">
                       <span x-show="!isInlineEditing('payment', p.id)" x-text="p.date"></span>
                       <input x-show="isInlineEditing('payment', p.id)" type="date" class="w-full min-w-[7rem] border border-amber-300 rounded px-1 py-1 text-xs bg-white" x-model="inlineEdit.draft.date">
@@ -1212,9 +1278,9 @@
                     <td class="px-1 py-1.5 text-right whitespace-nowrap">
                       <template x-if="!isInlineEditing('payment', p.id)">
                         <span>
-                          <button type="button" @click="editPayment(p)" class="text-slate-600 text-xs mr-2">Edit</button>
-                          <button type="button" @click="deletePayment(p)" class="text-rose-600 text-xs mr-2">Delete</button>
-                          <button type="button" @click="openPdfOptions('payment', p)" class="text-rose-600 text-xs"><i class="fas fa-file-pdf"></i></button>
+                          <button type="button" @click="editPayment(p)" class="text-slate-600 text-xs mr-2" x-show="can('payment','edit')">Edit</button>
+                          <button type="button" @click="deletePayment(p)" class="text-rose-600 text-xs mr-2" x-show="can('payment','delete')">Delete</button>
+                          <button type="button" @click="openPdfOptions('payment', p)" class="text-rose-600 text-xs" x-show="can('payment','pdf')"><i class="fas fa-file-pdf"></i></button>
                         </span>
                       </template>
                       <template x-if="isInlineEditing('payment', p.id)">
@@ -1367,7 +1433,8 @@
             <h2 class="text-base font-bold">Diesel & Cash</h2>
             <p class="text-xs text-slate-500">Trip kharch: diesel drums/ltr + driver cash + boarder (Mand / BP 250 / Gwadar / Turbat).</p>
           </div>
-          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="dieselForm.showForm = !dieselForm.showForm">Diesel / Cash Entry</button>
+          <button type="button" class="px-4 py-2.5 text-sm border border-rose-200 text-rose-700 rounded-lg bg-white mr-2" x-show="can('diesel','delete')" @click="openDeleteModal('diesel')">Delete selected</button>
+          <button type="button" class="btn-primary px-5 py-2.5 text-sm" @click="dieselForm.showForm = !dieselForm.showForm" x-show="can('diesel','create')">Diesel / Cash Entry</button>
         </div>
         <div class="card p-4 mb-5 rounded-2xl border border-slate-200 bg-slate-50/40" x-show="dieselForm.showForm">
           <form @submit.prevent="saveDiesel" class="space-y-3">
@@ -1418,11 +1485,12 @@
           <div class="table-scroll">
             <table class="w-full text-sm sheet-table">
               <thead>
-                <tr><th>No</th><th>Loading Date</th><th>Bowser No</th><th>Description</th><th>Boarder</th><th>Unit</th><th>Quantity</th><th>Rate</th><th>Amount</th><th>Gross Amount</th><th class="text-right">Actions</th></tr>
+                <tr><th><input type="checkbox" @click="toggleSelectAll('diesel', filteredDieselRows())"></th><th>No</th><th>Loading Date</th><th>Bowser No</th><th>Description</th><th>Boarder</th><th>Unit</th><th>Quantity</th><th>Rate</th><th>Amount</th><th>Gross Amount</th><th class="text-right">Actions</th></tr>
               </thead>
               <tbody>
                 <template x-for="(d,i) in filteredDieselRows()" :key="d.id">
                   <tr :class="isInlineEditing('diesel', d.id) ? 'bg-amber-50 ring-1 ring-amber-200' : ''">
+                    <td><input type="checkbox" :checked="isSelected('diesel', d.id)" @click.stop="toggleSelect('diesel', d.id)"></td>
                     <td x-text="i+1"></td>
                     <td class="px-1 py-1">
                       <span x-show="!isInlineEditing('diesel', d.id)" x-text="sheetDate(d.date)"></span>
@@ -1467,9 +1535,9 @@
                     <td class="px-1 py-1 text-right whitespace-nowrap">
                       <template x-if="!isInlineEditing('diesel', d.id)">
                         <span>
-                          <button type="button" @click="editDiesel(d)" class="text-slate-600 text-xs mr-2">Edit</button>
-                          <button type="button" @click="deleteDiesel(d)" class="text-rose-600 text-xs mr-2">Delete</button>
-                          <button type="button" @click="openPdfOptions('diesel', d)" class="text-rose-600 text-xs"><i class="fas fa-file-pdf"></i></button>
+                          <button type="button" @click="editDiesel(d)" class="text-slate-600 text-xs mr-2" x-show="can('diesel','edit')">Edit</button>
+                          <button type="button" @click="deleteDiesel(d)" class="text-rose-600 text-xs mr-2" x-show="can('diesel','delete')">Delete</button>
+                          <button type="button" @click="openPdfOptions('diesel', d)" class="text-rose-600 text-xs" x-show="can('diesel','pdf')"><i class="fas fa-file-pdf"></i></button>
                         </span>
                       </template>
                       <template x-if="isInlineEditing('diesel', d.id)">
@@ -1738,8 +1806,68 @@
               <button type="button" class="btn-primary px-4 py-2 text-sm" @click="exportBackup()">Export backup JSON</button>
               <button type="button" class="px-4 py-2 text-sm rounded-lg border border-rose-200 text-rose-700" @click="resetAllData()">Reset local data</button>
             </div>
-            <p class="text-xs text-slate-500">Data is saved in this browser. Export backup before reset.</p>
+            <p class="text-xs text-slate-500">Workspace is live across every open ERP tab. Export backup before reset.</p>
           </div>
+        </div>
+        <div class="card p-5 rounded-2xl max-w-2xl mt-5">
+          <h2 class="font-bold mb-1">My account</h2>
+          <p class="text-xs text-slate-500 mb-4">Change username, display name or password. Recovery email is used for OTP.</p>
+          <div class="space-y-3">
+            <label class="block text-[11px] font-semibold text-slate-500">Display name<input class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" x-model="authForm.displayName" :placeholder="session.displayName"></label>
+            <label class="block text-[11px] font-semibold text-slate-500">Username<input class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" x-model="authForm.username" :placeholder="session.username"></label>
+            <label class="block text-[11px] font-semibold text-slate-500">Recovery email<input class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" x-model="authForm.email" :placeholder="session.email"></label>
+            <label class="block text-[11px] font-semibold text-slate-500">Current password<input type="password" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" x-model="authForm.currentPassword"></label>
+            <label class="block text-[11px] font-semibold text-slate-500">New password<input type="password" class="mt-1 w-full border rounded-lg px-3 py-2 text-sm" x-model="authForm.password"></label>
+            <button type="button" class="btn-primary px-4 py-2 text-sm" @click="saveMyAccount()">Update account</button>
+          </div>
+        </div>
+      </section>
+
+      <section x-show="section === 'admin' && isAdmin">
+        <div class="mb-4">
+          <h2 class="text-base font-bold">Admin Panel</h2>
+          <p class="text-xs text-slate-500">Toggle what an Entry Operator may do. Changes apply live on every open tab — no refresh.</p>
+        </div>
+        <div class="card overflow-hidden rounded-2xl ring-1 ring-slate-200 mb-5">
+          <div class="px-5 py-3 border-b bg-slate-50 font-semibold text-sm">Operator access toggles</div>
+          <div class="table-scroll">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-[11px] uppercase text-slate-500">
+                  <th class="px-4 py-3">Menu</th>
+                  <th class="px-4 py-3">View</th>
+                  <th class="px-4 py-3">Create</th>
+                  <th class="px-4 py-3">Edit</th>
+                  <th class="px-4 py-3">Delete</th>
+                  <th class="px-4 py-3">PDF</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="mod in aclModules" :key="mod.id">
+                  <tr class="border-t">
+                    <td class="px-4 py-3 font-medium" x-text="mod.label"></td>
+                    <td class="px-4 py-3"><input type="checkbox" x-model="operatorAcl[mod.id].view"></td>
+                    <td class="px-4 py-3"><input type="checkbox" x-model="operatorAcl[mod.id].create"></td>
+                    <td class="px-4 py-3"><input type="checkbox" x-model="operatorAcl[mod.id].edit"></td>
+                    <td class="px-4 py-3"><input type="checkbox" x-model="operatorAcl[mod.id].delete"></td>
+                    <td class="px-4 py-3"><input type="checkbox" x-model="operatorAcl[mod.id].pdf"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+          <div class="p-4"><button type="button" class="btn-primary px-4 py-2 text-sm" @click="saveAcl()">Save access rules</button></div>
+        </div>
+        <div class="card p-5 rounded-2xl">
+          <h3 class="font-bold text-sm mb-3">Registered users</h3>
+          <table class="w-full text-sm">
+            <thead><tr class="text-left text-[11px] uppercase text-slate-500"><th class="py-2">Name</th><th>Username</th><th>Email</th><th>Panel</th></tr></thead>
+            <tbody>
+              <template x-for="u in authUsers" :key="u.id">
+                <tr class="border-t"><td class="py-2" x-text="u.displayName"></td><td x-text="u.username"></td><td x-text="u.email"></td><td class="capitalize" x-text="u.role"></td></tr>
+              </template>
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -1809,6 +1937,20 @@
   </div>
 
 
+  <!-- Realistic delete confirm -->
+  <div x-show="deleteModal.show" class="fixed inset-0 z-[70] flex items-center justify-center p-4" x-cloak>
+    <div class="absolute inset-0 bg-slate-900/50" @click="cancelDeleteModal()"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+      <div class="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mb-4 text-lg"><i class="fas fa-trash-can"></i></div>
+      <h3 class="font-bold text-lg mb-1" x-text="deleteModal.title"></h3>
+      <p class="text-sm text-slate-500 mb-5" x-text="deleteModal.body"></p>
+      <div class="flex justify-end gap-2">
+        <button type="button" class="px-4 py-2.5 rounded-lg border text-sm" @click="cancelDeleteModal()">Cancel</button>
+        <button type="button" class="px-4 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold" @click="confirmDeleteModal()">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <!-- PDF Download Options Modal -->
   <div x-show="pdfOptions.show" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
     <div class="absolute inset-0 bg-black/40" @click="pdfOptions.show = false"></div>
@@ -1835,7 +1977,7 @@
           <input type="checkbox" x-model="pdfOptions.watermark" class="w-4 h-4 rounded text-teal-600 focus:ring-teal-500">
           <div>
             <p class="text-sm font-semibold">Watermark</p>
-            <p class="text-[11px] text-slate-400">Centered faded mark under content (on by default)</p>
+            <p class="text-[11px] text-slate-400">Centered faded mark under content (off by default)</p>
           </div>
         </label>
       </div>
@@ -1867,7 +2009,9 @@
 
   <!-- Load order: data → helpers → app → Alpine (100% reliable, no modules) -->
   <script src="./src/utils/helpers.js"></script>
+  <script src="./src/utils/sync.js"></script>
   <script src="./src/data/store.js"></script>
+  <script src="./src/modules/auth.js"></script>
   <script src="./src/modules/app.js"></script>
 
   <script>
