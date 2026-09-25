@@ -30,7 +30,19 @@ function createApp() {
     clockDate: '',
     greeting: 'Welcome',
     greetIcon: '☀️',
-    pdfOptions: { show: false, header: false, footer: false, watermark: true, type: null, data: null },
+    pdfOptions: { show: false, header: false, footer: false, watermark: false, type: null, data: null },
+    session: null,
+    authView: 'login',
+    authBusy: false,
+    authMsg: '',
+    authForm: { username: '', password: '', confirm: '', displayName: '', email: '', role: 'operator', currentPassword: '', otp: '', identity: '' },
+    operatorAcl: {},
+    aclModules: [],
+    selectedIds: { purchase: [], sale: [], payment: [], diesel: [], quotation: [] },
+    deleteModal: { show: false, kind: '', ids: [], title: '', body: '' },
+    welcomePlayed: false,
+    _rev: 0,
+    _applyingSync: false,
     // Inline table editing
     inlineEdit: { kind: '', id: null, draft: null },
 
@@ -47,7 +59,8 @@ function createApp() {
       quotation: 'Quotations',
       reports: 'Reports',
       settings: 'Settings',
-      master: 'Master Data'
+      master: 'Master Data',
+      admin: 'Admin Panel'
     },
 
     nav: [
@@ -63,7 +76,8 @@ function createApp() {
       { id: 'quotation', label: 'Quotations', icon: 'fas fa-file-alt' },
       { id: 'reports', label: 'Reports', icon: 'fas fa-chart-pie' },
       { id: 'settings', label: 'Settings', icon: 'fas fa-cog' },
-      { id: 'master', label: 'Master Data', icon: 'fas fa-database' }
+      { id: 'master', label: 'Master Data', icon: 'fas fa-database' },
+      { id: 'admin', label: 'Admin Panel', icon: 'fas fa-user-shield', adminOnly: true }
     ],
 
     // ========== Business Data ==========
@@ -203,6 +217,19 @@ function createApp() {
         !q || p.name.toLowerCase().includes(q) || (p.city || '').toLowerCase().includes(q)
       );
     },
+    get displayName() {
+      return (this.session && (this.session.displayName || this.session.username)) || 'Meer Gas';
+    },
+    get isAdmin() { return !!(this.session && this.session.role === 'admin'); },
+    get visibleNav() {
+      return (this.nav || []).filter(item => {
+        if (item.adminOnly) return this.isAdmin;
+        return this.can(item.id, 'view');
+      });
+    },
+    get authUsers() {
+      return (window.MLGAuth && window.MLGAuth.loadUsers().users) || [];
+    },
 
     // ========== Lifecycle ==========
     init() {
@@ -222,6 +249,208 @@ function createApp() {
       if (!this.paymentForm.toParty && this.paymentForm.type === 'Received') this.paymentForm.toParty = 'MLG';
       if (!this.paymentForm.lines || !this.paymentForm.lines.length) {
         this.paymentForm.lines = [this.blankPaymentLine()];
+      }
+      this.session = window.MLGAuth ? window.MLGAuth.session() : null;
+      this.operatorAcl = (window.MLGAuth && window.MLGAuth.getAcl()) || (window.MLGAuth && window.MLGAuth.defaultOperatorAcl()) || {};
+      this.aclModules = (window.MLGAuth && window.MLGAuth.MODULES) || [];
+      if (window.MLGSync) {
+        window.MLGSync.subscribe((payload) => this.applySyncedData(payload));
+      }
+      if (this.session) this.playWelcome();
+    },
+
+    can(moduleId, action) {
+      if (this.isAdmin) return true;
+      if (!this.session) return false;
+      const acl = this.operatorAcl || {};
+      const row = acl[moduleId] || {};
+      if (action === 'view') return row.view !== false;
+      return !!row[action];
+    },
+    displayUser() {
+      return this.displayName;
+    },
+    playWelcome() {
+      if (this.welcomePlayed) return;
+      this.welcomePlayed = true;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        const notes = [392, 523.25, 659.25, 783.99];
+        notes.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.exponentialRampToValueAtTime(0.08, now + 0.03 + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.55 + i * 0.12);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.12);
+          osc.stop(now + 0.7 + i * 0.12);
+        });
+      } catch (e) {}
+    },
+    async submitLogin() {
+      this.authBusy = true; this.authMsg = '';
+      const res = await window.MLGAuth.login(this.authForm.username, this.authForm.password);
+      this.authBusy = false;
+      if (!res.ok) { this.authMsg = res.msg; return; }
+      this.session = res.session;
+      this.playWelcome();
+      this.showToast('Welcome back, ' + this.displayName);
+    },
+    async submitSignup() {
+      this.authBusy = true; this.authMsg = '';
+      if (this.authForm.password !== this.authForm.confirm) {
+        this.authBusy = false; this.authMsg = 'Passwords do not match'; return;
+      }
+      const res = await window.MLGAuth.signup(this.authForm);
+      this.authBusy = false;
+      if (!res.ok) { this.authMsg = res.msg; return; }
+      this.session = res.session;
+      this.playWelcome();
+      this.showToast(res.firstAdmin ? 'Admin account created' : 'Operator account created');
+    },
+    async submitForgot() {
+      this.authBusy = true; this.authMsg = '';
+      const res = await window.MLGAuth.requestOtp(this.authForm.identity || this.authForm.email || this.authForm.username);
+      this.authBusy = false;
+      if (!res.ok) { this.authMsg = res.msg; return; }
+      this.authView = 'otp';
+      this.authMsg = res.mailed
+        ? ('Recovery code sent to ' + res.emailHint)
+        : ('Email gateway pending confirmation. Use code: ' + res.demoOtp);
+    },
+    async submitReset() {
+      this.authBusy = true; this.authMsg = '';
+      if (this.authForm.password && this.authForm.password !== this.authForm.confirm) {
+        this.authBusy = false; this.authMsg = 'Passwords do not match'; return;
+      }
+      const res = await window.MLGAuth.resetWithOtp({
+        otp: this.authForm.otp,
+        username: this.authForm.username || undefined,
+        password: this.authForm.password || undefined
+      });
+      this.authBusy = false;
+      if (!res.ok) { this.authMsg = res.msg; return; }
+      this.authView = 'login';
+      this.authMsg = 'Account updated. Please login.';
+    },
+    async saveMyAccount() {
+      if (!this.session) return;
+      const res = await window.MLGAuth.updateAccount(this.session.userId, {
+        username: this.authForm.username || undefined,
+        password: this.authForm.password || undefined,
+        displayName: this.authForm.displayName || undefined,
+        email: this.authForm.email || undefined,
+        currentPassword: this.authForm.currentPassword
+      });
+      if (!res.ok) { this.showToast(res.msg); return; }
+      this.session = res.session;
+      this.authForm.password = '';
+      this.authForm.currentPassword = '';
+      this.showToast('Account updated');
+    },
+    logoutUser() {
+      window.MLGAuth.logout();
+      this.session = null;
+      this.welcomePlayed = false;
+      this.authView = 'login';
+      this.authForm = { username: '', password: '', confirm: '', displayName: '', email: '', role: 'operator', currentPassword: '', otp: '', identity: '' };
+    },
+    saveAcl() {
+      window.MLGAuth.setAcl(this.operatorAcl);
+      this.saveToStorage();
+      this.showToast('Operator access saved — live on every open tab');
+    },
+    applySyncedData(payload) {
+      if (!payload || this._applyingSync) return;
+      if (payload._rev && this._rev && payload._rev <= this._rev) return;
+      this._applyingSync = true;
+      try {
+        if (payload.parties) this.parties = payload.parties;
+        if (payload.purchases) this.purchases = payload.purchases;
+        if (payload.sales) this.sales = payload.sales;
+        if (payload.payments) this.payments = payload.payments;
+        if (payload.inventories) this.inventories = payload.inventories;
+        if (payload.master) this.master = payload.master;
+        if (payload.dieselEntries) this.dieselEntries = payload.dieselEntries;
+        if (payload.quotations) this.quotations = payload.quotations;
+        if (payload.settings) this.settings = Object.assign(this.settings || {}, payload.settings);
+        if (payload.totals) this.totals = payload.totals;
+        if (payload._rev) this._rev = payload._rev;
+        this.operatorAcl = (window.MLGAuth && window.MLGAuth.getAcl()) || this.operatorAcl;
+        if (this.activeParty) {
+          const fresh = (this.parties || []).find(p => p.id === this.activeParty.id || p.name === this.activeParty.name);
+          if (fresh) this.activeParty = fresh;
+        }
+        this.refreshDatalists();
+        this.recalcTotals();
+      } finally {
+        this._applyingSync = false;
+      }
+    },
+    isSelected(kind, id) {
+      return (this.selectedIds[kind] || []).some(x => String(x) === String(id));
+    },
+    toggleSelect(kind, id) {
+      const cur = this.selectedIds[kind] || [];
+      const has = cur.some(x => String(x) === String(id));
+      this.selectedIds[kind] = has ? cur.filter(x => String(x) !== String(id)) : cur.concat([id]);
+    },
+    selectedCount(kind) { return (this.selectedIds[kind] || []).length; },
+    toggleSelectAll(kind, rows) {
+      const list = rows || [];
+      if ((this.selectedIds[kind] || []).length === list.length) this.selectedIds[kind] = [];
+      else this.selectedIds[kind] = list.map(r => r.id);
+    },
+    openDeleteModal(kind, row) {
+      if (!this.can(kind, 'delete')) { this.showToast('Delete is not allowed for this account'); return; }
+      let ids = row ? [row.id] : (this.selectedIds[kind] || []);
+      if (!ids.length && row) ids = [row.id];
+      if (!ids.length) { this.showToast('Select at least one row'); return; }
+      this.deleteModal = {
+        show: true,
+        kind,
+        ids,
+        title: ids.length > 1 ? ('Delete ' + ids.length + ' ' + kind + ' entries?') : ('Delete this ' + kind + ' entry?'),
+        body: 'Linked stock and ledger lines will be reversed on every open tab. This cannot be undone.'
+      };
+    },
+    cancelDeleteModal() { this.deleteModal = { show: false, kind: '', ids: [], title: '', body: '' }; },
+    confirmDeleteModal() {
+      const { kind, ids } = this.deleteModal;
+      (ids || []).forEach(id => this.purgeEntry(kind, id));
+      this.selectedIds[kind] = [];
+      this.cancelDeleteModal();
+      this.recalcTotals();
+      this.saveToStorage();
+      this.showToast((ids.length > 1 ? ids.length + ' entries' : 'Entry') + ' deleted');
+    },
+    purgeEntry(kind, id) {
+      const rowId = id;
+      if (kind === 'purchase') {
+        const row = this.purchases.find(x => String(x.id) === String(rowId));
+        if (!row) return;
+        this.removeLedgerBySource('purchase', row.id);
+        this.removeStockBySource(row.id);
+        this.purchases = this.purchases.filter(x => String(x.id) !== String(row.id));
+      } else if (kind === 'sale') {
+        const row = this.sales.find(x => String(x.id) === String(rowId));
+        if (!row) return;
+        this.removeLedgerBySource('sale', row.id);
+        this.removeStockBySource(row.id);
+        this.sales = this.sales.filter(x => String(x.id) !== String(row.id));
+      } else if (kind === 'payment') {
+        this.removeLedgerBySource('payment', rowId);
+        this.payments = this.payments.filter(x => String(x.id) !== String(rowId));
+      } else if (kind === 'diesel') {
+        this.removeLedgerBySource('diesel', rowId);
+        this.dieselEntries = this.dieselEntries.filter(x => String(x.id) !== String(rowId));
+      } else if (kind === 'quotation') {
+        this.quotations = this.quotations.filter(x => String(x.id) !== String(rowId));
       }
     },
 
@@ -422,7 +651,7 @@ function createApp() {
         add(o.rate, d.rate ? ('Rate ' + d.rate) : '');
         add(o.remarks, d.remarks);
         if (d.ratePending) parts.push('Rate pending');
-        return parts.join(' • ');
+        return parts.join(' - ');
       }
       if (k.includes('sale')) {
         parts.push('Sale');
@@ -435,7 +664,7 @@ function createApp() {
         add(o.rate, d.rate ? ('Rate ' + d.rate) : '');
         add(o.remarks, d.remarks);
         if (d.ratePending) parts.push('Rate pending');
-        return parts.join(' • ');
+        return parts.join(' - ');
       }
       if (k.includes('diesel') || k.includes('cash') || k.includes('expense') || k.includes('karcha')) {
         parts.push(d.lineTitle || d.type || 'Expense');
@@ -446,7 +675,7 @@ function createApp() {
         add(o.description, d.description);
         add(o.party, d.party);
         add(o.remarks, d.remarks);
-        return parts.join(' • ');
+        return parts.join(' - ');
       }
       const title = k.includes('transfer') ? 'Transfer' : k.includes('paid') || k.includes('made') ? 'Paid' : k.includes('received') ? 'Received' : (d.mode ? (d.mode + ' Payment') : 'Payment');
       parts.push(title);
@@ -457,7 +686,7 @@ function createApp() {
       add(o.tid, d.tid ? ('TID ' + d.tid) : '');
       add(o.slip, d.slip ? ('Slip ' + d.slip) : '');
       add(o.remarks, d.remarks || d.note);
-      return parts.join(' • ');
+      return parts.join(' - ');
     },
     shortLedgerWord(e) {
       if (!e) return '';
@@ -480,7 +709,8 @@ function createApp() {
       return 'Entry';
     },
     customerLedgerNarration(e) {
-      return this.shortLedgerWord(e) || 'Entry';
+      const raw = this.shortLedgerWord(e) || 'Entry';
+      return String(raw).replace(/•/g, ' - ').replace(/\s+/g, ' ').trim();
     },
     findInventory(idOrName) {
       const key = String(idOrName || '').trim().toLowerCase();
@@ -1028,6 +1258,8 @@ function createApp() {
 
     // ========== Navigation ==========
     go(id) {
+      if (id === 'admin' && !this.isAdmin) { this.showToast('Admin panel only'); return; }
+      if (!this.can(id, 'view')) { this.showToast('This menu is not allowed'); return; }
       this.section = id;
       this.sidebarOpen = false;
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1075,8 +1307,12 @@ function createApp() {
           settings: this.settings,
           totals: this.totals
         };
+        payload._rev = Date.now();
+        payload._tab = window.MLGSync ? window.MLGSync.tabId : '';
+        this._rev = payload._rev;
         localStorage.setItem('mlg_erp_v8', JSON.stringify(payload));
         localStorage.setItem('mlg_erp_v7', JSON.stringify(payload));
+        if (window.MLGSync && !this._applyingSync) window.MLGSync.publish(payload);
       } catch (e) { console.warn('Storage save failed', e); }
     },
 
@@ -1237,33 +1473,9 @@ function createApp() {
       return window.confirm('Delete this ' + label + '? Linked stock and ledger lines will be reversed.');
     },
 
-    deletePurchase(row) {
-      if (!row || !this.confirmDelete('purchase')) return;
-      this.removeLedgerBySource('purchase', row.id);
-      this.removeStockBySource(row.id);
-      this.purchases = this.purchases.filter(x => x.id !== row.id);
-      this.recalcTotals();
-      this.saveToStorage();
-      this.showToast('Purchase deleted and linked records reversed');
-    },
-
-    deleteSale(row) {
-      if (!row || !this.confirmDelete('sale')) return;
-      this.removeLedgerBySource('sale', row.id);
-      this.removeStockBySource(row.id);
-      this.sales = this.sales.filter(x => x.id !== row.id);
-      this.recalcTotals();
-      this.saveToStorage();
-      this.showToast('Sale deleted and linked records reversed');
-    },
-
-    deletePayment(row) {
-      if (!row || !this.confirmDelete('payment')) return;
-      this.removeLedgerBySource('payment', row.id);
-      this.payments = this.payments.filter(x => x.id !== row.id);
-      this.saveToStorage();
-      this.showToast('Payment deleted and ledger reversed');
-    },
+    deletePurchase(row) { this.openDeleteModal('purchase', row); },
+    deleteSale(row) { this.openDeleteModal('sale', row); },
+    deletePayment(row) { this.openDeleteModal('payment', row); },
 
     deleteMovement(m, idx) {
       if (!this.confirmDelete('stock movement')) return;
@@ -1309,6 +1521,7 @@ function createApp() {
       return '';
     },
     startInlineEdit(kind, row) {
+      if (!this.can(kind, 'edit')) { this.showToast('Edit is not allowed for this account'); return; }
       if (!row || !row.id) return;
       // Deep copy for draft so cancel restores original
       const draft = JSON.parse(JSON.stringify(row));
@@ -1507,7 +1720,7 @@ function createApp() {
     },
 
     editPayment(row) {
-      // Inline edit in payment register table
+      if (!this.can('payment', 'edit')) { this.showToast('Edit is not allowed for this account'); return; }
       if (!row || !row.id) return;
       const first = (row.lines && row.lines[0]) || {};
       const draft = {
@@ -1610,6 +1823,7 @@ function createApp() {
       this.showToast('Payment updated • party + master ledgers refreshed');
     },
     editDiesel(row) {
+      if (!this.can('diesel', 'edit')) { this.showToast('Edit is not allowed for this account'); return; }
       if (!row || !row.id) return;
       const draft = {
         date: this.toInputDate(row.date) || row.date || '',
@@ -1677,13 +1891,7 @@ function createApp() {
       this.cancelInlineEdit();
       this.showToast('Diesel / Cash updated • ledger refreshed');
     },
-    deleteDiesel(row) {
-      if (!row || !this.confirmDelete('diesel/cash entry')) return;
-      this.removeLedgerBySource('diesel', row.id);
-      this.dieselEntries = this.dieselEntries.filter(x => String(x.id) !== String(row.id));
-      this.saveToStorage();
-      this.showToast('Diesel / Cash deleted and ledger reversed');
-    },
+    deleteDiesel(row) { this.openDeleteModal('diesel', row); },
 
     calcPurchase() {
       this.purchaseForm.amount = calcAmount(this.purchaseForm.qty, this.purchaseForm.rate);
@@ -2572,13 +2780,7 @@ function createApp() {
       this.showToast('Edit mode — update karke save karein');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
-    deleteQuotation(q) {
-      if (!q || !this.confirmDelete('quotation')) return;
-      this.quotations = this.quotations.filter(x => String(x.id) !== String(q.id));
-      if (this.activeQuotation && String(this.activeQuotation.id) === String(q.id)) this.activeQuotation = null;
-      this.saveToStorage();
-      this.showToast('Quotation deleted');
-    },
+    deleteQuotation(q) { this.openDeleteModal('quotation', q); },
     openQuotation(q) { this.activeQuotation = q; },
     quoteContact(q, key) {
       if (!q) return this.settings[key] || '';
@@ -2753,11 +2955,18 @@ function createApp() {
     },
 
     openPdfOptions(type, data) {
+      const map = { ledger:'parties', quotation:'quotation', register: (typeof data === 'string' ? data : 'reports'), sale:'sale', purchase:'purchase', payment:'payment', diesel:'diesel' };
+      const mod = map[type] || type;
+      const permMod = mod === 'purchases' ? 'purchase' : mod === 'sales' ? 'sale' : mod === 'payments' ? 'payment' : mod === 'quotations' ? 'quotation' : (mod === 'inventory' || mod === 'summary' || mod === 'ledger' ? (mod === 'ledger' ? 'parties' : mod) : mod);
+      if (!this.can(permMod === 'reports' || permMod === 'summary' ? 'reports' : permMod, 'pdf') && type !== 'ledger') {
+        if (!this.can('parties', 'pdf') && type === 'ledger') { this.showToast('PDF download is not allowed'); return; }
+      }
+      if (type === 'ledger' && !this.can('parties', 'pdf')) { this.showToast('PDF download is not allowed'); return; }
       this.pdfOptions = {
         show: true,
         header: false,
         footer: false,
-        watermark: true,
+        watermark: false,
         type: type,
         data: data
       };
@@ -2917,7 +3126,7 @@ function createApp() {
       try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-        const optsSafe = opts || { header: false, footer: false, logo: false, watermark: true };
+        const optsSafe = opts || { header: false, footer: false, logo: false, watermark: false };
         await this.loadAssetImage('watermark.png');
         await this.loadAssetImage('header.png');
         await this.loadAssetImage('footer.png');
@@ -2997,29 +3206,32 @@ function createApp() {
           styles: {
             font: 'helvetica',
             fontSize: 8,
-            cellPadding: { top: 2.2, bottom: 2.2, left: 2, right: 2 },
+            cellPadding: { top: 2.1, bottom: 2.1, left: 1.8, right: 1.8 },
             overflow: 'linebreak',
-            valign: 'middle',
+            cellWidth: 'wrap',
+            valign: 'top',
             textColor: [15, 23, 42],
             lineColor: [15, 23, 42],
             lineWidth: 0.18,
-            fillColor: [255, 255, 255]
+            fillColor: [255, 255, 255],
+            minCellHeight: 7
           },
           headStyles: {
             fillColor: [15, 23, 42],
             textColor: [255, 255, 255],
             fontStyle: 'bold',
-            fontSize: 8.2,
+            fontSize: 8,
             halign: 'center',
             valign: 'middle'
           },
           columnStyles: {
-            0: { cellWidth: 32, valign: 'top' },
-            1: { cellWidth: 78, valign: 'top' },
-            2: { cellWidth: 26, halign: 'right' },
-            3: { cellWidth: 26, halign: 'right' },
-            4: { cellWidth: 26, halign: 'right', fontStyle: 'bold' }
+            0: { cellWidth: 28, valign: 'top', fontSize: 7.5, overflow: 'linebreak' },
+            1: { cellWidth: 82, valign: 'top', fontSize: 7, overflow: 'linebreak', halign: 'left' },
+            2: { cellWidth: 24, halign: 'right', valign: 'top', overflow: 'linebreak' },
+            3: { cellWidth: 24, halign: 'right', valign: 'top', overflow: 'linebreak' },
+            4: { cellWidth: 28, halign: 'right', valign: 'top', fontStyle: 'bold', overflow: 'linebreak' }
           },
+          tableWidth: 186,
           didParseCell: function (data) {
             if (data.section !== 'body') return;
             const last = data.table.body.length - 1;
@@ -3027,8 +3239,11 @@ function createApp() {
               data.cell.styles.fontStyle = 'bold';
               data.cell.styles.fillColor = [248, 250, 252];
             }
-            if (data.column.index === 2 && data.cell.raw) data.cell.styles.textColor = [15, 23, 42];
-            if (data.column.index === 3 && data.cell.raw) data.cell.styles.textColor = [15, 23, 42];
+            if (data.column.index === 1) {
+              data.cell.styles.fontSize = 7;
+              data.cell.styles.overflow = 'linebreak';
+              data.cell.styles.cellWidth = 82;
+            }
           },
           margin: { left: 12, right: 12, top: chrome.contentTop, bottom: Math.max(bottomMargin, 18) },
           willDrawPage: function (data) {
