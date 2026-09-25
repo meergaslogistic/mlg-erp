@@ -1,8 +1,11 @@
 // Auth + ACL for Admin / Entry Operator panels
 (function () {
-  const USER_KEY = 'mlg_erp_users_v1';
-  const SESSION_KEY = 'mlg_erp_session_v1';
-  const OTP_KEY = 'mlg_erp_otp_v1';
+  const USER_KEY = 'mlg_erp_users_v2';
+  const SESSION_KEY = 'mlg_erp_session_v2';
+  const OTP_KEY = 'mlg_erp_otp_v2';
+  try {
+    ['mlg_erp_users_v1','mlg_erp_session_v1','mlg_erp_otp_v1'].forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
 
   const MODULES = [
     { id: 'purchase', label: 'Purchase / Loading' },
